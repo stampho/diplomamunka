@@ -116,7 +116,6 @@
 %%% TABLE OF CONTENTS %%%
 \tableofcontents
 
-
 %%% PROLOGUE %%%
 
 \chapter*{Feladatkiírás}
@@ -181,7 +180,7 @@ A fejlesztés során az alábbi szempontokat kell figyelembe venni:
         \texttt{Makefile}-ok legenerálását a project file-okból a \texttt{qmake} végzi.
         A project fordítása \texttt{Linux}-on a \texttt{GNU Toolchain}-el (\texttt{GCC 5.3}),
         \texttt{Os X}-en \texttt{Xcode} -al (\texttt{Xcode 7.2.1}), \texttt{Windows}-on pedig
-        \texttt{MSVC 2013} 32-bites verziójával történt. A verziókövetéshez \texttt{Git}-et
+        \texttt{MSVC 2013} 32-bites verziójával történt. A verzió-követéshez \texttt{Git}-et
         használtam. A teszteléshez szükséges keretrendszert és a teszteket a \texttt{Qt}
         repository-k tartalmazzák.
     \item[\texttt{o}] \textbf{Elért eredmények:} \\
@@ -254,9 +253,9 @@ A fejlesztés során az alábbi szempontokat kell figyelembe venni:
 
 \subsection{Qt Web}
 \begin{itemize}
-    \item Az Allan féle előadásból mehet egy kis áttekintás
+    \item Az Allan féle előadásból mehet egy kis áttekintés
     \item QtWebKit
-    \item QtWebView (natív webview, Android)
+    \item QtWebView (natív WebView, Android)
     \item QWebChannel
     \item QtWebEngine
     \item etc.
@@ -286,7 +285,7 @@ A fejlesztés során az alábbi szempontokat kell figyelembe venni:
             \item Rendering
             \item etc.
         \end{itemize}
-    \item IPC kommunikáció a processek között
+    \item IPC kommunikáció a process-ek között
     \item Thread-ek
     \item Single Process mode
 \end{itemize}
@@ -310,7 +309,7 @@ A fejlesztés során az alábbi szempontokat kell figyelembe venni:
     \item Miért a 2 API?
     \begin{itemize}
         \item A Quick a fontosabb
-        \item A 2 API között vannak funkció beli különbségek (``az egyik tudja, a másik nem'')
+        \item A 2 API között vannak funkcióbeli különbségek (``az egyik tudja, a másik nem'')
     \end{itemize}
 \end{itemize}
 
@@ -368,7 +367,7 @@ tesztelés szempontjából, továbbá egy lépéssel közelebb kerültünk az \t
 API eltávolításához.}
 \begin{itemize}
     \item Olyan feature-ök tesztelése ami nem jelenhet meg a publikus API-ban
-    \item Pl. error page, az error page signal-okat elrejtjuk a fejleszto elol, de tesztelni
+    \item Pl. error page, az error page signal-okat elrejtjük a fejlesztő elől, de tesztelni
         kell.
     \item Előfordulhat, hogy a fejlesztő saját felelőségére használja
     \item Nincs dokumentálva
@@ -435,7 +434,7 @@ felé. Talán a \texttt{HTML5}-öt is be kellene venni az ismertetőbe.}
         \end{itemize}
     \item Konfigurálhatóság a WebEngineSettings-en keresztül (``Icon Download Modes'')
         \begin{itemize}
-            \item Letilhatóak lehessenek az ikonok (sávszélesség, sebesség, saját icon
+            \item Letilthatóak lehessenek az ikonok (sávszélesség, sebesség, saját icon
                 manager)
             \item Desktop-on alapból nincsenek bekapcsolva a touch ikonok, de engedélyezni
                 lehessen őket
@@ -454,7 +453,7 @@ felé. Talán a \texttt{HTML5}-öt is be kellene venni az ismertetőbe.}
         \end{itemize}
     \item Quick API-hoz icon image provider
         \begin{itemize}
-            \item problémák: hogyan kössük be a managert? Hol kössük be a provider-t az
+            \item problémák: hogyan kössük be a manager-t? Hol kössük be a provider-t az
                 engine-be?
         \end{itemize}
     \item Hosszabb távú tervek (Qt 5.8)
@@ -470,7 +469,7 @@ felé. Talán a \texttt{HTML5}-öt is be kellene venni az ismertetőbe.}
 \chapter{Egy példa browser megvalósítása}
 \textbf{Szempontok:}
 \begin{itemize}
-    \item Screenshotok legyenek a browserről
+    \item Screenshot-ok legyenek a browser-ről
     \item Csak a lényeget részletezni (funkciók megjelenése), a ``körítés'', design-t csak
         megemlíteni
     \item QML példakód a funkciókra
@@ -484,7 +483,7 @@ felé. Talán a \texttt{HTML5}-öt is be kellene venni az ismertetőbe.}
     \item Az URL pop-up-nak legyen saját history-ja a memóriában (csak addig él amíg a
         program fut). Indításkor a navigation history-ból legyen inicializálva.
         Automatikus URL kiegészítés.
-    \item Legyenek az oldalakrol screenshotok tárolva. Az URL pop-up a felajánlott oldalakkal
+    \item Legyenek az oldalakról screenshot-ok tárolva. Az URL pop-up a felajánlott oldalakkal
         együtt mutatja a screenshot-ot.
     \item A tabok bal oldali sávon legyenek, vertikális listában. Indok: desktop browser,
         a monitorok szélesek
@@ -519,7 +518,7 @@ felé. Talán a \texttt{HTML5}-öt is be kellene venni az ismertetőbe.}
     \item[Log Level] Példa browser indításakor \texttt{-{}-log-level} kapcsolóval
     \item[Test Support API] --
     \item[Form Validation] Screenshot a buborékról
-    \item[Localization] Példa browser inditásakor \texttt{-{}-lang} kapcsolóval
+    \item[Localization] Példa browser indításakor \texttt{-{}-lang} kapcsolóval
     \item[Authentication Dialog] Felül definiálni Custom UI delegate-el ha meg lesz
     \item[Favicon Manager] Nagy méretű ikonok: tab, bookmark (kompakt mód), URL pop-up
 \end{description}
@@ -571,7 +570,7 @@ könyvtárában, a helyben olvasható könyvek között helyezik el.
 \addcontentsline{toc}{section}{Köszönetnyílvánítás}
 
 \noindent
-Szeretnék köszönetet mondani Dr. Kiss Ákos témvezetőmnek a téma kutatása alatt nyújtott
+Szeretnék köszönetet mondani Dr. Kiss Ákos témavezetőmnek a téma kutatása alatt nyújtott
 támogatásáért és a diplomamunkám megírásában nyújtott segítségéért.
 
 Ezen kívül szeretnék köszönetet mondani a \textit{The Qt Company} és a
@@ -586,8 +585,8 @@ ellenőrzéséért és befogadásáért.
 \noindent
 DVD lemez mely tartalmazza:
 \begin{itemize}
-    \item \texttt{QtWebEngine} modul \texttt{Git} repositoryját
-    \item A bemutatott funkciókat megvalósító patcheket
+    \item \texttt{QtWebEngine} modul \texttt{Git} repository-ját
+    \item A bemutatott funkciókat megvalósító patch-eket
     \item A példa böngésző forráskódját
 \end{itemize}
 
