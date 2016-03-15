@@ -14,6 +14,7 @@
 \usepackage{enumitem}
 \usepackage{fancyhdr}
 \usepackage{hyperref}
+\usepackage{graphicx}
 \usepackage{xcolor}
 
 % Margins
@@ -49,6 +50,8 @@
     \textcolor{red}{\textbf{FIXME}}\footnote{\textcolor{red}{\textbf{FIXME:} #1}}
 }
 
+\newcommand{\newpar}{\par\noindent\parskip=8pt}
+
 \setdescription{
     style=standard,
     align=right,
@@ -74,8 +77,7 @@
 \fancyhf{}
 \fancyhead[L]{\title}
 \fancyfoot[R]{\thepage}
-%TODO(pvarga): Page number
-%\pagenumbering{gobble}
+%\fancyfoot[C]{\thepage}
 
 %%% TITLE PAGE %%%
 \thispagestyle{empty}
@@ -195,6 +197,7 @@ A fejlesztés során az alábbi szempontokat kell figyelembe venni:
         \todo{Lista bővítése és formázása}
 \end{itemize}
 
+%%% CONTENT %%%
 
 \chapter*{Bevezetés}
 \addcontentsline{toc}{section}{Bevezetés}
@@ -212,28 +215,134 @@ A fejlesztés során az alábbi szempontokat kell figyelembe venni:
         \end{itemize}
 \end{itemize}
 
-
-%%% CONTENT %%%
-
-\chapter{QtWebEngine Felépítés/Áttekintés/Ismertetés}
-\todo{Kell egy jó fejezet cím a teljes rendszer (Chromium, Qt, QtWebEngine) áttekintésére}
+\chapter{Áttekintés: \mbox{Chromium + Qt = QtWebEngine}}
 
 \section{Chromium}
+A \texttt{Chromium} a Google által fejlesztett, nyílt forrású web böngésző projekt. Nagy
+része \texttt{C++} nyelven íródott. Támogatja napjaink legnépszerűbb operációs rendszereit
+(``Cross-Platform''), legyen az desktop (Windows, Linux, OS X) vagy mobil (Android, iOS,
+QNX).
+A \texttt{Chromium} nem egy böngésző alkalmazás, hanem egy tabokat használó ablakkezelő
+vagy shell a web-hez.
+
+\subsection{Chrome}
+A Google saját \texttt{Chromium}-ra épülő böngésző alkalmazása a \texttt{Google Chrome}.
+Ez az alkalmazás \texttt{Chromium}-mal szemben nem nyílt forrású, viszont a böngésző
+megvalósításának nagy része a \texttt{Chromium} projektben megtalálható.
+A \texttt{Chrome} nem nyílt részei például a beépített \texttt{Adobe Flash Player}
+(\texttt{Pepper Flash Player}) és az automatikus frissítésekért felelős modul
+(\texttt{GoogleUpdate}). Egy másik, népszerű \texttt{Chromium}-ra épülő böngésző alkalmazás
+az \texttt{Opera}.
+
+\subsection{Blink}
+\newpar
+A \texttt{Chromium} 27-es verziójától kezdve a \texttt{Blink} böngésző motort használja.
+A böngésző motor elsődleges feladata a webes tartalom megjelenítése a képernyőn. Talán
+ebből is látszik, hogy a \texttt{Blink} talán a legfontosabb komponense
+a \texttt{Chromium}-nak. A \texttt{Chromium} a 27-es verzió előtt \texttt{WebKit}-et
+használt, a Google ezt a projektet forkolta és nevezte el \texttt{Blink}-nek. Pontosabban,
+a \texttt{Blink} nem a teljes \texttt{WebKit} forkja, hanem csak annak egy részének, a
+\texttt{WebCore}-nak.
+
+\newpar
+A \texttt{Blink} nem tartalmazza a \texttt{WebKit}-ben alkalmazott multi-process
+architektúrát és sandboxing-ot, ezek a feladatok a \texttt{Chromium} más szintjein jelennek
+meg így egyszerűbbé téve a \texttt{Blink} implementációját. Továbbá, a \texttt{WebKit} része
+a \texttt{JavaScriptCore} JavaScript motor is, ami a \texttt{Blink}-be már nem került bele,
+hiszen a \texttt{Chromium}-nak van sajátja, a \texttt{V8}.
+Ettől eltekintve a \texttt{Blink} még mindig nagyon hasonlít a
+\texttt{WebCore}-ra/\texttt{WebKit}-re, a \texttt{Chromium}
+forrásában és könyvtár struktúrájában még mindig \texttt{WebKit} néven hivatkoznak erre a
+komponensre. Például, a \texttt{Blink} forrása a \\
+\texttt{third\_party/WebKit} könyvtárban van.
+
+\newpar
+Már említettem, hogy a \texttt{Blink}, mint böngésző motor felel a webes tartalmak
+megjelenítésért. Ennek működése fontos a \texttt{QtWebEngine} szempontjából, ezert ezt itt
+röviden részletezném.
+A \texttt{Blink} a web oldal tartalmát feldolgozza (parse-olja), és a HTML elemekből
+\texttt{Node} objektumokat gyárt. Ezeket a \texttt{Node}-okat egy fába rendezi, amit
+\texttt{DOM} (Document Object Model) fának hívnak. A fának a gyökér \texttt{Node}-ja mindig,
+az úgynevezett, \texttt{Document Node}. A \texttt{DOM} fa építése során, a motor, minden
+megjeleníthető \texttt{Node}-hoz egy \texttt{RenderObject}-et rendel. A \texttt{DOM} fa
+építésével párhuzamosan egy másik fát is épít a \texttt{RenderObject}-ekből, a
+\texttt{Render Tree}-t. A \texttt{RenderObject} ``tudja'', hogyan kell a \texttt{Node}-ot
+megjeleníteni. Továbbá, bizonyos \texttt{RenderObject}-hez saját \texttt{RenderLayer}-t is
+rendel, amiből egy újabb fát épít: \texttt{RenderLayer Tree}.
+\todo{Mi a forrás hivatkozásának hivatalos formája? Lábjegyzetbe? Bibliográfiából? Mindkettő?}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[scale=0.45]{rendering_trees}
+    \caption{
+        \label{figure-rendering-trees}
+        Rendering Trees (forrás: \url{https://www.chromium.org})
+        %https://www.chromium.org/developers/design-documents/oop-iframes/oop-iframes-rendering
+    }
+\end{figure}
+
+\newpar
+Ahogy az \ref{figure-rendering-trees} ábrán is látszik \dots
 \begin{itemize}
-    \item Google
-    \item Mi \texttt{Chrome} és mi a \texttt{Chromium}
-    \item \texttt{WebKit} fork: \texttt{Blink}
-    \item \texttt{Chromium} multi process architektúra
-    \item verziózás?
+    \item Melyik fa, mi?
+    \item Chrome (Chromium?) Compositor
+    \item RenderLayerBacking
+    \item GraphicsLayer
+    \item WebLayer
+    \item RenderObject paints to WebLayer Buffer
+    \item TextureLayer
+    \item TextureMailbox
 \end{itemize}
 
-\subsection{Chromium Content API}
+\subsection{Multi-Process Architektúra}
+\newpar
 \begin{itemize}
+    \item Cél:
+        \begin{itemize}
+            \item Ne ``álljon'' a UI, mikor a browser dolgozik
+            \item Hiba esetén ne szálljon el az egész browser
+        \end{itemize}
+    \item Process-ek:
+        \begin{itemize}
+            \item Browser Process (main process)
+            \item Render Process (minden tabhoz)
+            \item Plugin-oknak (NPAPI) saját process
+            \item GPU process
+        \end{itemize}
+    \item GPU Process
+        \begin{itemize}
+            \item Mit is csinál -> compositing on GPU
+            \item Security
+            \item Direct 3D API calls (D3D, OpenGL)
+            \item MailboxTexture?
+            \item Model-ek:
+                \begin{itemize}
+                    \item Old Rendering Model
+                    \item Hardware Accelerated Model
+                \end{itemize}
+        \end{itemize}
+\end{itemize}
+
+\subsection{Chromium Content Module}
+\begin{itemize}
+    \item WebKit-hez képest a különbség -> WebKit-től eltérő megközelítés
+    \item Content API
     \item Unstable API
     \item Mit is jelent ez?
     \item Felépítés
     \item Design Pattern
+        \begin{itemize}
+            \item Delegate interfaces
+            \item Observer interfaces
+            \item Callbacks
+        \end{itemize}
 \end{itemize}
+
+\subsection{Áttekintés}
+\newpar
+Jelenleg hanyas verzió? Esetleg pár szó a releasekről?
+\todo{Ábra ide}
+
 
 \section{Qt}
 \begin{itemize}
@@ -523,7 +632,9 @@ felé. Talán a \texttt{HTML5}-öt is be kellene venni az ismertetőbe.}
     \item[Favicon Manager] Nagy méretű ikonok: tab, bookmark (kompakt mód), URL pop-up
 \end{description}
 
-\chapter{Összefoglaló}
+\addtocontents{toc}{\ }
+\chapter*{Összefoglaló}
+\addcontentsline{toc}{section}{Összefoglaló}
 \begin{itemize}
     \item Eredmények és összegzés
     \item \todo{Van erre szükség? Mit lehet ebbe beleírni?}
@@ -531,7 +642,6 @@ felé. Talán a \texttt{HTML5}-öt is be kellene venni az ismertetőbe.}
 
 
 %%% EPILOGUE %%%
-\addtocontents{toc}{\ }
 
 \begin{thebibliography}{9}
     \addcontentsline{toc}{section}{Irodalomjegyzék}
