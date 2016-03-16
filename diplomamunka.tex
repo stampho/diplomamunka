@@ -267,7 +267,7 @@ az úgynevezett, \texttt{Document Node}. A \texttt{DOM} fa építése során, a 
 megjeleníthető \texttt{Node}-hoz egy \texttt{RenderObject}-et rendel. A \texttt{DOM} fa
 építésével párhuzamosan egy másik fát is épít a \texttt{RenderObject}-ekből, a
 \texttt{Render Tree}-t. A \texttt{RenderObject} ``tudja'', hogyan kell a \texttt{Node}-ot
-megjeleníteni. Továbbá, bizonyos \texttt{RenderObject}-hez saját \texttt{RenderLayer}-t is
+megjeleníteni. Továbbá, bizonyos \texttt{RenderObject}-hez \texttt{RenderLayer}-t is
 rendel, amiből egy újabb fát épít: \texttt{RenderLayer Tree}.
 \todo{Mi a forrás hivatkozásának hivatalos formája? Lábjegyzetbe? Bibliográfiából? Mindkettő?}
 
@@ -282,17 +282,52 @@ rendel, amiből egy újabb fát épít: \texttt{RenderLayer Tree}.
 \end{figure}
 
 \newpar
-Ahogy az \ref{figure-rendering-trees} ábrán is látszik \dots
-\begin{itemize}
-    \item Melyik fa, mi?
-    \item Chrome (Chromium?) Compositor
-    \item RenderLayerBacking
-    \item GraphicsLayer
-    \item WebLayer
-    \item RenderObject paints to WebLayer Buffer
-    \item TextureLayer
-    \item TextureMailbox
-\end{itemize}
+Ahogy az \ref{figure-rendering-trees} ábrán is látszik a \texttt{DOM Tree} és a
+\texttt{Render Tree} szinte azonos, csak a \texttt{Render Tree} csak a megjeleníthető
+\texttt{Node}-okat tartalmazza. Míg a \texttt{RenderLayer Tree} a \texttt{Render Tree} egy
+lecsupaszított változata, amit a \texttt{renderer} fog használni a rajzoláshoz.
+A \texttt{RenderLayer}-ből elérhetőek a \texttt{RenderObject}-ek (amik tudják, hogyan
+kell kirajzolni a tartalmat), a \texttt{RenderLayer Tree} pedig hordozza azt az információt,
+hogy milyen sorrendben kell rajzolni és, hogy milyen átfedések lehetnek.
+
+\newpar
+Az, hogy a rajzolás ezek után hogyan történik az függ attól, hogy van e elérhető hardveres
+gyorsítás. Ha nincs, akkor szoftveres renderelés történik úgy, hogy a
+\texttt{RenderLayer Tree}-n keresztül megfelelő sorrendben bejárják a
+\texttt{RenderObject}-eket és kirajzoltatják őket egy közös bitmap-re. Ha kész, ez a bitmap
+lesz elküldve a böngésző alkalmazásnak (pl. \texttt{Chrome}) megjelenítésre. Szoftveres
+renderelés esetén a rajzolást a \texttt{Skia} grafikus motor végzi.
+
+\newpar
+Ha van elérhető hardveres gyorsítás, akkor az eljárás valamivel bonyolultabb. Az egésznek az
+a lényege, hogy a \texttt{RenderObject} nem bitmap-be ``rajzolja bele magát'', hanem 3D API-n
+keresztül (\texttt{OpenGL} vagy Windows-on \texttt{D3D}) utasításokat küld közvetlenül a
+GPU-nak (grafikus processzor). Ezt az eljárást már a \texttt{Chrome Compositor} (\texttt{CC})
+végzi.
+
+\newpar
+A \texttt{Chrome Compositor} már nem része a \texttt{Blink}-nek
+(ennek az az oka, hogy most már a \texttt{Chromium} a browser UI megrajzolásához is a
+\texttt{Chrome Compositor}-t használja).
+Ahhoz, hogy a compositor ki tudja rajzolni a \texttt{DOM}-ban tárolt tartalmat,
+további layer absztrakciókra van szükség:
+\begin{center}
+    \texttt{RenderLayers} $\rightarrow$ \texttt{GraphicsLayers} $\rightarrow$
+    \texttt{WebLayers} $\rightarrow$ \texttt{CC Layers}
+\end{center}
+
+\newpar
+A compositor a végeredményt nem bitmap-be, hanem textúrába ``rajzolja''. Az elkészült
+textúrák a GPU memóriájában vannak tárolva és \texttt{texture mailbox} segítségével
+azonosítják. A \texttt{texture mailbox} egy \texttt{OpenGL extension}, ami egyedi és globális
+string azonosítót rendel a textúrához és lehetővé teszi, hogy más \texttt{OpenGL context}-en
+is elérhető legyen a textúra, ami normális esetben nem lenne megosztva.
+
+\newpar
+A \texttt{texture mailbox}-nak hála az összeállított képet nem kell az \texttt{IPC}-n
+(\texttt{Inter-Process Communication}) keresztül megosztani a process-ek között
+(mint a szoftveres rendering esetében), hanem a GPU memórián keresztül bármelyik
+process hozzáférhet a textúrához.
 
 \subsection{Multi-Process Architektúra}
 \newpar
@@ -338,10 +373,13 @@ Ahogy az \ref{figure-rendering-trees} ábrán is látszik \dots
         \end{itemize}
 \end{itemize}
 
-\subsection{Áttekintés}
+\subsection{Felépítés}
+\newpar
+\todo{Ábra ide}
+
+\subsection{Verzió?}
 \newpar
 Jelenleg hanyas verzió? Esetleg pár szó a releasekről?
-\todo{Ábra ide}
 
 
 \section{Qt}
