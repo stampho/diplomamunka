@@ -34,12 +34,12 @@
 
 \let\orighref\href
 \renewcommand{\href}[2]{%
-    \orighref{#1}{\textcolor{blue}{#2}}
+    \orighref{#1}{\textcolor{blue}{\texttt{#2}}}
 }
 
 \let\origurl\url
 \renewcommand{\url}[1]{%
-    \textcolor{blue}{\underline{\origurl{#1}}}
+    \textcolor{blue}{\origurl{#1}}
 }
 
 \newcommand{\todo}[1]{%
@@ -224,6 +224,7 @@ része \texttt{C++} nyelven íródott. Támogatja napjaink legnépszerűbb oper�
 QNX).
 A \texttt{Chromium} nem egy böngésző alkalmazás, hanem egy tabokat használó ablakkezelő
 vagy shell a web-hez.
+\cite{bib-wiki-chromium}
 
 \subsection{Chrome}
 A Google saját \texttt{Chromium}-ra épülő böngésző alkalmazása a \texttt{Google Chrome}.
@@ -231,18 +232,19 @@ Ez az alkalmazás \texttt{Chromium}-mal szemben nem nyílt forrású, viszont a 
 megvalósításának nagy része a \texttt{Chromium} projektben megtalálható.
 A \texttt{Chrome} nem nyílt részei például a beépített \texttt{Adobe Flash Player}
 (\texttt{Pepper Flash Player}) és az automatikus frissítésekért felelős modul
-(\texttt{GoogleUpdate}). Egy másik, népszerű \texttt{Chromium}-ra épülő böngésző alkalmazás
-az \texttt{Opera}.
+(\texttt{GoogleUpdate}). \cite{bib-wiki-chrome} \\
+Egy másik, népszerű \texttt{Chromium}-ra épülő böngésző alkalmazás az \texttt{Opera}.
 
 \subsection{Blink}
 \newpar
-A \texttt{Chromium} 27-es verziójától kezdve a \texttt{Blink} böngésző motort használja.
+A \texttt{Chromium} 28-as verziójától kezdve a \texttt{Blink} böngésző motort használja.
 A böngésző motor elsődleges feladata a webes tartalom megjelenítése a képernyőn. Talán
 ebből is látszik, hogy a \texttt{Blink} talán a legfontosabb komponense
-a \texttt{Chromium}-nak. A \texttt{Chromium} a 27-es verzió előtt \texttt{WebKit}-et
+a \texttt{Chromium}-nak. A \texttt{Chromium} a 28-es verzió előtt \texttt{WebKit}-et
 használt, a Google ezt a projektet forkolta és nevezte el \texttt{Blink}-nek. Pontosabban,
 a \texttt{Blink} nem a teljes \texttt{WebKit} forkja, hanem csak annak egy részének, a
 \texttt{WebCore}-nak.
+\cite{bib-wiki-blink}
 
 \newpar
 A \texttt{Blink} nem tartalmazza a \texttt{WebKit}-ben alkalmazott multi-process
@@ -255,10 +257,11 @@ Ettől eltekintve a \texttt{Blink} még mindig nagyon hasonlít a
 forrásában és könyvtár struktúrájában még mindig \texttt{WebKit} néven hivatkoznak erre a
 komponensre. Például, a \texttt{Blink} forrása a \\
 \texttt{third\_party/WebKit} könyvtárban van.
+\cite{bib-chromium-displays-web-pages, bib-chromium-blink}
 
 \newpar
 Már említettem, hogy a \texttt{Blink}, mint böngésző motor felel a webes tartalmak
-megjelenítésért. Ennek működése fontos a \texttt{QtWebEngine} szempontjából, ezert ezt itt
+megjelenítésért. Ennek működése fontos a \texttt{QtWebEngine} szempontjából, ezért ezt itt
 röviden részletezném.
 A \texttt{Blink} a web oldal tartalmát feldolgozza (parse-olja), és a HTML elemekből
 \texttt{Node} objektumokat gyárt. Ezeket a \texttt{Node}-okat egy fába rendezi, amit
@@ -269,20 +272,18 @@ megjeleníthető \texttt{Node}-hoz egy \texttt{RenderObject}-et rendel. A \textt
 \texttt{Render Tree}-t. A \texttt{RenderObject} ``tudja'', hogyan kell a \texttt{Node}-ot
 megjeleníteni. Továbbá, bizonyos \texttt{RenderObject}-hez \texttt{RenderLayer}-t is
 rendel, amiből egy újabb fát épít: \texttt{RenderLayer Tree}.
-\todo{Mi a forrás hivatkozásának hivatalos formája? Lábjegyzetbe? Bibliográfiából? Mindkettő?}
 
 \begin{figure}[h]
     \centering
     \includegraphics[scale=0.45]{rendering_trees}
     \caption{
-        \label{figure-rendering-trees}
-        Rendering Trees (forrás: \url{https://www.chromium.org})
-        %https://www.chromium.org/developers/design-documents/oop-iframes/oop-iframes-rendering
+        \label{fig-rendering-trees}
+        Rendering Trees (forrás: \url{https://www.chromium.org} \cite{bib-chromium-oopifs})
     }
 \end{figure}
 
 \newpar
-Ahogy az \ref{figure-rendering-trees} ábrán is látszik a \texttt{DOM Tree} és a
+Ahogy az \ref{fig-rendering-trees} ábrán is látszik a \texttt{DOM Tree} és a
 \texttt{Render Tree} szinte azonos, csak a \texttt{Render Tree} csak a megjeleníthető
 \texttt{Node}-okat tartalmazza. Míg a \texttt{RenderLayer Tree} a \texttt{Render Tree} egy
 lecsupaszított változata, amit a \texttt{renderer} fog használni a rajzoláshoz.
@@ -304,11 +305,13 @@ a lényege, hogy a \texttt{RenderObject} nem bitmap-be ``rajzolja bele magát'',
 keresztül (\texttt{OpenGL} vagy Windows-on \texttt{D3D}) utasításokat küld közvetlenül a
 GPU-nak (grafikus processzor). Ezt az eljárást már a \texttt{Chrome Compositor} (\texttt{CC})
 végzi.
+\cite{bib-chromium-gpu, bib-chromium-oopifs}
 
+\subsection{Chrome Compositor (CC)}
 \newpar
-A \texttt{Chrome Compositor} már nem része a \texttt{Blink}-nek
-(ennek az az oka, hogy most már a \texttt{Chromium} a browser UI megrajzolásához is a
-\texttt{Chrome Compositor}-t használja).
+A \texttt{Chrome Compositor} már nem része a \texttt{Blink}-nek.
+Ennek az az oka, hogy most már a \texttt{Chromium} a browser UI megrajzolásához is a
+\texttt{Chrome Compositor}-t használja.
 Ahhoz, hogy a compositor ki tudja rajzolni a \texttt{DOM}-ban tárolt tartalmat,
 további layer absztrakciókra van szükség:
 \begin{center}
@@ -322,12 +325,14 @@ textúrák a GPU memóriájában vannak tárolva és \texttt{texture mailbox} se
 azonosítják. A \texttt{texture mailbox} egy \texttt{OpenGL extension}, ami egyedi és globális
 string azonosítót rendel a textúrához és lehetővé teszi, hogy más \texttt{OpenGL context}-en
 is elérhető legyen a textúra, ami normális esetben nem lenne megosztva.
+\cite{bib-chromium-gpu, bib-chromium-oopifs}
 
 \newpar
-A \texttt{texture mailbox}-nak hála az összeállított képet nem kell az \texttt{IPC}-n
-(\texttt{Inter-Process Communication}) keresztül megosztani a process-ek között
+A \texttt{texture mailbox}-nak hála az összeállított képet nem kell az \\
+\texttt{IPC}-n (\texttt{Inter-Process Communication}) keresztül megosztani a process-ek között
 (mint a szoftveres rendering esetében), hanem a GPU memórián keresztül bármelyik
 process hozzáférhet a textúrához.
+\cite{bib-chromium-texture-mailbox}
 
 \subsection{Multi-Process Architektúra}
 \newpar
@@ -684,11 +689,44 @@ felé. Talán a \texttt{HTML5}-öt is be kellene venni az ismertetőbe.}
 \begin{thebibliography}{9}
     \addcontentsline{toc}{section}{Irodalomjegyzék}
 
-    \bibitem{Google}
-        Content API overview, \url{http://valami}
+    \bibitem{bib-wiki-chromium}
+        Wikipedia: Chromium (web browser) \\
+        \url{https://en.wikipedia.org/wiki/Chromium_(web_browser)}
 
-    \bibitem{Kai Koehne}
-        QtWebEngine, taming? the beast, \url{http://www.youtube.com/...}
+    \bibitem{bib-wiki-chrome}
+        Wikipedia: Google Chrome \\
+        \url{https://en.wikipedia.org/wiki/Google_Chrome}
+
+    \bibitem{bib-wiki-blink}
+        Wikipedia: Blink (web engine) \\
+        \url{https://en.wikipedia.org/wiki/Blink_(web_engine)}
+
+    \bibitem{bib-chromium-displays-web-pages}
+        Chromium: How Chromium Displays Web Pages \\
+        \href{https://www.chromium.org/developers/design-documents/displaying-a-web-page-in-chrome}
+        {https://www.chromium.org/developers/design-documents/\\
+         displaying-a-web-page-in-chrome}
+
+    \bibitem{bib-chromium-blink}
+        Chromium: Blink \\
+        \url{http://www.chromium.org/blink}
+
+    \bibitem{bib-chromium-gpu}
+        Chromium: GPU Accelerated Compositing in Chrome \\
+        \href{https://www.chromium.org/developers/design-documents/gpu-accelerated-compositing-in-chrome}
+        {https://www.chromium.org/developers/design-documents/\\
+        gpu-accelerated-compositing-in-chrome}
+    \bibitem{bib-chromium-oopifs}
+        Chromium: Rendering and compositing out of process iframes \\
+        \href{https://www.chromium.org/developers/design-documents/oop-iframes/oop-iframes-rendering}
+        {https://www.chromium.org/developers/design-documents/\\
+        oop-iframes/oop-iframes-rendering}
+    \bibitem{bib-chromium-texture-mailbox}
+        Chromium: CHROMIUM\_texture\_mailbox.txt \\
+        \href{https://src.chromium.org/viewvc/chrome/trunk/src/gpu/GLES2/extensions/CHROMIUM/CHROMIUM_texture_mailbox.txt}
+        {https://src.chromium.org/viewvc/chrome/trunk/src/gpu/\\
+        GLES2/extensions/CHROMIUM/CHROMIUM\_texture\_mailbox.txt}
+
 \end{thebibliography}
 
 
