@@ -162,17 +162,17 @@ A fejlesztés során az alábbi szempontokat kell figyelembe venni:
 \chapter*{Tartalmi összefoglaló}
 \addcontentsline{toc}{section}{Tartalmi összefoglaló}
 \begin{itemize}
-    \item[\texttt{o}] \textbf{A téma megnevezése:} \\
+    \item \textbf{A téma megnevezése:} \\
         \title
-    \item[\texttt{o}] \textbf{A megadott feladat megfogalmazása:} \\
+    \item \textbf{A megadott feladat megfogalmazása:} \\
         A \texttt{QtWebEngine} modul bővítése új funkciókkal és azok tesztelése a
         \texttt{Qt auto test} keretrendszerének segítségével. Az új funkciók bemutatása
         egy saját böngészőalkalmazás megvalósításával.
-    \item[\texttt{o}] \textbf{A megoldási mód:} \\
+    \item \textbf{A megoldási mód:} \\
         Részvétel a \texttt{QtWebEngine} project fejlesztésében. Az új funkciók
         megvalósítása \texttt{C++} nyelven. Egy példa böngészőalkalmazás implementálása
         \texttt{QtQuick} segítségével, \texttt{C++} és \texttt{QML} nyelven.
-    \item[\texttt{o}] \textbf{Alkalmazott eszközök, módszerek:} \\
+    \item \textbf{Alkalmazott eszközök, módszerek:} \\
         A fejlesztés \texttt{GNU/Linux} rendszeren, \texttt{QtCreator} fejlesztői
         környezetben (IDE) történt. A hibakereséshez \texttt{GDB}-t használtam.
         \texttt{Makefile}-ok legenerálását a project file-okból a \texttt{qmake} végzi.
@@ -181,10 +181,10 @@ A fejlesztés során az alábbi szempontokat kell figyelembe venni:
         \texttt{MSVC 2013} 32-bites verziójával történt. A verzió-követéshez \texttt{Git}-et
         használtam. A teszteléshez szükséges keretrendszert és a teszteket a \texttt{Qt}
         repository-k tartalmazzák.
-    \item[\texttt{o}] \textbf{Elért eredmények:} \\
+    \item \textbf{Elért eredmények:} \\
         A \texttt{QtWebEngine} 8 új funkcióval lett kibővítve. Ebből 4 a \texttt{QtWebKit}-ből
         átvett, 3 a tesztelést és hibakeresést segíti, 1 pedig HTML5 funkció.
-    \item[\texttt{o}] \textbf{Kulcsszavak:} \\
+    \item \textbf{Kulcsszavak:} \\
         \texttt{QtWebEngine}, \texttt{QtWebKit}, \texttt{Qt}, \texttt{Chromium}, \\
         \texttt{Chromium Content API}, \texttt{Web}, \texttt{HTML5}, \texttt{C++}, \\
         \texttt{Quick}, \texttt{QML}, \texttt{Widget}, \texttt{WebEngineView}
@@ -238,7 +238,7 @@ a \texttt{Blink} nem a teljes \texttt{WebKit} forkja, hanem csak annak egy rész
 \texttt{WebCore}-nak.
 \cite{bib-wiki-blink}
 
-A \texttt{Blink} nem tartalmazza a \texttt{WebKit}-ben alkalmazott multi-process
+A \texttt{Blink} nem tartalmazza a \texttt{WebKit}-ben alkalmazott multi-processz
 architektúrát és sandboxing-ot, ezek a feladatok a \texttt{Chromium} más szintjein jelennek
 meg így egyszerűbbé téve a \texttt{Blink} implementációját. Továbbá, a \texttt{WebKit} része
 a \texttt{JavaScriptCore} JavaScript motor is, ami a \texttt{Blink}-be már nem került bele,
@@ -313,37 +313,73 @@ is elérhető legyen a textúra, ami normális esetben nem lenne megosztva.
 \cite{bib-chromium-gpu, bib-chromium-oopifs}
 
 A \texttt{texture mailbox}-nak hála az összeállított képet nem kell az \\
-\texttt{IPC}-n (\texttt{Inter-Process Communication}) keresztül megosztani a process-ek között
+\texttt{IPC}-n (\texttt{Inter-Process Communication}) keresztül megosztani a processzek között
 (mint a szoftveres rendering esetében), hanem a GPU memórián keresztül bármelyik
-process hozzáférhet a textúrához.
+processz hozzáférhet a textúrához.
 \cite{bib-chromium-texture-mailbox}
 
-\subsection{Multi-Process Architektúra}
+\subsection{Multi-processz Architektúra}
+\texttt{Chromium} volt az egyik első olyan böngésző, ami úgy lett megtervezve, hogy több
+processzre legyen bontva. A \texttt{WebKit} multi-processzt támogató API-ja (\texttt{WebKit2})
+is a \texttt{Chromium}-ról mintázta a multi-processz modelljét.
+\cite{bib-webkit-webkit2}
+Arról már volt szó, hogy ez az API nem került át a \texttt{Blink}-be,
+viszont említést érdemel, mivel a \texttt{QtWebEngine} elődjének, a \texttt{QtWebKit}-nek
+\texttt{Quick} API-ja a \texttt{WebKit2}-re épül.
+
+A multi-processz architektúrán alapuló böngésző alapgondolata az, hogy a böngészőalkalmazás
+UI-ért felelős része saját processzben fut, míg a web oldal(ak) megjelenítésért egy másik
+(vagy több) processz felel. Ennek több előnye is van: \cite{bib-chromium-blog-multi-process}
+\begin{enumerate}
+    \item Felhasználói élmény: Előfordulhat, hogy egy oldal töltése egy script
+        vagy webalkalmazás futtatása nagyon leterheli a böngészőt.
+        Ez hagyományos ``egy-processzes'' browserek
+        esetében nagy valószínűséggel azzal is jár, hogy a UI kevésbé lesz ``reszponzív''.
+        Multi-processz architektúra esetén ez kevésbé valószínű.
+    \item Biztonság: Bizonyos processzek sandboxolva vannak: a külön processzben futó
+        webalkalmazások hozzáférése korlátozott a rendszer erőforrásaihoz és egymáshoz.
+    \item Hibatűrés: A tabok és pluginok külön-külön processzben futnak. Ha egy oldal
+        betöltésekor vagy egy bővítmény futtatásakor hiba történik, vagy elszáll, az nem
+        fogja magával rántani az egész böngészőt.
+\end{enumerate}
+
+A \texttt{Chromium}-ban 4-féle processzt különböztetünk meg. A processzek egymással
+\texttt{IPC}-n keresztül kommunikálnak.
+
+\subsubsection{Browser Process}
 \begin{itemize}
-    \item Cél:
-        \begin{itemize}
-            \item Ne ``álljon'' a UI, mikor a browser dolgozik
-            \item Hiba esetén ne szálljon el az egész browser
-        \end{itemize}
-    \item Process-ek:
-        \begin{itemize}
-            \item Browser Process (main process)
-            \item Render Process (minden tabhoz)
-            \item Plugin-oknak (NPAPI) saját process
-            \item GPU process
-        \end{itemize}
-    \item GPU Process
-        \begin{itemize}
-            \item Mit is csinál -> compositing on GPU
-            \item Security
-            \item Direct 3D API calls (D3D, OpenGL)
-            \item MailboxTexture?
-            \item Model-ek:
-                \begin{itemize}
-                    \item Old Rendering Model
-                    \item Hardware Accelerated Model
-                \end{itemize}
-        \end{itemize}
+    \item main process
+\end{itemize}
+
+\subsubsection{Render Process}
+\begin{itemize}
+    \item renderer nagyon komplex, előfordul crash
+    \item single process
+    \item sandbox
+    \item render process per tab
+    \item ha elszáll -> sad tab
+\end{itemize}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[scale=0.5]{sad_tab}
+    \caption{
+        \label{fig-sad-tab}
+        Sad Tab (forrás: \url{https://googlesystem.blogspot.com} \cite{bib-sad-tab})
+    }
+\end{figure}
+
+\subsubsection{Plugin Process}
+\begin{itemize}
+    \item NPAPI
+\end{itemize}
+
+\subsubsection{GPU Process}
+\begin{itemize}
+    \item Mit is csinál -> compositing on GPU
+    \item Security: nem férhet akárki hozzá a GPU-hoz
+    \item Direct 3D API calls (D3D, OpenGL)
+    \item kDisableGPU
 \end{itemize}
 
 \subsection{Chromium Content Module}
@@ -418,7 +454,7 @@ Jelenleg hanyas verzió? Esetleg pár szó a releasekről?
             \item Rendering
             \item etc.
         \end{itemize}
-    \item IPC kommunikáció a process-ek között
+    \item IPC kommunikáció a processzek között
     \item Thread-ek
     \item Single Process mode
 \end{itemize}
@@ -696,16 +732,46 @@ Jelenleg hanyas verzió? Esetleg pár szó a releasekről?
         \href{https://www.chromium.org/developers/design-documents/gpu-accelerated-compositing-in-chrome}
         {https://www.chromium.org/developers/design-documents/\\
         gpu-accelerated-compositing-in-chrome}
+
     \bibitem{bib-chromium-oopifs}
         Chromium: Rendering and compositing out of process iframes \\
         \href{https://www.chromium.org/developers/design-documents/oop-iframes/oop-iframes-rendering}
         {https://www.chromium.org/developers/design-documents/\\
         oop-iframes/oop-iframes-rendering}
+
     \bibitem{bib-chromium-texture-mailbox}
         Chromium: CHROMIUM\_texture\_mailbox.txt \\
         \href{https://src.chromium.org/viewvc/chrome/trunk/src/gpu/GLES2/extensions/CHROMIUM/CHROMIUM_texture_mailbox.txt}
         {https://src.chromium.org/viewvc/chrome/trunk/src/gpu/\\
         GLES2/extensions/CHROMIUM/CHROMIUM\_texture\_mailbox.txt}
+
+    \bibitem{bib-webkit-webkit2}
+        WebKit: WebKit2 \\
+        \url{https://trac.webkit.org/wiki/WebKit2}
+
+    \bibitem{bib-chromium-multi-process}
+        Chromium: Multi-process Architecture \\
+        \href{https://www.chromium.org/developers/design-documents/multi-process-architecture}
+        {https://www.chromium.org/developers/design-documents/\\
+        multi-process-architecture}
+
+    \bibitem{bib-chromium-blog-multi-process}
+        Chromium Blog: Multi-process Architecture \\
+        \href{http://blog.chromium.org/2008/09/multi-process-architecture.html}
+        {http://blog.chromium.org/2008/09/\\
+        multi-process-architecture.html}
+
+    \bibitem{bib-sad-tab}
+        Google Operating System (Unofficial Google Blog): Chrome's New Sad Tab Page \\
+        \href{http://googlesystem.blogspot.hu/2011/01/chromes-new-sad-tab-page.html}
+        {http://googlesystem.blogspot.hu/2011/01/\\
+        chromes-new-sad-tab-page.html}
+
+    \bibitem{bib-chromium-process-models}
+        Chromium: Process Models \\
+        \href{https://www.chromium.org/developers/design-documents/process-models}
+        {https://www.chromium.org/developers/design-documents/\\
+        process-models}
 
 \end{thebibliography}
 
