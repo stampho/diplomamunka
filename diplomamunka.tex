@@ -30,6 +30,7 @@
 % URL style
 \hypersetup{
     colorlinks=false, % Disable colorlinks for not coloring table of contents
+    unicode=true,
 }
 
 \let\orighref\href
@@ -50,8 +51,6 @@
     \textcolor{red}{\textbf{FIXME}}\footnote{\textcolor{red}{\textbf{FIXME:} #1}}
 }
 
-\newcommand{\newpar}{\par\noindent\parskip=8pt}
-
 \setdescription{
     style=standard,
     align=right,
@@ -61,7 +60,7 @@
     %font=\sffamily\bfseries,
 }
 
-\def\title{A QtWebEngine modul fejlesztése}
+\def\title{A QtWebEngine modul bővítése és bemutatása saját böngészőalkalmazás segítségével}
 
 \begin{document}
 
@@ -125,8 +124,10 @@
 
 \noindent
 A \texttt{QtWebEngine} modul bővítése úgy, hogy a \texttt{QtWebKit} modult használó
-fejlesztők könnyen portolhassák a projektjüket \texttt{QtWebEngine}-re. Az újonnan
-implementált funkciókat tesztelni kell.
+fejlesztők könnyen portolhassák a projektjüket \texttt{QtWebEngine}-re.
+Továbbá, olyan új funkciók megvalósítása is fontos, amelyek hozzásegítik a
+\texttt{QtWebEngine}-t, hogy lépést tartson a fejlődő web technológiákkal (pl. HTML5).
+Az újonnan implementált funkciókat tesztelni kell.
 
 \bigskip
 \noindent
@@ -134,28 +135,27 @@ A tesztelésre lehetőséget nyújt a \texttt{Qt auto test}
 keretrendszere, viszont bizonyos funkciók nem tesztelhetőek megfelelően \texttt{auto}
 tesztekkel, továbbá nem biztosítható teljes lefedettség. A probléma kiküszöbölésére
 példa alkalmazás(ok) implementálására van szükség, amelyet a fejlesztő használhat
-``manuális'' tesztelésre, hibakeresésre, továbbá a forráskódja funkciók dokumentálására is
-felhasználható.
+``manuális'' tesztelésre, hibakeresésre, továbbá annak forráskódja a funkciók dokumentálására,
+bemutatására is felhasználható.
 
 \bigskip
 \noindent
 A fejlesztés során az alábbi szempontokat kell figyelembe venni:
 \begin{itemize}
-    \item[\texttt{o}] Bináris kompatibilitás megtartása korábbi \texttt{QtWebEngine}
+    \item Bináris kompatibilitás megtartása korábbi \texttt{QtWebEngine}
         verziókkal: publikus API-ban a változtatások számát minimalizálni kell,
         meglévő API-t (függvény, \\
         property, signal, stb.) módosítani vagy eltávolítani
         nem lehet.
-    \item[\texttt{o}] Törekvés kompatibilitásra a \texttt{QtWebKit}-el.
+    \item Törekvés kompatibilitásra a \texttt{QtWebKit}-el.
         A \texttt{QtWebEngine}-hez adott új \mbox{API-k} ne térjenek el
         (névben, paraméterezésben, stb.) az eredeti \texttt{QtWebKit} API-tól, hacsak ezt
-        \dots \todo{milyen esetekben volt erre szükség?}
-        nem indokolja.
-    \item[\texttt{o}] Törekedni kell arra, hogy a Quick és Widget API hasonlítson egymásra,
+        az új funkcionalitás bővítése nem indokolja.
+    \item Törekedni kell arra, hogy a Quick és Widget API hasonlítson egymásra,
         amennyire csak lehet.
-    \item[\texttt{o}] Az új funkcionalitásokhoz \texttt{auto} tesztet kell készíteni,
+    \item Az új funkcionalitásokhoz \texttt{auto} tesztet kell készíteni,
         ahol ez megoldható.
-    \item[\texttt{o}] Qt 5.6-tól minden új funkcionalitást dokumentálni kell.
+    \item Qt 5.6-os verziójától minden új funkcionalitást dokumentálni kell.
 \end{itemize}
 
 
@@ -163,19 +163,15 @@ A fejlesztés során az alábbi szempontokat kell figyelembe venni:
 \addcontentsline{toc}{section}{Tartalmi összefoglaló}
 \begin{itemize}
     \item[\texttt{o}] \textbf{A téma megnevezése:} \\
-        A \texttt{QtWebEngine} modul \dots
-        \todo{Találjunk jobb címet a dolgozatnak. A cím nem utal arra, hogy a QtWebEngine
-        alkalmazásáról is szól egy egész fejezet.}
+        \title
     \item[\texttt{o}] \textbf{A megadott feladat megfogalmazása:} \\
-        A \texttt{QtWebEngine} modul bővítése olyan funkciókkal (feature-ök),
-        amelyekkel az előd (\texttt{QtWebKit}) már rendelkezett. A cél, hogy a
-        \texttt{QtWebKit} felhasználók átállását megkönnyítsük és, hogy egyáltalán
-        lehetővé tegyük.
-        \todo{Hasonló probléma, mint a címnél. A feladatkiírás nem szól a QtWebEngine
-        alkalmazását bemutató fejezetről.}
+        A \texttt{QtWebEngine} modul bővítése új funkciókkal és azok tesztelése a
+        \texttt{Qt auto test} keretrendszerének segítségével. Az új funkciók bemutatása
+        egy saját böngészőalkalmazás megvalósításával.
     \item[\texttt{o}] \textbf{A megoldási mód:} \\
         Részvétel a \texttt{QtWebEngine} project fejlesztésében. Az új funkciók
-        megvalósítása \texttt{C++} nyelven.
+        megvalósítása \texttt{C++} nyelven. Egy példa böngészőalkalmazás implementálása
+        \texttt{QtQuick} segítségével, \texttt{C++} és \texttt{QML} nyelven.
     \item[\texttt{o}] \textbf{Alkalmazott eszközök, módszerek:} \\
         A fejlesztés \texttt{GNU/Linux} rendszeren, \texttt{QtCreator} fejlesztői
         környezetben (IDE) történt. A hibakereséshez \texttt{GDB}-t használtam.
@@ -186,15 +182,12 @@ A fejlesztés során az alábbi szempontokat kell figyelembe venni:
         használtam. A teszteléshez szükséges keretrendszert és a teszteket a \texttt{Qt}
         repository-k tartalmazzák.
     \item[\texttt{o}] \textbf{Elért eredmények:} \\
-        A munka megkezdése óta minden \texttt{QtWebEngine} verzióhoz sikerült olyan funkciót
-        hozzáadni vagy kijavítani, amely a \texttt{QtWebKit} API-ban elérhető:
-        \todo{Ide jöhet a lista a verziókról és feature-ökről}, 5.6: Authentication Dialog,
-        5.7: Favicon Manager \todo{A felsorolás lehetne hivatkozás az alfejezetekre}
+        A \texttt{QtWebEngine} 8 új funkcióval lett kibővítve. Ebből 4 a \texttt{QtWebKit}-ből
+        átvett, 3 a tesztelést és hibakeresést segíti, 1 pedig HTML5 funkció.
     \item[\texttt{o}] \textbf{Kulcsszavak:} \\
         \texttt{QtWebEngine}, \texttt{QtWebKit}, \texttt{Qt}, \texttt{Chromium}, \\
         \texttt{Chromium Content API}, \texttt{Web}, \texttt{HTML5}, \texttt{C++}, \\
-        \texttt{Quick}, \texttt{QML}, \texttt{Widget}, \texttt{WebEngineView} \\
-        \todo{Lista bővítése és formázása}
+        \texttt{Quick}, \texttt{QML}, \texttt{Widget}, \texttt{WebEngineView}
 \end{itemize}
 
 %%% CONTENT %%%
@@ -236,7 +229,6 @@ A \texttt{Chrome} nem nyílt részei például a beépített \texttt{Adobe Flash
 Egy másik, népszerű \texttt{Chromium}-ra épülő böngésző alkalmazás az \texttt{Opera}.
 
 \subsection{Blink}
-\newpar
 A \texttt{Chromium} 28-as verziójától kezdve a \texttt{Blink} böngésző motort használja.
 A böngésző motor elsődleges feladata a webes tartalom megjelenítése a képernyőn. Talán
 ebből is látszik, hogy a \texttt{Blink} talán a legfontosabb komponense
@@ -246,7 +238,6 @@ a \texttt{Blink} nem a teljes \texttt{WebKit} forkja, hanem csak annak egy rész
 \texttt{WebCore}-nak.
 \cite{bib-wiki-blink}
 
-\newpar
 A \texttt{Blink} nem tartalmazza a \texttt{WebKit}-ben alkalmazott multi-process
 architektúrát és sandboxing-ot, ezek a feladatok a \texttt{Chromium} más szintjein jelennek
 meg így egyszerűbbé téve a \texttt{Blink} implementációját. Továbbá, a \texttt{WebKit} része
@@ -259,7 +250,6 @@ komponensre. Például, a \texttt{Blink} forrása a \\
 \texttt{third\_party/WebKit} könyvtárban van.
 \cite{bib-chromium-displays-web-pages, bib-chromium-blink}
 
-\newpar
 Már említettem, hogy a \texttt{Blink}, mint böngésző motor felel a webes tartalmak
 megjelenítésért. Ennek működése fontos a \texttt{QtWebEngine} szempontjából, ezért ezt itt
 röviden részletezném.
@@ -282,7 +272,6 @@ rendel, amiből egy újabb fát épít: \texttt{RenderLayer Tree}.
     }
 \end{figure}
 
-\newpar
 Ahogy az \ref{fig-rendering-trees} ábrán is látszik a \texttt{DOM Tree} és a
 \texttt{Render Tree} szinte azonos, csak a \texttt{Render Tree} csak a megjeleníthető
 \texttt{Node}-okat tartalmazza. Míg a \texttt{RenderLayer Tree} a \texttt{Render Tree} egy
@@ -291,15 +280,13 @@ A \texttt{RenderLayer}-ből elérhetőek a \texttt{RenderObject}-ek (amik tudjá
 kell kirajzolni a tartalmat), a \texttt{RenderLayer Tree} pedig hordozza azt az információt,
 hogy milyen sorrendben kell rajzolni és, hogy milyen átfedések lehetnek.
 
-\newpar
 Az, hogy a rajzolás ezek után hogyan történik az függ attól, hogy van e elérhető hardveres
-gyorsítás. Ha nincs, akkor szoftveres renderelés történik úgy, hogy a
+gyorsítás. Ha nincs, akkor szoftveres renderelés történik úgy, hogy a \\
 \texttt{RenderLayer Tree}-n keresztül megfelelő sorrendben bejárják a
 \texttt{RenderObject}-eket és kirajzoltatják őket egy közös bitmap-re. Ha kész, ez a bitmap
 lesz elküldve a böngésző alkalmazásnak (pl. \texttt{Chrome}) megjelenítésre. Szoftveres
 renderelés esetén a rajzolást a \texttt{Skia} grafikus motor végzi.
 
-\newpar
 Ha van elérhető hardveres gyorsítás, akkor az eljárás valamivel bonyolultabb. Az egésznek az
 a lényege, hogy a \texttt{RenderObject} nem bitmap-be ``rajzolja bele magát'', hanem 3D API-n
 keresztül (\texttt{OpenGL} vagy Windows-on \texttt{D3D}) utasításokat küld közvetlenül a
@@ -308,7 +295,6 @@ végzi.
 \cite{bib-chromium-gpu, bib-chromium-oopifs}
 
 \subsection{Chrome Compositor (CC)}
-\newpar
 A \texttt{Chrome Compositor} már nem része a \texttt{Blink}-nek.
 Ennek az az oka, hogy most már a \texttt{Chromium} a browser UI megrajzolásához is a
 \texttt{Chrome Compositor}-t használja.
@@ -319,7 +305,6 @@ további layer absztrakciókra van szükség:
     \texttt{WebLayers} $\rightarrow$ \texttt{CC Layers}
 \end{center}
 
-\newpar
 A compositor a végeredményt nem bitmap-be, hanem textúrába ``rajzolja''. Az elkészült
 textúrák a GPU memóriájában vannak tárolva és \texttt{texture mailbox} segítségével
 azonosítják. A \texttt{texture mailbox} egy \texttt{OpenGL extension}, ami egyedi és globális
@@ -327,7 +312,6 @@ string azonosítót rendel a textúrához és lehetővé teszi, hogy más \textt
 is elérhető legyen a textúra, ami normális esetben nem lenne megosztva.
 \cite{bib-chromium-gpu, bib-chromium-oopifs}
 
-\newpar
 A \texttt{texture mailbox}-nak hála az összeállított képet nem kell az \\
 \texttt{IPC}-n (\texttt{Inter-Process Communication}) keresztül megosztani a process-ek között
 (mint a szoftveres rendering esetében), hanem a GPU memórián keresztül bármelyik
@@ -335,7 +319,6 @@ process hozzáférhet a textúrához.
 \cite{bib-chromium-texture-mailbox}
 
 \subsection{Multi-Process Architektúra}
-\newpar
 \begin{itemize}
     \item Cél:
         \begin{itemize}
@@ -379,11 +362,9 @@ process hozzáférhet a textúrához.
 \end{itemize}
 
 \subsection{Felépítés}
-\newpar
-\todo{Ábra ide}
+Ábra ide
 
 \subsection{Verzió?}
-\newpar
 Jelenleg hanyas verzió? Esetleg pár szó a releasekről?
 
 
@@ -504,8 +485,6 @@ Jelenleg hanyas verzió? Esetleg pár szó a releasekről?
 \pagebreak
 
 \section{Log Level}
-\fixme{Ez nem hagyományos értelemben vett API és a \texttt{QtWebKit}-ben nem is volt ilyen.
-Kell ez?}
 \begin{itemize}
     \item Parancssori kapcsoló
     \item Hibakeresés
@@ -514,21 +493,18 @@ Kell ez?}
 \pagebreak
 
 \section{Test Support API}
-\fixme{Ez sem volt a \texttt{QtWebKit}-ben. Ez nagyon internal dolog, de fontos lépés a
-tesztelés szempontjából, továbbá egy lépéssel közelebb kerültünk az \texttt{experimental}
-API eltávolításához.}
 \begin{itemize}
     \item Olyan feature-ök tesztelése ami nem jelenhet meg a publikus API-ban
     \item Pl. error page, az error page signal-okat elrejtjük a fejlesztő elől, de tesztelni
         kell.
     \item Előfordulhat, hogy a fejlesztő saját felelőségére használja
     \item Nincs dokumentálva
+    \item Fontos lépés a tesztelés szempontjából
+    \item Experimental API eltávolítása
 \end{itemize}
 \pagebreak
 
 \section{Form Validation}
-\fixme{Ez sem volt a \texttt{QtWebKit}-ben, viszont fontos lépés a \texttt{HTML5} támogatás
-felé. Talán a \texttt{HTML5}-öt is be kellene venni az ismertetőbe.}
 \begin{itemize}
     \item kódnév: Bubi
     \item Message Bubble
@@ -540,11 +516,11 @@ felé. Talán a \texttt{HTML5}-öt is be kellene venni az ismertetőbe.}
 \pagebreak
 
 \section{Localization}
-\todo{Hasonló a Log Level-hez. Ez tulajdonképpen nem API és Chromium specifikus.}
 \begin{itemize}
     \item Tesztelés miatt: csak angol nyelvű hibaüzenetek
     \item Qt API-n keresztül beállított lokalizáció használata
     \item \texttt{-{}-lang} parancssori kapcsoló lokalizáció felüldefiniálására
+    \item \texttt{Chromium} specifikus
 \end{itemize}
 \pagebreak
 
@@ -618,7 +594,7 @@ felé. Talán a \texttt{HTML5}-öt is be kellene venni az ismertetőbe.}
 \pagebreak
 
 
-\chapter{Egy példa browser megvalósítása}
+\chapter{Egy példa böngészőalkalmazás megvalósítása}
 \textbf{Szempontok:}
 \begin{itemize}
     \item Screenshot-ok legyenek a browser-ről
@@ -676,11 +652,15 @@ felé. Talán a \texttt{HTML5}-öt is be kellene venni az ismertetőbe.}
 \end{description}
 
 \addtocontents{toc}{\ }
-\chapter*{Összefoglaló}
-\addcontentsline{toc}{section}{Összefoglaló}
+\chapter*{Eredmények}
+\addcontentsline{toc}{section}{Eredmények}
 \begin{itemize}
-    \item Eredmények és összegzés
-    \item \todo{Van erre szükség? Mit lehet ebbe beleírni?}
+    \item Eredmények:
+        \begin{itemize}
+            \item Hány darab új feature? Milyen kategória (QtWebKit, Test/Debug, HTML5)?
+            \item Teszt lefedettség?
+        \end{itemize}
+    \item Összegzés?
 \end{itemize}
 
 
@@ -773,7 +753,7 @@ DVD lemez mely tartalmazza:
 \begin{itemize}
     \item \texttt{QtWebEngine} modul \texttt{Git} repository-ját
     \item A bemutatott funkciókat megvalósító patch-eket
-    \item A példa böngésző forráskódját
+    \item A példa böngészőalkalmazás forráskódját
 \end{itemize}
 
 \end{document}
