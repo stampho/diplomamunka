@@ -320,45 +320,58 @@ processz hozzáférhet a textúrához.
 
 \subsection{Multi-processz Architektúra}
 \texttt{Chromium} volt az egyik első olyan böngésző, ami úgy lett megtervezve, hogy több
-processzre legyen bontva. A \texttt{WebKit} multi-processzt támogató API-ja (\texttt{WebKit2})
-is a \texttt{Chromium}-ról mintázta a multi-processz modelljét.
-\cite{bib-webkit-webkit2}
-Arról már volt szó, hogy ez az API nem került át a \texttt{Blink}-be,
-viszont említést érdemel, mivel a \texttt{QtWebEngine} elődjének, a \texttt{QtWebKit}-nek
-\texttt{Quick} API-ja a \texttt{WebKit2}-re épül.
+processzre legyen felosztva. A \texttt{WebKit} multi-processzt támogató
+API-ja (\texttt{WebKit2}) is a \texttt{Chromium}-ról mintázta a multi-processz
+architektúráját. \cite{bib-webkit-webkit2}
+Ez az API a \texttt{Blink}-nek nem része, viszont a \texttt{QtWebEngine} elődjének,
+a \texttt{QtWebKit}-nek \texttt{Quick} API-ja a \texttt{WebKit2}-re épül.
 
 A multi-processz architektúrán alapuló böngésző alapgondolata az, hogy a böngészőalkalmazás
-UI-ért felelős része saját processzben fut, míg a web oldal(ak) megjelenítésért egy másik
-(vagy több) processz felel. Ennek több előnye is van: \cite{bib-chromium-blog-multi-process}
-\begin{enumerate}
-    \item Felhasználói élmény: Előfordulhat, hogy egy oldal töltése egy script
-        vagy webalkalmazás futtatása nagyon leterheli a böngészőt.
-        Ez hagyományos ``egy-processzes'' browserek
-        esetében nagy valószínűséggel azzal is jár, hogy a UI kevésbé lesz ``reszponzív''.
-        Multi-processz architektúra esetén ez kevésbé valószínű.
-    \item Biztonság: Bizonyos processzek sandboxolva vannak: a külön processzben futó
-        webalkalmazások hozzáférése korlátozott a rendszer erőforrásaihoz és egymáshoz.
-    \item Hibatűrés: A tabok és pluginok külön-külön processzben futnak. Ha egy oldal
-        betöltésekor vagy egy bővítmény futtatásakor hiba történik, vagy elszáll, az nem
-        fogja magával rántani az egész böngészőt.
-\end{enumerate}
+UI-ért felelős része saját processzben fut, míg a weboldalak megjelenítésért más
+processzek felelnek. Ennek több előnye is van: \cite{bib-chromium-blog-multi-process}
+\begin{itemize}
+    \item \textbf{Felhasználói élmény:}
+        Előfordulhat, hogy egy weboldalon futó script (vagy ``webalkalmazás'')
+        nagyon leterheli a böngészőt. Ha ez a script és a UI egy processzben fut,
+        akkor ezek nagyobb valószínűséggel vonnak el egymástól erőforrást. Ha külön
+        processzben, egymástól függetlenül futnak, kisebb valószínűséggel alakul ki
+        köztük versenyhelyzet, így a UI nagyobb CPU használatnál is ``reszponzívabb''
+        lehet.
+    \item \textbf{Biztonság:}
+        Egyes processzek sandbox-ban futhatnak. Ezáltal nem férhetnek hozzá a rendszer
+        olyan erőforrásaihoz, ami veszélyes lehet (pl. merevlemez, hálózat,
+        videó memória, stb).
+        Továbbá a különböző weboldalakat megjelenítő processzek egymástól is el vannak
+        különítve, így egy ártalmas oldal, vagy plugin nem férhet hozzá más oldalon használt
+        szenzitív információhoz (pl. jelszó).
+    \item \textbf{Hibatűrés, Robosztusság:}
+        Ha egy oldal betöltésekor vagy egy bővítmény futtatásakor hiba történik és
+        összeomlik, az nem rántja magával a teljes böngészőt. Hiba esetén a UI és más
+        megnyitott oldalak, tabok megmaradnak.
+    \end{itemize}
 
-A \texttt{Chromium}-ban 4-féle processzt különböztetünk meg. A processzek egymással
-\texttt{IPC}-n keresztül kommunikálnak.
+A multi-processz architektúrának hátulütőjei is vannak: ez a megoldás sokkal \\
+erőforrás-igényesebb, és a megvalósítás is bonyolultabb (több hibalehetőség).
+A processzek használata memória többletköltséggel jár. Továbbá, a futtatható processzek
+számát limitálni kell, mert túl sok processz jelentős lassulást okozhat (pl. az ütemező
+többletköltsége miatt).
+
+A \texttt{Chromium}-ban 4 fő processz típust különböztetünk meg:
+%\cite{bib-chromium-multi-process, bib-chromium-blog-multi-process}
 
 \subsubsection{Browser Process}
-\begin{itemize}
-    \item main process
-\end{itemize}
+Ez az a processz, ahol maga böngésző alkalmazás (UI) fut. Ez felelős megjelenítésért,
+a felhasználói események és a tabok kezeléséért. Ez a fő processz, ami a többi processzt
+kezeli (indítja, leállítja, stb.) és csak egy van belőle. Hozzáfér a rendszer erőforrásaihoz,
+viszont nem tölt be vagy dolgoz fel web tartalmat.
 
 \subsubsection{Render Process}
-\begin{itemize}
-    \item renderer nagyon komplex, előfordul crash
-    \item single process
-    \item sandbox
-    \item render process per tab
-    \item ha elszáll -> sad tab
-\end{itemize}
+A renderelő motor egy nagyon összetett és bonyolult szoftver komponens. Szinte lehetetlen
+olyat implementálni, ami sosem hibázik és/vagy omlik össze. \cite{bib-chromium-multi-process}
+Ezért racionális döntés az egymástól független oldalak renderelését egymástól független
+processzekben végrehajtani. Amennyiben egy \texttt{Render Process} összeomlik, arról a
+\texttt{Browser Process} értesül és az oldal helyett az \ref{fig-sad-tab} ábrán látható,
+úgynevezett ``sad tab'' értesítő felületet.
 
 \begin{figure}[h]
     \centering
@@ -369,18 +382,53 @@ A \texttt{Chromium}-ban 4-féle processzt különböztetünk meg. A processzek e
     }
 \end{figure}
 
+Mivel a \texttt{Chromium}-ban a renderelésért a \texttt{Blink} felel, ezért az is a \\
+\texttt{Render Process} része. A \texttt{Blink} az ami közvetlenül feldolgozza a webes
+tartalmat, ezért jellemzően a \texttt{Render Process}-t sandbox-ban futtatják, így a
+potenciálisan kártékony weben futó kódok nem férhetnek hozzá a rendszer erőforrásaihoz.
+
+A \texttt{Chromium}-ban különböző parancssori kapcsolókkal is beállítható processz modellek
+vannak definiálva:
+\begin{itemize}
+    \item \textbf{Process-per-site-instance:}
+        Minden site\footnote{Site alatt olyan weboldalak csoportját értjük, amelyek
+        közös beregisztrált domain néven osztoznak} külön processz.
+        Ha ugyanaz a site kétszer van megnyitva, akkor az is két külön processz lesz.
+    \item \textbf{Process-per-site:}
+        Különböző site-ok külön processzbe kerülnek. Az előzővel ellentétben, ha egy site
+        kétszer van megnyitva, akkor azok közös processzbe kerülnek.
+    \item \textbf{Process-per-tab:}
+        Minden tab külön processz. Több tab kerülhet közös processzbe, ha függnek egymástól.
+    \item \textbf{Single Process:}
+        A ``hagyományos egy-processzes'' modell. Nincs külön \texttt{Render Process}.
+        A rendering a \texttt{Browser} processzben történik.
+\end{itemize}
+
+Alapértelmezetten a \textit{Process-per-site-instance} modellt használja a böngésző, de
+ettől függetlenül előfordulhat, hogy több site is osztozik, ugyanazon a processzen.
+Erre vagy akkor van szükség amikor két site hivatkozik script-ből egymásra,
+vagy amikor a futó render processzek száma elér egy limitet.
+\cite{bib-chromium-process-models}
+
+
 \subsubsection{Plugin Process}
 \begin{itemize}
-    \item NPAPI
+    \item NPAPI, flash plugin
 \end{itemize}
 
 \subsubsection{GPU Process}
 \begin{itemize}
     \item Mit is csinál -> compositing on GPU
+    \item Renderer process sandbox-ban fut, nem fér hozzá a GPU-hoz
     \item Security: nem férhet akárki hozzá a GPU-hoz
     \item Direct 3D API calls (D3D, OpenGL)
-    \item kDisableGPU
+    \item kDisableGPU: disables GPU hardware acceleration
+    \item kInProcessGPU: GPU is a thread in browser process
 \end{itemize}
+
+TODO: A processzek egymással \texttt{IPC}-n (\texttt{Chromium's IPC system})
+keresztül kommunikálnak.
+
 
 \subsection{Chromium Content Module}
 \begin{itemize}
