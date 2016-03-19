@@ -356,8 +356,8 @@ A processzek használata memória többletköltséggel jár. Továbbá, a futtat
 számát limitálni kell, mert túl sok processz jelentős lassulást okozhat (pl. az ütemező
 többletköltsége miatt).
 
-A \texttt{Chromium}-ban 4 fő processz típust különböztetünk meg:
-%\cite{bib-chromium-multi-process, bib-chromium-blog-multi-process}
+A processzek \texttt{IPC}-n (\texttt{Chromium's IPC System}) keresztül kommunikálnak
+egymással. A \texttt{Chromium}-ban 4 fő processz típust különböztetünk meg:
 
 \subsubsection{Browser Process}
 Ez az a processz, ahol maga böngésző alkalmazás (UI) fut. Ez felelős megjelenítésért,
@@ -400,7 +400,7 @@ vannak definiálva:
     \item \textbf{Process-per-tab:}
         Minden tab külön processz. Több tab kerülhet közös processzbe, ha függnek egymástól.
     \item \textbf{Single Process:}
-        A ``hagyományos egy-processzes'' modell. Nincs külön \texttt{Render Process}.
+        A ``hagyományos, egy-processzes'' modell. Nincs külön \texttt{Render Process}.
         A rendering a \texttt{Browser} processzben történik.
 \end{itemize}
 
@@ -410,24 +410,23 @@ Erre vagy akkor van szükség amikor két site hivatkozik script-ből egymásra,
 vagy amikor a futó render processzek száma elér egy limitet.
 \cite{bib-chromium-process-models}
 
-
 \subsubsection{Plugin Process}
-\begin{itemize}
-    \item NPAPI, flash plugin
-\end{itemize}
+A pluginok okozzák a legtöbb problémát a böngésző stabilitásának szempontjából. A plugint
+egy harmadik fél készíti ezért a \texttt{Chromium}-nak nincs befolyása afelett, hogy milyen
+erőforrásokat használ. Ennél fogva, indokolt lépés a pluginokat nem a
+\texttt{Browser Process}-ben futtatni. A legtöbb plugin nem futhat sandbox-ban, mivel olyan
+képességekkel bővítik a böngészőt, amelyekhez szükség van hozzáférésre a rendszer
+erőforrásaihoz. Ezért a \texttt{Render Process}-en kívül szükség van olyan processzre is,
+amelyben a pluginok futhatnak.
+\cite{bib-chromium-plugins}
 
 \subsubsection{GPU Process}
-\begin{itemize}
-    \item Mit is csinál -> compositing on GPU
-    \item Renderer process sandbox-ban fut, nem fér hozzá a GPU-hoz
-    \item Security: nem férhet akárki hozzá a GPU-hoz
-    \item Direct 3D API calls (D3D, OpenGL)
-    \item kDisableGPU: disables GPU hardware acceleration
-    \item kInProcessGPU: GPU is a thread in browser process
-\end{itemize}
-
-TODO: A processzek egymással \texttt{IPC}-n (\texttt{Chromium's IPC system})
-keresztül kommunikálnak.
+A renderelés a \texttt{Render Process}-ben történik, viszont ez a processz
+sandbox-ban fut és ezért nem küldhet parancsokat GPU-nak. Hardveres gyorsítás esetén
+a compositing-ot és a rajzolást egy külön processzben kell végezni, ami nem sandbox-ban fut.
+\cite{bib-chromium-gpu} \\
+A \texttt{Chromium} úgy is konfigurálható, hogy a \texttt{GPU Process} feladatát a \\
+\texttt{Browser Process} lássa el.
 
 
 \subsection{Chromium Content Module}
@@ -820,6 +819,12 @@ Jelenleg hanyas verzió? Esetleg pár szó a releasekről?
         \href{https://www.chromium.org/developers/design-documents/process-models}
         {https://www.chromium.org/developers/design-documents/\\
         process-models}
+
+    \bibitem{bib-chromium-plugins}
+        Chromium: Plugin Architecture \\
+        \href{https://www.chromium.org/developers/design-documents/plugin-architecture}
+        {https://www.chromium.org/developers/design-documents/\\
+        plugin-architecture}
 
 \end{thebibliography}
 
