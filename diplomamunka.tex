@@ -430,23 +430,51 @@ A \texttt{Chromium} úgy is konfigurálható, hogy a \texttt{GPU Process} felada
 
 
 \subsection{Chromium Content Module}
-\begin{itemize}
-    \item Multi-processz architektúra megvalósítása
-    \item Content module csak rendereléshez szükséges kódot tartalmazza
-    \item HTML5 és hardveres GPU gyorsítás támogatása
-    \item Cél: a core kód elválasztás minden mástól
-    \item Content API: a hiányzó feature-ök megvalósítására
-        \begin{itemize}
-            \item Tervezési minták: Delegate \& Observer interfaces
-            \item Callback függvények
-            \item Controller
-        \end{itemize}
-    \item az interface-ket és a callback függvényeket a beágyazó alkalmazás implementálja
-    \item beágyazó alkalmazás: pl. chrome
-    \item A Content modul hívja a callback-eket
-    \item WebKit API-ra hasonlít a könnyebb átállás miatt
-    \item Unstable API: Mit is jelent ez?
-\end{itemize}
+A \texttt{Content Module} az, ami megvalósítja az előző fejezetben bemutatott \\
+multi-processz architektúrát. Továbbá, ebben van megvalósítva az összes támogatott
+web platform funkcionalitás (például: HTML5, WebRTC, WebGL, stb.), illetve
+a hardveres GPU gyorsítás. Böngésző alkalmazás specifikus funkcionalitások, nem részei
+\texttt{Content Module}-nak. Lényegében csak az van benne, ami a web tartalom
+megjelenítéséhez\footnote{\textit{content} = web tartalom} szükséges, azaz olyan kód,
+amit minden böngészőt integráló alkalmazásnak szüksége van.
+\cite{bib-chromium-content-module}
+
+A modul célja, hogy az opcionális böngésző funkcionalitások (amire nem feltétlenül van
+szüksége a beágyazó alkalmazásnak\footnote{ilyen beágyazó alkalmazás például a
+\texttt{Google Chrome}}) le legyenek választva, ezáltal megvalósíthatóak legyenek
+a beágyazó alkalmazásban anélkül, hogy a \texttt{Chromium} kódját módosítani kellene. Erre
+nyújt lehetőséget a \texttt{Chromium Content API}.
+
+\subsubsection{Chromium Content API}
+A \texttt{Content API} megtervezésekor a \texttt{WebKit API}-t vették alapul,
+hogy a \texttt{WebKit} fejlesztők könnyebben áttérjenek. Az új API \textit{unstable}, ami
+azt jelenti, hogy az API minden új kiadásban változhat, ezért a beágyazó alkalmazást is
+minden \texttt{Chromium} frissítés után nagy valószínűséggel változtatni kell.
+
+A \texttt{Content Module} a beágyazó alkalmazást interfészeken (Delegate, Observer)
+és callback függvényeken keresztül értesíti az eseményekről, változásokról (például,
+hol tart a web oldal letöltése vagy sikeres volt-e a letöltés) vagy éppen
+kér le adatokat (például, kell megjeleníteni hiba üzenetet, ha nem sikerül letölteni egy
+oldalt). Az interfészek metódusainak és a callback függvényeknek törzse üres a
+\texttt{Content Module}-ban, ezeket a beágyazó alkalmazásnak kell implementálnia és a
+\texttt{Content Module} hívja meg őket szükség esetén.
+
+Ezeken kívül vannak olyan interfészek is, amelyeket a \texttt{Content Module} implementál
+(például, oldal betöltése: \textit{LoadURLWithParams} vagy az URL lekérdezése:
+\textit{GetVisibleURL}).
+Ezek az interfészek \textit{pure abstract} interfészek, mivel csak egy megvalósításuk lehet
+és csakis a \texttt{Content Module}-on belül. \cite{bib-chromium-content-api}
+
+\subsubsection{Chromium Content Shell}
+A \texttt{Content Shell} a lehető legegyszerűbb böngészőalkalmazás, ami a \\
+\texttt{Content API}-ra épül. Arra használják, hogy a \texttt{Content Module}-t \\
+és a  \texttt{Blink}-et tesztelhessék, debuggolhassák anélkül,
+hogy egy teljes böngészőalkalmazást (pl. \texttt{Chrome}) le kellene fordítani.
+
+\bigskip
+\noindent
+\textbf{\textcolor{red}{TODO:}} Screenshot
+
 
 \subsection{Felépítés}
 \texttt{Chromium} 3 réteg:
@@ -457,13 +485,14 @@ A \texttt{Chromium} úgy is konfigurálható, hogy a \texttt{GPU Process} felada
 \end{itemize}
 Hogyan is áll össze ez az egész \dots
 
-\begin{figure}[h]
+%\begin{figure}[h]
+\begin{figure}[ht] % TODO(pvarga): Remove specifier 't'
     \centering
     \includegraphics[scale=0.6]{chromium_architecture}
     \caption{
         \label{fig-chromium-architecture}
         Architectural Diagram
-        (forrás: \url{https://www.chromium.org} \cite{bib-chromium-content})
+        (forrás: \url{https://www.chromium.org} \cite{bib-chromium-content-module})
     }
 \end{figure}
 \dots
@@ -501,7 +530,7 @@ Jelenleg hanyas verzió? Esetleg pár szó a releasekről?
 \section{QtWebEngine}
 \begin{itemize}
     \item Qt module
-    \item Ez az unstable API felé húzott stable API
+    \item Unstable \texttt{Chromium Content API} felett egy stable Qt API
     \item ``Együttműködés'' (integrálhatóság) más Qt API-kal
     \item OpenGL nélkül nem megy
     \item SceneGraph
@@ -511,7 +540,7 @@ Jelenleg hanyas verzió? Esetleg pár szó a releasekről?
             \item qtdeclarative
             \item \dots
         \end{itemize}
-    \item Karbantartási munkák: rendszeres Chromium update
+    \item Lecsupaszított \texttt{Chromium} fork is a része
 \end{itemize}
 
 \subsection{QtWebEngine Process}
@@ -847,9 +876,15 @@ Jelenleg hanyas verzió? Esetleg pár szó a releasekről?
         {https://www.chromium.org/developers/design-documents/\\
         plugin-architecture}
 
-    \bibitem{bib-chromium-content}
+    \bibitem{bib-chromium-content-module}
         Chromium: Content module \\
         \url{https://www.chromium.org/developers/content-module}
+
+    \bibitem{bib-chromium-content-api}
+        Chromium: Content API \\
+        \href{https://www.chromium.org/developers/content-module/content-api}
+        {https://www.chromium.org/developers/content-module/\\
+        content-api}
 
 \end{thebibliography}
 
