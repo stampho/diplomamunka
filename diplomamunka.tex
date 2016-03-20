@@ -195,19 +195,42 @@ A fejlesztés során az alábbi szempontokat kell figyelembe venni:
 
 \chapter*{Bevezetés}
 \addcontentsline{toc}{section}{Bevezetés}
-\begin{itemize}
-    \item Mi a cél?
-    \item Bemutatom a \texttt{Chromium}-ot, a \texttt{Qt}-t és a kettőjük kapcsolatát
-    \item Bemutatom, hogy a QtWebEngine fejlesztéséhez milyen funkcionalitásokkal járultam
-        hozzá
-    \item 1-2 mondat: volt más fejlesztés is: karbantartás, tesztek, bug fix
-    \item Miért jó ez? Nem gyors, viszont cross-platform, és könnyű ``látványos'' dolgokat
-        készíteni
-    \item Könnyű böngészőt készíteni.
-        \begin{itemize}
-            \item Proof: utolsó fejezet, a példaböngészőről
-        \end{itemize}
-\end{itemize}
+A \texttt{QtWebEngine}-t 2013-ban kezdték el fejleszteni a Qt fejlesztői kísérleti jelleggel
+a \texttt{WebKit} -- \texttt{Chromium} szétválás után.
+A szétválás előtt a \texttt{Qt} csapata a harmadik
+legtermékenyebb fejlesztője volt a \texttt{WebKit}-nek, az \texttt{Apple} és a
+\texttt{Google} után. A kérdés adott volt: megtartsa e a \texttt{Qt} jól bevált
+\texttt{QtWebKit} modulját és maradjon az \texttt{Apple} szárnysegédje, vagy beálljon
+az új lehetőségeket és irányt mutató \texttt{Google} mögé azáltal, hogy az ő web
+platformjára épít egy új modult. Végül az utóbbi mellett döntöttek és a \texttt{QtWebKit}
+projektet parkolópályára helyezték és a \texttt{QtWebEngine} éles lett.
+\cite{bib-qt-blog-introducing-qtwebengine}
+
+2014 elején kapcsolódtam be a projektbe és azóta is részmunkaidőben veszek részt a
+fejlesztésekben. Az azóta eltelt több, mint 2 év alatt sokat tanultam a \texttt{Qt}-ról,
+\texttt{Chromium}-ról és a web technológiákról, úgy egyáltalán. Dolgozatomban az ez idő alatt
+gyűjtött tapasztalatokból szeretnék megörökíteni egy szeletet.
+
+A \texttt{QtWebEngine} (korábban \texttt{QtWeKit}) projekt célja egy \texttt{Qt} modul
+(függvénykönyvtár) nyújtása a fejlesztők számára, amelynek használatával könnyedén
+integrálhatnak böngésző funkcionalitásokat saját \texttt{Qt} alkalmazásaikba
+vagy könnyedén valósíthatnak meg \texttt{Qt} platform felett saját böngészőt. Ráadásul,
+mindezt úgy tehetik meg, hogy nincs szükségük semmilyen ismeretre arról, hogy egy böngésző,
+hogyan működik a motorháztető alatt.
+
+Dolgozatomat 3 részre tagoltam. Az első részben adok áttekintést arról, hogy mi is az a
+\texttt{Chromium}, mi a \texttt{Qt}, ezek hogyan kapcsolódnak egymáshoz és hogyan is lesz
+ebből \texttt{QtWebEngine}. A második részben összegyűjtöttem 8 olyan funkcionalitást,
+amit én adtam hozzá a \texttt{QtWebEngine}-hez. Röviden leírom, hogyan valósítottam meg
+őket, mi volt a célom velük és milyen nehézségekkel kellett szembe néznem a
+megvalósítás során.
+
+A legutolsó fejezetben szeretném bebizonyítani, hogy könnyű a \texttt{QtWebEngine}-el
+böngészőt készíteni. Sajnos a \texttt{Chromium} erőforrás igénye és a magas szintű API
+miatt, nem várható el a \texttt{QtWebEngine}-től, hogy lekörözze sebességben és/vagy
+memória-fogyasztásban a versenytársakat. A \texttt{QtWebEngine} előnye kétség nélkül
+az egyszerű használhatóságban és a cross-platform támogatásban rejlik.
+
 
 \chapter{Áttekintés: \mbox{Chromium + Qt = QtWebEngine}}
 
@@ -813,8 +836,26 @@ Az itt leírtak erre a verzióra vonatkoznak.
         \begin{itemize}
             \item Hány darab új feature? Milyen kategória (QtWebKit, Test/Debug, HTML5)?
             \item Teszt lefedettség?
+            \item Hány db patch ment be? Melyik milyen jellegű?
+                \begin{itemize}
+                    \item Új feature
+                    \item Új teszt
+                    \item Bug fix, build fix, teszt javítás
+                    \item Chromium fork karbantartás
+                    \item \dots
+                \end{itemize}
+            \item Chromium fork külön repository, oda is mentek patch-ek
+            \item Javításaim között vannak olyanok, amelyek kimondottan platform specifikus
+                problémát javítanak. Ezek lefedik a 3 fő desktop platformot: GNU/Linux,
+                Windows, OS X
         \end{itemize}
     \item Összegzés?
+        \begin{itemize}
+            \item Hol tartunk most a QtWebKit leváltással? Mi hiányzik még?
+            \item Jelenleg Qt 5.7-en dolgozunk, a felsorolásból mely feature-ök kerülnek
+                be az 5.7-be: \textbf{favicon}
+            \item Jövő: milyen tervek vannak 5.8-ra?
+        \end{itemize}
 \end{itemize}
 
 
@@ -822,6 +863,12 @@ Az itt leírtak erre a verzióra vonatkoznak.
 
 \begin{thebibliography}{9}
     \addcontentsline{toc}{section}{Irodalomjegyzék}
+
+    \bibitem{bib-qt-blog-introducing-qtwebengine}
+        Qt Blog: Introducing the Qt WebEngine \\
+        \href{http://blog.qt.io/blog/2013/09/12/introducing-the-qt-webengine/}
+        {http://blog.qt.io/blog/2013/09/12/\\
+        introducing-the-qt-webengine/}
 
     \bibitem{bib-wiki-chromium}
         Wikipedia: Chromium (web browser) \\
