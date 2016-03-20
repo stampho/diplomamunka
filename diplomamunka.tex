@@ -54,9 +54,10 @@
 \setdescription{
     style=standard,
     align=right,
-    itemindent=2cm,
-    labelwidth=2cm,
-    leftmargin=2cm,
+    itemindent=1cm,
+    labelwidth=1cm,
+    leftmargin=1cm,
+    before={\renewcommand\makelabel[1]{\bfseries ########1:}},
     %font=\sffamily\bfseries,
 }
 
@@ -329,26 +330,26 @@ a \texttt{QtWebKit}-nek \texttt{Quick} API-ja a \texttt{WebKit2}-re épül.
 A multi-processz architektúrán alapuló böngésző alapgondolata az, hogy a böngészőalkalmazás
 UI-ért felelős része saját processzben fut, míg a weboldalak megjelenítésért más
 processzek felelnek. Ennek több előnye is van: \cite{bib-chromium-blog-multi-process}
-\begin{itemize}
-    \item \textbf{Felhasználói élmény:}
+\begin{description}
+    \item[Felhasználói élmény]
         Előfordulhat, hogy egy weboldalon futó script (vagy ``webalkalmazás'')
         nagyon leterheli a böngészőt. Ha ez a script és a UI egy processzben fut,
         akkor ezek nagyobb valószínűséggel vonnak el egymástól erőforrást. Ha külön
         processzben, egymástól függetlenül futnak, kisebb valószínűséggel alakul ki
         köztük versenyhelyzet, így a UI nagyobb CPU használatnál is ``reszponzívabb''
         lehet.
-    \item \textbf{Biztonság:}
+    \item[Biztonság]
         Egyes processzek sandbox-ban futhatnak. Ezáltal nem férhetnek hozzá a rendszer
         olyan erőforrásaihoz, ami veszélyes lehet (pl. merevlemez, hálózat,
         videó memória, stb).
         Továbbá a különböző weboldalakat megjelenítő processzek egymástól is el vannak
         különítve, így egy ártalmas oldal, vagy plugin nem férhet hozzá más oldalon használt
         szenzitív információhoz (pl. jelszó).
-    \item \textbf{Hibatűrés, Robosztusság:}
+    \item[Hibatűrés, Robosztusság]
         Ha egy oldal betöltésekor vagy egy bővítmény futtatásakor hiba történik és
         összeomlik, az nem rántja magával a teljes böngészőt. Hiba esetén a UI és más
         megnyitott oldalak, tabok megmaradnak.
-    \end{itemize}
+    \end{description}
 
 A multi-processz architektúrának hátulütőjei is vannak: ez a megoldás sokkal \\
 erőforrás-igényesebb, és a megvalósítás is bonyolultabb (több hibalehetőség).
@@ -389,20 +390,20 @@ potenciálisan kártékony weben futó kódok nem férhetnek hozzá a rendszer e
 
 A \texttt{Chromium}-ban különböző parancssori kapcsolókkal is beállítható processz modellek
 vannak definiálva:
-\begin{itemize}
-    \item \textbf{Process-per-site-instance:}
+\begin{description}
+    \item[Process-per-site-instance]
         Minden site\footnote{Site alatt olyan weboldalak csoportját értjük, amelyek
         közös beregisztrált domain néven osztoznak} külön processz.
         Ha ugyanaz a site kétszer van megnyitva, akkor az is két külön processz lesz.
-    \item \textbf{Process-per-site:}
+    \item[Process-per-site]
         Különböző site-ok külön processzbe kerülnek. Az előzővel ellentétben, ha egy site
         kétszer van megnyitva, akkor azok közös processzbe kerülnek.
-    \item \textbf{Process-per-tab:}
+    \item[Process-per-tab]
         Minden tab külön processz. Több tab kerülhet közös processzbe, ha függnek egymástól.
-    \item \textbf{Single Process:}
+    \item[Single Process]
         A ``hagyományos, egy-processzes'' modell. Nincs külön \texttt{Render Process}.
         A rendering a \texttt{Browser} processzben történik.
-\end{itemize}
+\end{description}
 
 Alapértelmezetten a \textit{Process-per-site-instance} modellt használja a böngésző, de
 ettől függetlenül előfordulhat, hogy több site is osztozik, ugyanazon a processzen.
@@ -477,16 +478,24 @@ hogy egy teljes böngészőalkalmazást (pl. \texttt{Chrome}) le kellene fordít
 
 
 \subsection{Felépítés}
-\texttt{Chromium} 3 réteg:
-\begin{itemize}
-    \item Chrome: UI és feature-ök/browser komponensek (history, favicon)
-    \item Blink: rendering és V8 JavaScript engine közös processzben (single process)
-    \item Content Module: HTML5 és hardveres GPU gyorsítás
-\end{itemize}
-Hogyan is áll össze ez az egész \dots
+Az előző fejezet alapján a \texttt{Chromium}-ot 3 rétegre oszthatjuk fel:
+\begin{description}
+    \item[Chrome]
+        Felhasználói felület (UI) és böngészőalkalmazás funkciók
+        (pl.: history, könyvjelzők, favicon, stb.)
+    \item[Blink]
+        Webes tartalom feldolgozása és renderelése. A \texttt{V8} JavaScript motort a \\
+        \texttt{Blink}-en keresztül érjük el és közös processzben futnak.
+    \item[Content]
+        Ez a réteg valósítja meg a multi-processz architektúrát,
+        felel a web platform funkciókért és a hardveres GPU gyorsításért.
+\end{description}
+A \ref{fig-chromium-architecture} ábra mutatja, hogyan is állnak össze ezek a részek egy
+egységes egésszé.
 
-%\begin{figure}[h]
-\begin{figure}[ht] % TODO(pvarga): Remove specifier 't'
+\pagebreak
+
+\begin{figure}[h]
     \centering
     \includegraphics[scale=0.6]{chromium_architecture}
     \caption{
@@ -495,7 +504,11 @@ Hogyan is áll össze ez az egész \dots
         (forrás: \url{https://www.chromium.org} \cite{bib-chromium-content-module})
     }
 \end{figure}
-\dots
+
+Az \ref{fig-chromium-architecture} ábrán a \texttt{Blink} böngésző motor még
+\texttt{WebKit}-nek van jelölve.
+A legfelső réteg a \texttt{Chrome} (böngészőalkalmazás), helyére a saját beépítő alkalmazás
+kerül.
 
 \subsection{Verzió?}
 Jelenleg hanyas verzió? Esetleg pár szó a releasekről?
