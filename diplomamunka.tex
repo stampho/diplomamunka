@@ -490,15 +490,20 @@ Ezek az interfészek \textit{pure abstract} interfészek, mivel csak egy megval�
 és csakis a \texttt{Content Module}-on belül. \cite{bib-chromium-content-api}
 
 \subsubsection{Chromium Content Shell}
-A \texttt{Content Shell} a lehető legegyszerűbb böngészőalkalmazás, ami a \\
-\texttt{Content API}-ra épül. Arra használják, hogy a \texttt{Content Module}-t \\
-és a  \texttt{Blink}-et tesztelhessék, debuggolhassák anélkül,
+\begin{figure}[h]
+    \centering
+    \includegraphics[scale=0.5]{content_shell}
+    \caption{
+        \label{fig-content-shell}
+        Content Shell
+    }
+\end{figure}
+
+A \ref{fig-content-shell} ábrán látható alkalmazás a \texttt{Content Shell}.
+Ez a lehető legegyszerűbb böngészőalkalmazás, ami a \texttt{Content API}-ra épül.
+Arra használják, hogy a \\
+\texttt{Content Module}-t és a  \texttt{Blink}-et tesztelhessék, debuggolhassák anélkül,
 hogy egy teljes böngészőalkalmazást (pl. \texttt{Chrome}) le kellene fordítani.
-
-\bigskip
-\noindent
-\textbf{\textcolor{red}{TODO:}} Screenshot
-
 
 \subsection{Felépítés}
 Az előző fejezet alapján a \texttt{Chromium}-ot 3 rétegre oszthatjuk fel:
@@ -515,8 +520,6 @@ Az előző fejezet alapján a \texttt{Chromium}-ot 3 rétegre oszthatjuk fel:
 \end{description}
 A \ref{fig-chromium-architecture} ábra mutatja, hogyan is állnak össze ezek a részek egy
 egységes egésszé.
-
-\pagebreak
 
 \begin{figure}[h]
     \centering
