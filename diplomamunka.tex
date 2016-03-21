@@ -546,32 +546,67 @@ A \texttt{Chromium} közösség előre tervezett menetrend szerint 1-1.5 havonta
 verziószámot. Dolgozatom készítése idején az 51-es verziójú volt a legfrissebb stabil kiadás.
 Az itt leírtak erre a verzióra vonatkoznak.
 
-\pagebreak
 
 \section{Qt}
+A Qt egy nyílt forrású, cross-platform alkalmazás keretrendszer. Úgy ahogy a
+\texttt{Chromium} úgy a \texttt{Qt} is elérhető napjaink legnépszerűbb desktop és mobil
+operációs rendszerein. Ez a keretrendszer nyújt \texttt{C++} függvénykönyvtárakat (library),
+binding-okat más programozási nyelvekhez (pl.: Python, Java), saját programozási nyelvet
+(QML), saját integrált fejlesztői környezetet (QtCreator), saját build rendszert
+(qmake) és kiterjesztéseket is a \texttt{C++} nyelvhez (pl.: signal-slot model).
+\cite{bib-qt-wiki-about-qt}
+
+A \texttt{Qt} első verziója 1995-ben jelent meg \dots
+\cite{bib-qt-wiki-qt-history}
 \begin{itemize}
-    \item Mi ez?
-        \subitem Cross-platform, open source, fejlesztő környezet, framework
-        \subitem \texttt{C++} függvénykönyvtár
-    \item Egy kis történelem:
-        \subitem Trolltech -> Nokia -> Digia -> The Qt Company
-    \item GUI fejlesztés. 2 fajta megközelítés:
-        \begin{enumerate}
-            \item Widget
-            \item Quick
-        \end{enumerate}
-    \item Verziók, hol tartunk, honnan jöttünk?
-    \item Moduláris felépítés
+    \item Trolltech
+    \item Cél: Cross-platform és GUI
+    \item 2008: Nokia
+    \item 2010: Qt 4.7: QtWebkit, QtQuick (QML)
+    \item 2012: Qt 5.0: QtQuick2; Digia
+    \item 2013: QtWebEngine
+    \item 2014: The Qt Company
+\end{itemize}
+
+Qt 5.0 óta moduláris felépítés \dots
+\begin{itemize}
+    \item bináris kompatibilitás
+    \item csak azokat a modulokat linkeljük az alkalmazáshoz, amire szükség van
+    \item essentials and add-ons
+    \item Git hogyan tükrözi a modularizációt?
+\end{itemize}
+
+\subsection{Qt GUI}
+GUI fejlesztésre 2 API: a ``hagyományos'' Widget és a ``modern'' Quick \dots
+
+\subsubsection{Widget}
+\begin{itemize}
+    \item widget elemek
+    \item layoutok
+    \item Alkalmazás: designer
+\end{itemize}
+
+\subsubsection{Quick}
+\begin{itemize}
+    \item QtQuick2 OpenGL nélkül nem megy
+    \item Library: Quick
+    \item Declarative language: QML
 \end{itemize}
 
 \subsection{Qt Web}
 \begin{itemize}
-    \item Az Allan féle előadásból mehet egy kis áttekintés
     \item QtWebKit
     \item QtWebView (natív WebView, Android)
     \item QWebChannel
     \item QtWebEngine
     \item etc.
+\end{itemize}
+
+\subsection{Qt Release}
+\begin{itemize}
+    \item Félévente jelennek meg új kiadások
+    \item legfrissebb stabil az 5.6
+    \item a dolgozatban 5.7
 \end{itemize}
 
 \section{QtWebEngine}
@@ -639,11 +674,16 @@ Az itt leírtak erre a verzióra vonatkoznak.
         \end{itemize}
 \end{itemize}
 
-\section{Összegzés}
-\begin{itemize}
-    \item TODO: egy ábra jöhet a felépítésről
-    \item Hogyan kapcsolódnak a részek egymáshoz?
-\end{itemize}
+\subsubsection{Felépítés}
+\begin{figure}[h]
+    \centering
+    \includegraphics[scale=0.75]{qtwebengine_architecture}
+    \caption{
+        \label{fig-qtwebengine-architecture}
+        Qt WebEngine Architecture (forrás: \url{http://doc.qt.io/}
+        \cite{bib-qt-doc-webengine-overview})
+    }
+\end{figure}
 
 
 \chapter{Új funkciók a QtWebEngine-ben}
@@ -950,6 +990,18 @@ Az itt leírtak erre a verzióra vonatkoznak.
         \href{https://www.chromium.org/developers/content-module/content-api}
         {https://www.chromium.org/developers/content-module/\\
         content-api}
+
+    \bibitem{bib-qt-wiki-about-qt}
+        Qt Wiki: About Qt \\
+        \url{https://wiki.qt.io/About_Qt}
+
+    \bibitem{bib-qt-wiki-qt-history}
+        Qt Wiki: Qt History \\
+        \url{https://wiki.qt.io/Qt_History}
+
+    \bibitem{bib-qt-doc-webengine-overview}
+        Qt Documentation: Qt WebEngine Overview \\
+        \url{http://doc.qt.io/qt-5/qtwebengine-overview.html}
 
 \end{thebibliography}
 
