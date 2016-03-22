@@ -556,18 +556,57 @@ binding-okat más programozási nyelvekhez (pl.: Python, Java), saját programoz
 (qmake) és kiterjesztéseket is a \texttt{C++} nyelvhez (pl.: signal-slot model).
 \cite{bib-qt-wiki-about-qt}
 
-A \texttt{Qt} első verziója 1995-ben jelent meg \dots
+\subsection{Qt Történelem}
+A \texttt{Qt} első verziója 1995-ben jelent meg, akkor még a projekt egy cross-platform
+GUI fejlesztői keretrendszernek indult. \textcolor{red}{\textbf{TODO:}} Trolltech \dots
+Nem sokkal később (1998-ban), jelent meg a
+\texttt{KDE} (\texttt{K Desktop Environment}) első verziója, amely \texttt{Qt}-re épült.
+A \texttt{KDE} egyhamar az egyik legnépszerűbb Linuxos asztali környezetté nőtte ki magát
+és talán ennek tudható be a \texttt{Qt} népszerűsége is.
+A \texttt{Qt} eszköztára az évek során fokozatosan
+bővült. Új API-k jelentek meg adatbázis kezeléshez (SQL), hálózati programozáshoz,
+multimédiás alkalmazások készítéséhez, \texttt{XML} dokumentumok feldolgozásához stb.
+
+2000-ben megjelent a \texttt{Qt}-ra épülő \texttt{Qt/Embedded} keretrendszer
+\texttt{Linux}-os beágyazott eszközökre. Ezzel az új technológiával a \texttt{Qt}
+meg is jelent az első okos telefonokon (2003: Motorola A760) és a korabeli PDA-kon.
+2006-ban a Trolltech még a saját fejlesztésű mobil telefonját is kiadta Greenphone néven.
+
+Talán a Trolltech beágyazott platformokon és mobil telefonokon szerzett tapasztalata
+miatt került arra sor, hogy 2008-ban, az akkori egyik vezető mobiltelefon gyártó, a Nokia,
+felvásárolta a céget. A következő pár évben a fejlesztés még inkább a mobil eszközök
+felé irányult és a \texttt{Qt} számára megjelent egy új technológia is, a \texttt{Web}.
+Ennek következményeképpen a 2010-ben megjelenő 4.7-es verzióban 2 új nagyon jelentős
+újítás jelent meg: a \texttt{QtWebKit} és a \texttt{QtQuick}.
+
+A \texttt{WebKit} az Apple által fejlesztett nyílt forrású böngésző motor, a
+\texttt{QtWebKit} pedig ennek a ``\texttt{Qt} portja''. Ez azt jelenti, hogy az
+API természetesen ``\texttt{Qt}-s'', továbbá a legfontosabb "alacsony szintű" feladatokat
+is a \texttt{Qt} látja el, mint például a hálózat kezelés (pl. tartalom letöltése) és az
+oldalak kirajzolása, renderelése. A projekt érdekessége, hogy a \texttt{WebKit} elődjei a
+\texttt{KHTML} és \texttt{KJS} projektek, melyek \texttt{KDE} keretrendszer részei voltak,
+ennélfogva a \texttt{Qt}-re épültek. Amikor 2001-ben az Apple fejlesztői forkolták ezeket
+a függvény könyvtárakat, a céljuk éppen az volt, hogy a \texttt{Qt}-tól független
+böngésző motort valósítsanak meg.
+
+A \texttt{Qt} 4.7-es verzió másik nagyon fontos újítása a \texttt{QtQuick} és a \texttt{QML}.
+Ez az új technológia a mobil fejlesztés szempontjából nagyon fontos. A \texttt{QML} egy
+új deklaratív programozási nyelv, a \texttt{QtQuick} pedig a hozzátartozó eszközkészlet vagy
+``függvénykönvytár''. Ezek segítségével a \texttt{Qt} egy új megközelítést nyújtott GUI
+megvalósítására. A legnagyobb előnye (a könnyű használhatóságot és a gyors fejlesztési
+ciklust nem számítva), hogy mobil alkalmazás felhasználói felületének
+lefejlesztéséhez nincs szükség szimulátorra, hiszen a \texttt{QML}-ben írt alkalmazás
+platform független és ugyanúgy fut/néz ki desktop-on mint mobilon.
 \cite{bib-qt-wiki-qt-history}
+
 \begin{itemize}
-    \item Trolltech
-    \item Cél: Cross-platform és GUI
-    \item 2008: Nokia
-    \item 2010: Qt 4.7: QtWebkit, QtQuick (QML)
     \item 2012: Qt 5.0: QtQuick2; Digia
     \item 2013: QtWebEngine
     \item 2014: The Qt Company
+    \item Qt-t használó alkalmazások: skype, VirtualBox, spotify
 \end{itemize}
 
+\subsection{Qt Modulok}
 Qt 5.0 óta moduláris felépítés \dots
 \begin{itemize}
     \item bináris kompatibilitás
@@ -591,6 +630,8 @@ GUI fejlesztésre 2 API: a ``hagyományos'' Widget és a ``modern'' Quick \dots
     \item QtQuick2 OpenGL nélkül nem megy
     \item Library: Quick
     \item Declarative language: QML
+    \item Logika: JavaScript
+    \item QML-t is JavaScript engine dolgozza fel, jelenleg: v4
 \end{itemize}
 
 \subsection{Qt Web}
@@ -613,6 +654,7 @@ GUI fejlesztésre 2 API: a ``hagyományos'' Widget és a ``modern'' Quick \dots
 \begin{itemize}
     \item Qt module
     \item Unstable \texttt{Chromium Content API} felett egy stable Qt API
+    \item Chromium Content Module-t beágyazó ``alkalmazás''
     \item ``Együttműködés'' (integrálhatóság) más Qt API-kal
     \item OpenGL nélkül nem megy
     \item SceneGraph
@@ -674,8 +716,9 @@ GUI fejlesztésre 2 API: a ``hagyományos'' Widget és a ``modern'' Quick \dots
         \end{itemize}
 \end{itemize}
 
-\subsubsection{Felépítés}
-\begin{figure}[h]
+\subsection{Felépítés}
+%\begin{figure}[h]
+\begin{figure}[ht]
     \centering
     \includegraphics[scale=0.75]{qtwebengine_architecture}
     \caption{
