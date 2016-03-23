@@ -557,8 +557,8 @@ binding-okat más programozási nyelvekhez (pl.: Python, Java), saját programoz
 \cite{bib-qt-wiki-about-qt}
 
 \subsection{Qt Történelem}
-A \texttt{Qt} első verziója 1995-ben jelent meg, akkor még a projekt egy cross-platform
-GUI fejlesztői keretrendszernek indult. \textcolor{red}{\textbf{TODO:}} Trolltech \dots
+A \texttt{Qt} első verziója 1995-ben adta ki a Trolltech. Akkor még a projekt egy
+cross-platform GUI fejlesztői keretrendszernek indult.
 Nem sokkal később (1998-ban), jelent meg a
 \texttt{KDE} (\texttt{K Desktop Environment}) első verziója, amely \texttt{Qt}-re épült.
 A \texttt{KDE} egyhamar az egyik legnépszerűbb Linuxos asztali környezetté nőtte ki magát
@@ -597,10 +597,23 @@ megvalósítására. A legnagyobb előnye (a könnyű használhatóságot és a 
 ciklust nem számítva), hogy mobil alkalmazás felhasználói felületének
 lefejlesztéséhez nincs szükség szimulátorra, hiszen a \texttt{QML}-ben írt alkalmazás
 platform független és ugyanúgy fut/néz ki desktop-on mint mobilon.
+
+2011 elején a Nokia szerződést kötött a Microsoft-tal. A Nokia készülékek elsődleges
+platformja a \texttt{Windows Phone} lett, így a Nokia elkezdte fokozatosan leépíteni a
+szoftver kutatás-fejlesztés részlegét. 2012-re a \texttt{Qt} teljes egészében a Digia
+tulajdonába került.
+
+A 2012-es év más változást is hozott, az év végén megjelent a \texttt{Qt} 5.0-ás verziója.
+A verzió egyik nagy újítása a moduláris felépítés volt. A \texttt{C++} API-k modulokba
+kerültek, a modulok pedig saját git repository-t is kaptak. Létrehoztak egy \texttt{qt5}
+``top-level'' repository-t is, amely hivatkozásokat (git submodule) tartalmaz a modulok
+repository-jaira, definiálja a függőségeket köztük, tartalmazza build-hez szükséges
+script-eket (pl. configure) és specifikációkat (mkspecs) és más script-eket is.
+
+A verzió másik újítása \texttt{QtQuick2} volt \dots
 \cite{bib-qt-wiki-qt-history}
 
 \begin{itemize}
-    \item 2012: Qt 5.0: QtQuick2; Digia
     \item 2013: QtWebEngine
     \item 2014: The Qt Company
     \item Qt-t használó alkalmazások: skype, VirtualBox, spotify
