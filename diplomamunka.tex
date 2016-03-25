@@ -61,6 +61,8 @@
     %font=\sffamily\bfseries,
 }
 
+\hyphenation{QtWebEngine QtWebKit WebKit Chromium Content Apple Google Quick Widget}
+
 \def\title{A QtWebEngine modul bővítése és bemutatása saját böngészőalkalmazás segítségével}
 
 \begin{document}
@@ -124,34 +126,32 @@
 \addcontentsline{toc}{section}{Feladatkiírás}
 
 \noindent
-A \texttt{QtWebEngine} modul bővítése úgy, hogy a \texttt{QtWebKit} modult használó
-fejlesztők könnyen portolhassák a projektjüket \texttt{QtWebEngine}-re.
+A QtWebEngine modul bővítése úgy, hogy a QtWebKit modult használó fejlesztők \\
+könnyen portolhassák a projektjüket QtWebEngine-re.
 Továbbá, olyan új funkciók megvalósítása is fontos, amelyek hozzásegítik a
-\texttt{QtWebEngine}-t, hogy lépést tartson a fejlődő web technológiákkal (pl. HTML5).
+QtWebEngine-t, hogy lépést tartson a fejlődő web technológiákkal (pl. HTML5).
 Az újonnan implementált funkciókat tesztelni kell.
 
 \bigskip
 \noindent
-A tesztelésre lehetőséget nyújt a \texttt{Qt auto test}
+A tesztelésre lehetőséget nyújt a Qt \texttt{auto test}
 keretrendszere, viszont bizonyos funkciók nem tesztelhetőek megfelelően \texttt{auto}
 tesztekkel, továbbá nem biztosítható teljes lefedettség. A probléma kiküszöbölésére
 példa alkalmazás(ok) implementálására van szükség, amelyet a fejlesztő használhat
-``manuális'' tesztelésre, hibakeresésre, továbbá annak forráskódja a funkciók dokumentálására,
-bemutatására is felhasználható.
+``manuális'' tesztelésre, hibakeresésre, továbbá annak forráskódja a funkciók
+dokumentálására, bemutatására is felhasználható.
 
 \bigskip
 \noindent
 A fejlesztés során az alábbi szempontokat kell figyelembe venni:
 \begin{itemize}
-    \item Bináris kompatibilitás megtartása korábbi \texttt{QtWebEngine}
-        verziókkal: publikus API-ban a változtatások számát minimalizálni kell,
-        meglévő API-t (függvény, \\
-        property, signal, stb.) módosítani vagy eltávolítani
+    \item Bináris kompatibilitás megtartása korábbi QtWebEngine verziókkal:
+        publikus API-ban a változtatások számát minimalizálni kell,
+        meglévő API-t (függvény, property, signal, stb.) módosítani vagy eltávolítani
         nem lehet.
-    \item Törekvés kompatibilitásra a \texttt{QtWebKit}-el.
-        A \texttt{QtWebEngine}-hez adott új \mbox{API-k} ne térjenek el
-        (névben, paraméterezésben, stb.) az eredeti \texttt{QtWebKit} API-tól, hacsak ezt
-        az új funkcionalitás bővítése nem indokolja.
+    \item Törekvés kompatibilitásra a QtWebKit-el.
+        A QtWebEngine-hez adott új API-k ne térjenek el (névben, paraméterezésben, stb.)
+        az eredeti QtWebKit API-tól, hacsak ezt az új funkcionalitás bővítése nem indokolja.
     \item Törekedni kell arra, hogy a Quick és Widget API hasonlítson egymásra,
         amennyire csak lehet.
     \item Az új funkcionalitásokhoz \texttt{auto} tesztet kell készíteni,
@@ -166,126 +166,119 @@ A fejlesztés során az alábbi szempontokat kell figyelembe venni:
     \item \textbf{A téma megnevezése:} \\
         \title
     \item \textbf{A megadott feladat megfogalmazása:} \\
-        A \texttt{QtWebEngine} modul bővítése új funkciókkal és azok tesztelése a
-        \texttt{Qt auto test} keretrendszerének segítségével. Az új funkciók bemutatása
+        A QtWebEngine modul bővítése új funkciókkal és azok tesztelése a
+        Qt teszt keretrendszerének segítségével. Az új funkciók bemutatása
         egy saját böngészőalkalmazás megvalósításával.
     \item \textbf{A megoldási mód:} \\
-        Részvétel a \texttt{QtWebEngine} project fejlesztésében. Az új funkciók
+        Részvétel a QtWebEngine project fejlesztésében. Az új funkciók
         megvalósítása \texttt{C++} nyelven. Egy példa böngészőalkalmazás implementálása
-        \texttt{QtQuick} segítségével, \texttt{C++} és \texttt{QML} nyelven.
+        QtQuick használatával, \texttt{C++} és \texttt{QML} nyelven.
     \item \textbf{Alkalmazott eszközök, módszerek:} \\
-        A fejlesztés \texttt{GNU/Linux} rendszeren, \texttt{QtCreator} fejlesztői
-        környezetben (IDE) történt. A hibakereséshez \texttt{GDB}-t használtam.
-        \texttt{Makefile}-ok legenerálását a project file-okból a \texttt{qmake} végzi.
-        A project fordítása \texttt{Linux}-on a \texttt{GNU Toolchain}-el (\texttt{GCC 5.3}),
-        \texttt{Os X}-en \texttt{Xcode} -al (\texttt{Xcode 7.2.1}), \texttt{Windows}-on pedig
-        \texttt{MSVC 2013} 32-bites verziójával történt. A verzió-követéshez \texttt{Git}-et
-        használtam. A teszteléshez szükséges keretrendszert és a teszteket a \texttt{Qt}
+        A fejlesztés GNU/Linux rendszeren, QtCreator fejlesztői
+        környezetben (IDE) történt. A hibakereséshez GDB-t használtam.
+        Makefile-ok legenerálását a project file-okból a qmake végzi.
+        A project fordítása Linux-on a GNU Toolchain-el (GCC 5.3),
+        Os X-en Xcode-al (Xcode 7.2.1), Windows-on pedig
+        MSVC 2013 32-bites verziójával történt. A verzió-követéshez Git-et
+        használtam. A teszteléshez szükséges keretrendszert és a teszteket a Qt
         repository-k tartalmazzák.
     \item \textbf{Elért eredmények:} \\
-        A \texttt{QtWebEngine} 8 új funkcióval lett kibővítve. Ebből 4 a \texttt{QtWebKit}-ből
+        A QtWebEngine 8 új funkcióval lett kibővítve. Ebből 4 a QtWebKit-ből
         átvett, 3 a tesztelést és hibakeresést segíti, 1 pedig HTML5 funkció.
     \item \textbf{Kulcsszavak:} \\
-        \texttt{QtWebEngine}, \texttt{QtWebKit}, \texttt{Qt}, \texttt{Chromium}, \\
-        \texttt{Chromium Content API}, \texttt{Web}, \texttt{HTML5}, \texttt{C++}, \\
-        \texttt{Quick}, \texttt{QML}, \texttt{Widget}, \texttt{WebEngineView}
+        \texttt{QtWebEngine}, \texttt{QtWebKit}, \texttt{QtQuick}, \texttt{Qt},
+        \texttt{Chromium}, \\
+        \texttt{Chromium Content API}, \texttt{Web}, \texttt{HTML5}, \texttt{WebKit},
+        \texttt{Blink}, \texttt{C++}, \texttt{QML},\\
+        \texttt{Quick}, \texttt{Widget}, \texttt{WebEngineView}
 \end{itemize}
 
 %%% CONTENT %%%
 
 \chapter*{Bevezetés}
 \addcontentsline{toc}{section}{Bevezetés}
-A \texttt{QtWebEngine}-t 2013-ban kezdték el fejleszteni a Qt fejlesztői kísérleti jelleggel
-a \texttt{WebKit} -- \texttt{Chromium} szétválás után.
-A szétválás előtt a \texttt{Qt} csapata a harmadik
-legtermékenyebb fejlesztője volt a \texttt{WebKit}-nek, az \texttt{Apple} és a
-\texttt{Google} után. A kérdés adott volt: megtartsa e a \texttt{Qt} jól bevált
-\texttt{QtWebKit} modulját és maradjon az \texttt{Apple} szárnysegédje, vagy beálljon
-az új lehetőségeket és irányt mutató \texttt{Google} mögé azáltal, hogy az ő web
-platformjára épít egy új modult. Végül az utóbbi mellett döntöttek és a \texttt{QtWebKit}
-projektet parkolópályára helyezték és a \texttt{QtWebEngine} éles lett.
+A QtWebEngine-t 2013-ban kezdték el fejleszteni a Qt fejlesztői kísérleti jelleggel
+a WebKit--Chromium szétválás után. A szétválás előtt a Qt fejlesztői csapata volt a harmadik
+legtermékenyebb contributor-a (hozzájárulója) a WebKit kód bázisnak, az Apple és a
+Google után. A kérdés adott volt: megtartsa e a Qt jól bevált QtWebKit modulját és maradjon
+az Apple szárnysegédje, vagy beálljon az új lehetőségeket és irányt mutató Google mögé
+azáltal, hogy az ő web platformjára épít egy új modult. Végül az utóbbi mellett döntöttek,
+a QtWebKit projektet parkolópályára helyezték és a QtWebEngine éles lett.
 \cite{bib-qt-blog-introducing-qtwebengine}
 
 2014 elején kapcsolódtam be a projektbe és azóta is részmunkaidőben veszek részt a
-fejlesztésekben. Az azóta eltelt több, mint 2 év alatt sokat tanultam a \texttt{Qt}-ról,
-\texttt{Chromium}-ról és a web technológiákról, úgy egyáltalán. Dolgozatomban az ez idő alatt
+fejlesztésekben. Az azóta eltelt több, mint 2 év alatt sokat tanultam a Qt-ról,
+Chromium-ról és a web technológiákról, úgy egyáltalán. Dolgozatomban az ez idő alatt
 gyűjtött tapasztalatokból szeretnék megörökíteni egy szeletet.
 
-A \texttt{QtWebEngine} (korábban \texttt{QtWeKit}) projekt célja egy \texttt{Qt} modul
-(függvénykönyvtár) nyújtása a fejlesztők számára, amelynek használatával könnyedén
-integrálhatnak böngésző funkcionalitásokat saját \texttt{Qt} alkalmazásaikba
-vagy könnyedén valósíthatnak meg \texttt{Qt} platform felett saját böngészőt. Ráadásul,
-mindezt úgy tehetik meg, hogy nincs szükségük semmilyen ismeretre arról, hogy egy böngésző,
-hogyan működik a motorháztető alatt.
+A QtWebEngine (korábban QtWebKit) projekt célja egy Qt modul (függvénykönyvtár) nyújtása a
+fejlesztők számára, amelynek használatával könnyedén integrálhatnak böngésző
+funkcionalitásokat saját Qt alkalmazásaikba vagy könnyedén valósíthatnak meg Qt platform
+felett saját böngészőt. Ráadásul, mindezt úgy tehetik meg, hogy nincs szükségük semmilyen
+ismeretre arról, hogy egy böngésző, hogyan működik a motorháztető alatt.
 
 Dolgozatomat 3 részre tagoltam. Az első részben adok áttekintést arról, hogy mi is az a
-\texttt{Chromium}, mi a \texttt{Qt}, ezek hogyan kapcsolódnak egymáshoz és hogyan is lesz
-ebből \texttt{QtWebEngine}. A második részben összegyűjtöttem 8 olyan funkcionalitást,
-amit én adtam hozzá a \texttt{QtWebEngine}-hez. Röviden leírom, hogyan valósítottam meg
-őket, mi volt a célom velük és milyen nehézségekkel kellett szembe néznem a
-megvalósítás során.
+Chromium, mi a Qt, ezek hogyan kapcsolódnak egymáshoz és hogyan is lesz ebből QtWebEngine.
+A második részben összegyűjtöttem 8 olyan funkcionalitást (feature-t), amit magam
+fejlesztettem és adtam hozzá a QtWebEngine-hez. Röviden leírom, hogyan valósítottam meg
+őket, mi volt a célom velük és milyen nehézségekkel kellett szembe néznem a megvalósítás
+során.
 
-A legutolsó fejezetben szeretném bebizonyítani, hogy könnyű a \texttt{QtWebEngine}-el
-böngészőt készíteni. Sajnos a \texttt{Chromium} erőforrás igénye és a magas szintű API
-miatt, nem várható el a \texttt{QtWebEngine}-től, hogy lekörözze sebességben és/vagy
-memória-fogyasztásban a versenytársakat. A \texttt{QtWebEngine} előnye kétség nélkül
-az egyszerű használhatóságban és a cross-platform támogatásban rejlik.
+A legutolsó fejezetben szeretném bebizonyítani, hogy könnyű a QtWebEngine-el böngészőt
+készíteni. Sajnos a Chromium erőforrás igénye és a magas szintű API-ja miatt, nem várható el
+a QtWebEngine-től, hogy lekörözze sebességben és/vagy memória-fogyasztásban a versenytársakat.
+A QtWebEngine igazi előnye kétség nélkül az egyszerű használhatóságban és a cross-platform
+támogatásban rejlik.
 
 
 \chapter{Áttekintés: \mbox{Chromium + Qt = QtWebEngine}}
 
 \section{Chromium}
-A \texttt{Chromium} a Google által fejlesztett, nyílt forrású web böngésző projekt. Nagy
-része \texttt{C++} nyelven íródott. Támogatja napjaink legnépszerűbb operációs rendszereit
-(``Cross-Platform''), legyen az desktop (Windows, Linux, OS X) vagy mobil (Android, iOS,
+A Chromium a Google által fejlesztett, nyílt forrású (open source) web böngésző projekt. Nagy
+része \texttt{C++} nyelven íródott. Támogatja napjaink legnépszerűbb operációs rendszereit \\
+(``cross-platform''), legyen az desktop (Windows, Linux, OS X) vagy mobil (Android, iOS,
 QNX).
-A \texttt{Chromium} nem egy böngésző alkalmazás, hanem egy tabokat használó ablakkezelő
-vagy shell a web-hez.
+A Chromium nem egy böngésző alkalmazás, hanem egy tabokat használó ablakkezelő (vagy shell)
+a web-hez.
 \cite{bib-wiki-chromium}
 
 \subsection{Chrome}
-A Google saját \texttt{Chromium}-ra épülő böngésző alkalmazása a \texttt{Google Chrome}.
-Ez az alkalmazás \texttt{Chromium}-mal szemben nem nyílt forrású, viszont a böngésző
-megvalósításának nagy része a \texttt{Chromium} projektben megtalálható.
-A \texttt{Chrome} nem nyílt részei például a beépített \texttt{Adobe Flash Player}
-(\texttt{Pepper Flash Player}) és az automatikus frissítésekért felelős modul
-(\texttt{GoogleUpdate}). \cite{bib-wiki-chrome} \\
-Egy másik, népszerű \texttt{Chromium}-ra épülő böngésző alkalmazás az \texttt{Opera}.
+A Google saját Chromium-ra épülő böngésző alkalmazása a Google Chrome.
+Ez az alkalmazás Chromium-mal szemben nem nyílt forrású, viszont a böngésző
+megvalósításának nagy része a Chromium projektben megtalálható.
+A Chrome nem nyílt részei például a beépített Adobe Flash Player (Pepper Flash Player)
+és az automatikus frissítésekért felelős komponens (GoogleUpdate). \cite{bib-wiki-chrome}
+Egy másik, szintén népszerű Chromium-ra épülő böngésző alkalmazás az Opera.
 
 \subsection{Blink}
-A \texttt{Chromium} 28-as verziójától kezdve a \texttt{Blink} böngésző motort használja.
+A Chromium 28-as verziójától kezdve a Blink böngésző motort használja.
 A böngésző motor elsődleges feladata a webes tartalom megjelenítése a képernyőn. Talán
-ebből is látszik, hogy a \texttt{Blink} talán a legfontosabb komponense
-a \texttt{Chromium}-nak. A \texttt{Chromium} a 28-es verzió előtt \texttt{WebKit}-et
-használt, a Google ezt a projektet forkolta és nevezte el \texttt{Blink}-nek. Pontosabban,
-a \texttt{Blink} nem a teljes \texttt{WebKit} forkja, hanem csak annak egy részének, a
-\texttt{WebCore}-nak.
+ebből is látszik, hogy a Blink talán a legfontosabb komponense a Chromium-nak.
+A Chromium a 28-es verzió előtt WebKit-et használt, a Google ezt a projektet forkolta és
+nevezte el Blink-nek. Pontosabban, annak csak egy részét, név szerint a WebCore-t.
 \cite{bib-wiki-blink}
 
-A \texttt{Blink} nem tartalmazza a \texttt{WebKit}-ben alkalmazott multi-processz
-architektúrát és sandboxing-ot, ezek a feladatok a \texttt{Chromium} más szintjein jelennek
-meg így egyszerűbbé téve a \texttt{Blink} implementációját. Továbbá, a \texttt{WebKit} része
-a \texttt{JavaScriptCore} JavaScript motor is, ami a \texttt{Blink}-be már nem került bele,
-hiszen a \texttt{Chromium}-nak van sajátja, a \texttt{V8}.
-Ettől eltekintve a \texttt{Blink} még mindig nagyon hasonlít a
-\texttt{WebCore}-ra/\texttt{WebKit}-re, a \texttt{Chromium}
-forrásában és könyvtár struktúrájában még mindig \texttt{WebKit} néven hivatkoznak erre a
-komponensre. Például, a \texttt{Blink} forrása a \\
-\texttt{third\_party/WebKit} könyvtárban van.
+A Blink nem tartalmazza a WebKit-ben alkalmazott multi-processz architektúrát és sandbox
+megoldást, ezek a feladatok a Chromium más szintjein vannak megvalósítva, így egyszerűbbé
+téve a Blink forráskódját.
+Továbbá, a WebKit része JavaScriptCore JavaScript motor is, ami a Blink-be már nem került
+bele, hiszen a Chromium-nak van sajátja, a V8. Ezektől eltekintve a Blink még mindig nagyon
+hasonlít a WebCore-ra/WebKit-re. A Chromium forrásában és könyvtár struktúrájában továbbra is
+``WebKit'' néven hivatkoznak erre a komponensre\footnote{Például, a Blink forrása a
+\texttt{third\_party/WebKit} könyvtárban található a Chromium repository-n belül}.
 \cite{bib-chromium-displays-web-pages, bib-chromium-blink}
 
-Már említettem, hogy a \texttt{Blink}, mint böngésző motor felel a webes tartalmak
-megjelenítésért. Ennek működése fontos a \texttt{QtWebEngine} szempontjából, ezért ezt itt
-röviden részletezném.
-A \texttt{Blink} a web oldal tartalmát feldolgozza (parse-olja), és a HTML elemekből
-\texttt{Node} objektumokat gyárt. Ezeket a \texttt{Node}-okat egy fába rendezi, amit
-\texttt{DOM} (Document Object Model) fának hívnak. A fának a gyökér \texttt{Node}-ja mindig,
-az úgynevezett, \texttt{Document Node}. A \texttt{DOM} fa építése során, a motor, minden
-megjeleníthető \texttt{Node}-hoz egy \texttt{RenderObject}-et rendel. A \texttt{DOM} fa
-építésével párhuzamosan egy másik fát is épít a \texttt{RenderObject}-ekből, a
-\texttt{Render Tree}-t. A \texttt{RenderObject} ``tudja'', hogyan kell a \texttt{Node}-ot
-megjeleníteni. Továbbá, bizonyos \texttt{RenderObject}-hez \texttt{RenderLayer}-t is
-rendel, amiből egy újabb fát épít: \texttt{RenderLayer Tree}.
+A Blink az a komponens, ami a weboldal tartalmát feldolgozza és előkészíti megjelenítésre.
+Az oldal tartalmát először parse-olja és a HTML elemekből \texttt{Node} objektumokat gyárt.
+Ezeket a \texttt{Node}-okat egy fába rendezi, amit DOM (Document Object Model) fának hívnak.
+A DOM fának a gyökér \texttt{Node}-ja mindig, az úgynevezett, \texttt{Document Node}.
+A fa építése során, a motor, minden megjeleníthető \texttt{Node}-hoz egy
+\texttt{RenderObject}-et rendel. A \texttt{RenderObject} az az elem, ami ``tudja'',
+hogyan kell a hozzátartozó \texttt{Node}-ot megjeleníteni.
+A DOM fa építésével párhuzamosan, a Blink egy másik fát is épít a
+\texttt{RenderObject}-ekből, ez a \texttt{Render Tree}. Továbbá, bizonyos
+\texttt{RenderObject}-hez \texttt{RenderLayer}-t is rendel, amiből egy újabb fát épít,
+ami pedig a \texttt{RenderLayer Tree}.
 
 \begin{figure}[h]
     \centering
@@ -296,59 +289,59 @@ rendel, amiből egy újabb fát épít: \texttt{RenderLayer Tree}.
     }
 \end{figure}
 
-Ahogy az \ref{fig-rendering-trees} ábrán is látszik a \texttt{DOM Tree} és a
-\texttt{Render Tree} szinte azonos, csak a \texttt{Render Tree} csak a megjeleníthető
-\texttt{Node}-okat tartalmazza. Míg a \texttt{RenderLayer Tree} a \texttt{Render Tree} egy
-lecsupaszított változata, amit a \texttt{renderer} fog használni a rajzoláshoz.
-A \texttt{RenderLayer}-ből elérhetőek a \texttt{RenderObject}-ek (amik tudják, hogyan
-kell kirajzolni a tartalmat), a \texttt{RenderLayer Tree} pedig hordozza azt az információt,
-hogy milyen sorrendben kell rajzolni és, hogy milyen átfedések lehetnek.
+\noindent
+Az \ref{fig-rendering-trees} ábra szemlélteti, hogyan is állnak össze ezek a struktúrák.
+A \texttt{DOM Tree} és a \texttt{Render Tree} szinte azonos, annyi különbséggel, hogy
+a \texttt{Render Tree} csak a megjeleníthető \texttt{Node}-okat tartalmazza.
+A \texttt{RenderLayer Tree} a \texttt{Render Tree} egy lecsupaszított változata, amit a
+megjelenítő komponens (renderer) fog használni a rajzoláshoz.
+A \texttt{RenderLayer}-ből elérhetőek a \texttt{RenderObject}-ek, a \texttt{RenderLayer Tree}
+szerkezete pedig, hordozza azt az információt, hogy milyen sorrendben kell kirajzolni
+\texttt{RenderObject}-eket és, hogy azok között milyen átfedések lehetnek.
 
-Az, hogy a rajzolás ezek után hogyan történik az függ attól, hogy van e elérhető hardveres
-gyorsítás. Ha nincs, akkor szoftveres renderelés történik úgy, hogy a \\
-\texttt{RenderLayer Tree}-n keresztül megfelelő sorrendben bejárják a
-\texttt{RenderObject}-eket és kirajzoltatják őket egy közös bitmap-re. Ha kész, ez a bitmap
-lesz elküldve a böngésző alkalmazásnak (pl. \texttt{Chrome}) megjelenítésre. Szoftveres
-renderelés esetén a rajzolást a \texttt{Skia} grafikus motor végzi.
+Az, hogy a rajzolás hogyan történik az függ attól, hogy van e elérhető hardveres gyorsítás.
+Ha nincs, akkor szoftveres renderelés történik. A szoftveres renderelés során a rajzoló
+algoritmus bejárja a \texttt{RenderLayer Tree}-n keresztül a \texttt{RenderObject}-eket és
+azokat egy közös bitmap-re rajzoltatja ki. Ha kész, ez a bitmap lesz elküldve egy másik
+processz (browser process) számára megjelenítésre. Szoftveres renderelés esetén a rajzolást
+a Skia grafikus motor végzi.
 
-Ha van elérhető hardveres gyorsítás, akkor az eljárás valamivel bonyolultabb. Az egésznek az
-a lényege, hogy a \texttt{RenderObject} nem bitmap-be ``rajzolja bele magát'', hanem 3D API-n
-keresztül (\texttt{OpenGL} vagy Windows-on \texttt{D3D}) utasításokat küld közvetlenül a
-GPU-nak (grafikus processzor). Ezt az eljárást már a \texttt{Chrome Compositor} (\texttt{CC})
-végzi.
+Ha van elérhető hardveres gyorsítás, akkor az eljárás valamivel bonyolultabb. Ebben az
+esetben, a \texttt{RenderObject} nem bitmap-be ``rajzolja bele magát'', hanem 3D API-n
+keresztül (OpenGL vagy Windows-on esetleg D3D) utasításokat küld közvetlenül a GPU
+utasítás pufferébe (command buffer) végrehajtásra. Ezt az eljárást már a
+Chrome Compositor (CC) végzi.
 \cite{bib-chromium-gpu, bib-chromium-oopifs}
 
 \subsection{Chrome Compositor (CC)}
-A \texttt{Chrome Compositor} már nem része a \texttt{Blink}-nek.
-Ennek az az oka, hogy most már a \texttt{Chromium} a browser UI megrajzolásához is a
-\texttt{Chrome Compositor}-t használja.
-Ahhoz, hogy a compositor ki tudja rajzolni a \texttt{DOM}-ban tárolt tartalmat,
-további layer absztrakciókra van szükség:
+A Chrome Compositor már nem része a Blink-nek (ahogy a Skia sem). Ennek az az oka,
+hogy most már a Chromium a browser UI megrajzolásához is a Chrome Compositor-t használja.
+Ahhoz, hogy a compositor ki tudja rajzolni a DOM-ban tárolt tartalmat, további layer
+absztrakciókra van szükség:
 \begin{center}
     \texttt{RenderLayers} $\rightarrow$ \texttt{GraphicsLayers} $\rightarrow$
     \texttt{WebLayers} $\rightarrow$ \texttt{CC Layers}
 \end{center}
 
 A compositor a végeredményt nem bitmap-be, hanem textúrába ``rajzolja''. Az elkészült
-textúrák a GPU memóriájában vannak tárolva és \texttt{texture mailbox} segítségével
-azonosítják. A \texttt{texture mailbox} egy \texttt{OpenGL extension}, ami egyedi és globális
-string azonosítót rendel a textúrához és lehetővé teszi, hogy más \texttt{OpenGL context}-en
+textúrák a GPU memóriájában vannak tárolva és úgy nevezett texture mailbox segítségével
+azonosítják. A texture mailbox egy OpenGL extension kiterjesztés, ami egyedi és globális
+string azonosítót rendel a textúrához és lehetővé teszi, hogy más OpenGL context-en
 is elérhető legyen a textúra, ami normális esetben nem lenne megosztva.
 \cite{bib-chromium-gpu, bib-chromium-oopifs}
 
-A \texttt{texture mailbox}-nak hála az összeállított képet nem kell az \\
-\texttt{IPC}-n (\texttt{Inter-Process Communication}) keresztül megosztani a processzek között
-(mint a szoftveres rendering esetében), hanem a GPU memórián keresztül bármelyik
-processz hozzáférhet a textúrához.
+A texture mailbox-nak hála az összeállított képet nem kell az IPC-n (Inter-Process
+Communication) keresztül megosztani a processzek között (mint a szoftveres rendering
+esetében), hanem a GPU memórián keresztül bármelyik processz hozzáférhet a textúrához, így
+elég csak a textúra azonosítót átküldeni IPC-n.
 \cite{bib-chromium-texture-mailbox}
 
 \subsection{Multi-processz Architektúra}
-\texttt{Chromium} volt az egyik első olyan böngésző, ami úgy lett megtervezve, hogy több
-processzre legyen felosztva. A \texttt{WebKit} multi-processzt támogató
-API-ja (\texttt{WebKit2}) is a \texttt{Chromium}-ról mintázta a multi-processz
-architektúráját. \cite{bib-webkit-webkit2}
-Ez az API a \texttt{Blink}-nek nem része, viszont a \texttt{QtWebEngine} elődjének,
-a \texttt{QtWebKit}-nek \texttt{Quick} API-ja a \texttt{WebKit2}-re épül.
+Chromium volt az egyik első olyan böngésző, ami úgy lett megtervezve, hogy több processzre
+legyen felosztva. A WebKit multi-processz architektúrára épülő API-ja (WebKit2) is a
+Chromium-ról vette a mintát. \cite{bib-webkit-webkit2}
+Ez az API a Blink-nek nem része, viszont a QtWebEngine elődjének, a QtWebKit-nek
+Quick API-ja a WebKit2-re épül.
 
 A multi-processz architektúrán alapuló böngésző alapgondolata az, hogy a böngészőalkalmazás
 UI-ért felelős része saját processzben fut, míg a weboldalak megjelenítésért más
@@ -374,14 +367,14 @@ processzek felelnek. Ennek több előnye is van: \cite{bib-chromium-blog-multi-p
         megnyitott oldalak, tabok megmaradnak.
     \end{description}
 
-A multi-processz architektúrának hátulütőjei is vannak: ez a megoldás sokkal \\
+A multi-processz architektúrának hátrányai is vannak: ez a megoldás sokkal \\
 erőforrás-igényesebb, és a megvalósítás is bonyolultabb (több hibalehetőség).
 A processzek használata memória többletköltséggel jár. Továbbá, a futtatható processzek
 számát limitálni kell, mert túl sok processz jelentős lassulást okozhat (pl. az ütemező
 többletköltsége miatt).
 
-A processzek \texttt{IPC}-n (\texttt{Chromium's IPC System}) keresztül kommunikálnak
-egymással. A \texttt{Chromium}-ban 4 fő processz típust különböztetünk meg:
+A processzek IPC-n (Chromium's IPC System) keresztül kommunikálnak egymással.
+A Chromium-ban 4 fő processz típust különböztetünk meg:
 
 \subsubsection{Browser Process}
 Ez az a processz, ahol maga böngésző alkalmazás (UI) fut. Ez felelős megjelenítésért,
@@ -393,9 +386,9 @@ viszont nem tölt be vagy dolgoz fel web tartalmat.
 A renderelő motor egy nagyon összetett és bonyolult szoftver komponens. Szinte lehetetlen
 olyat implementálni, ami sosem hibázik és/vagy omlik össze. \cite{bib-chromium-multi-process}
 Ezért racionális döntés az egymástól független oldalak renderelését egymástól független
-processzekben végrehajtani. Amennyiben egy \texttt{Render Process} összeomlik, arról a
-\texttt{Browser Process} értesül és az oldal helyett az \ref{fig-sad-tab} ábrán látható,
-úgynevezett ``sad tab'' értesítő felületet.
+processzekben végrehajtani. Amennyiben egy Render Process összeomlik, arról a
+Browser Process értesül és az oldal helyett az \ref{fig-sad-tab} ábrán látható,
+úgynevezett, ``sad tab'' értesítést jeleníti meg.
 
 \begin{figure}[h]
     \centering
@@ -406,12 +399,12 @@ processzekben végrehajtani. Amennyiben egy \texttt{Render Process} összeomlik,
     }
 \end{figure}
 
-Mivel a \texttt{Chromium}-ban a renderelésért a \texttt{Blink} felel, ezért az is a \\
-\texttt{Render Process} része. A \texttt{Blink} az ami közvetlenül feldolgozza a webes
-tartalmat, ezért jellemzően a \texttt{Render Process}-t sandbox-ban futtatják, így a
-potenciálisan kártékony weben futó kódok nem férhetnek hozzá a rendszer erőforrásaihoz.
+Mivel a Chromium-ban a renderelésért a Blink felel, ezért az is a Render Process-ben fut.
+A Blink az, ami közvetlenül feldolgozza a webes tartalmat, ezért jellemzően a
+Render Process-t sandbox-ban futtatják, így a potenciálisan kártékony webes kódok nem
+férhetnek hozzá a rendszer erőforrásaihoz vagy más betöltött webes tartalomhoz.
 
-A \texttt{Chromium}-ban különböző parancssori kapcsolókkal is beállítható processz modellek
+A Chromium-ban különböző parancssori kapcsolókkal is beállítható processz modellek
 vannak definiálva:
 \begin{description}
     \item[Process-per-site-instance]
@@ -424,70 +417,67 @@ vannak definiálva:
     \item[Process-per-tab]
         Minden tab külön processz. Több tab kerülhet közös processzbe, ha függnek egymástól.
     \item[Single Process]
-        A ``hagyományos, egy-processzes'' modell. Nincs külön \texttt{Render Process}.
-        A rendering a \texttt{Browser} processzben történik.
+        A ``hagyományos, egy-processzes'' modell. \\
+        Nincs külön Render Process. A rendering a Browser Process-ben történik.
 \end{description}
 
+\noindent
 Alapértelmezetten a \textit{Process-per-site-instance} modellt használja a böngésző, de
 ettől függetlenül előfordulhat, hogy több site is osztozik, ugyanazon a processzen.
 Erre vagy akkor van szükség amikor két site hivatkozik script-ből egymásra,
-vagy amikor a futó render processzek száma elér egy limitet.
+vagy amikor a futó Render Proess-ek száma elér egy limitet.
 \cite{bib-chromium-process-models}
 
 \subsubsection{Plugin Process}
 A pluginok okozzák a legtöbb problémát a böngésző stabilitásának szempontjából. A plugint
-egy harmadik fél készíti ezért a \texttt{Chromium}-nak nincs befolyása afelett, hogy milyen
-erőforrásokat használ. Ennél fogva, indokolt lépés a pluginokat nem a
-\texttt{Browser Process}-ben futtatni. A legtöbb plugin nem futhat sandbox-ban, mivel olyan
+egy harmadik fél készíti ezért a Chromium-nak nincs befolyása afelett, hogy milyen
+erőforrásokat használ. Ennél fogva, indokolt lépés a pluginokat nem a Browser Process-ben
+futtatni. A legtöbb plugin nem futhat sandbox-ban, mivel olyan
 képességekkel bővítik a böngészőt, amelyekhez szükség van hozzáférésre a rendszer
-erőforrásaihoz. Ezért a \texttt{Render Process}-en kívül szükség van olyan processzre is,
+erőforrásaihoz. Ezért a Render Process-en kívül szükség van egy újabb processz típusra is,
 amelyben a pluginok futhatnak.
 \cite{bib-chromium-plugins}
 
 \subsubsection{GPU Process}
-A renderelés a \texttt{Render Process}-ben történik, viszont ez a processz
-sandbox-ban fut és ezért nem küldhet parancsokat GPU-nak. Hardveres gyorsítás esetén
-a compositing-ot és a rajzolást egy külön processzben kell végezni, ami nem sandbox-ban fut.
+A renderelés a Render Process-ben történik, viszont ez a processz sandbox-ban fut és ezért
+nem küldhet parancsokat GPU-nak. Hardveres gyorsítás esetén a compositing-ot és a rajzolást
+egy külön processzben kell végezni, ami nem sandbox-ban fut.
 \cite{bib-chromium-gpu} \\
-A \texttt{Chromium} úgy is konfigurálható, hogy a \texttt{GPU Process} feladatát a \\
-\texttt{Browser Process} lássa el.
-
+A Chromium úgy is konfigurálható, hogy a GPU Process feladatát a Browser Process lássa el.
 
 \subsection{Chromium Content Module}
-A \texttt{Content Module} az, ami megvalósítja az előző fejezetben bemutatott \\
+A Content Module a Chromium az a része, ami megvalósítja az előző fejezetben bemutatott
 multi-processz architektúrát. Továbbá, ebben van megvalósítva az összes támogatott
 web platform funkcionalitás (például: HTML5, WebRTC, WebGL, stb.), illetve
-a hardveres GPU gyorsítás. Böngésző alkalmazás specifikus funkcionalitások, nem részei
-\texttt{Content Module}-nak. Lényegében csak az van benne, ami a web tartalom
+a hardveres GPU gyorsítás. Böngészőalkalmazás specifikus funkcionalitások, nem részei
+Content Module-nak. Lényegében csak az van benne, ami a web tartalom
 megjelenítéséhez\footnote{\textit{content} = web tartalom} szükséges, azaz olyan kód,
 amit minden böngészőt integráló alkalmazásnak szüksége van.
 \cite{bib-chromium-content-module}
 
 A modul célja, hogy az opcionális böngésző funkcionalitások (amire nem feltétlenül van
-szüksége a beágyazó alkalmazásnak\footnote{ilyen beágyazó alkalmazás például a
-\texttt{Google Chrome}}) le legyenek választva, ezáltal megvalósíthatóak legyenek
-a beágyazó alkalmazásban anélkül, hogy a \texttt{Chromium} kódját módosítani kellene. Erre
-nyújt lehetőséget a \texttt{Chromium Content API}.
+szüksége a beágyazó alkalmazásnak (pl. Chrome) le legyenek választva, ezáltal
+megvalósíthatóak és testreszabhatóak legyenek a beágyazó alkalmazásban anélkül,
+hogy a Chromium forráskódját módosítani kellene. Erre nyújt lehetőséget a Content API.
 
 \subsubsection{Chromium Content API}
-A \texttt{Content API} megtervezésekor a \texttt{WebKit API}-t vették alapul,
-hogy a \texttt{WebKit} fejlesztők könnyebben áttérjenek. Az új API \textit{unstable}, ami
-azt jelenti, hogy az API minden új kiadásban változhat, ezért a beágyazó alkalmazást is
-minden \texttt{Chromium} frissítés után nagy valószínűséggel változtatni kell.
+A Content API megtervezésekor a WebKit API-t vették alapul, hogy a WebKit fejlesztők
+könnyebben áttérhessenek. Az új API \textit{unstable}, ami azt jelenti, hogy az API minden
+új kiadásban változhat, ezért a beágyazó alkalmazást is minden Chromium frissítés után nagy
+valószínűséggel változtatni kell.
 
-A \texttt{Content Module} a beágyazó alkalmazást interfészeken (Delegate, Observer)
+A Content Module a beágyazó alkalmazást interfészeken (Delegate, Observer)
 és callback függvényeken keresztül értesíti az eseményekről, változásokról (például,
 hol tart a web oldal letöltése vagy sikeres volt-e a letöltés) vagy éppen
 kér le adatokat (például, kell megjeleníteni hiba üzenetet, ha nem sikerül letölteni egy
-oldalt). Az interfészek metódusainak és a callback függvényeknek törzse üres a
-\texttt{Content Module}-ban, ezeket a beágyazó alkalmazásnak kell implementálnia és a
-\texttt{Content Module} hívja meg őket szükség esetén.
+oldalt). Az ilyen interfészek metódusainak törzse üres a Content Module-ban, ezeket a
+beágyazó alkalmazásnak kell megvalósítania és a Content Module hívja meg őket szükség esetén.
 
-Ezeken kívül vannak olyan interfészek is, amelyeket a \texttt{Content Module} implementál
-(például, oldal betöltése: \textit{LoadURLWithParams} vagy az URL lekérdezése:
-\textit{GetVisibleURL}).
+Ezeken kívül vannak olyan interfészek is, amelyeket a Content Module implementál
+(például, oldal betöltése: \texttt{LoadURLWithParams()} vagy az URL lekérdezése: \\
+\texttt{GetVisibleURL()}).
 Ezek az interfészek \textit{pure abstract} interfészek, mivel csak egy megvalósításuk lehet
-és csakis a \texttt{Content Module}-on belül. \cite{bib-chromium-content-api}
+és az is a Content Module-on belül. \cite{bib-chromium-content-api}
 
 \subsubsection{Chromium Content Shell}
 \begin{figure}[h]
@@ -499,27 +489,28 @@ Ezek az interfészek \textit{pure abstract} interfészek, mivel csak egy megval�
     }
 \end{figure}
 
-A \ref{fig-content-shell} ábrán látható alkalmazás a \texttt{Content Shell}.
-Ez a lehető legegyszerűbb böngészőalkalmazás, ami a \texttt{Content API}-ra épül.
-Arra használják, hogy a \\
-\texttt{Content Module}-t és a  \texttt{Blink}-et tesztelhessék, debuggolhassák anélkül,
-hogy egy teljes böngészőalkalmazást (pl. \texttt{Chrome}) le kellene fordítani.
+\noindent
+Az \ref{fig-content-shell} ábrán látható alkalmazás a Content Shell. Ez a lehető
+legegyszerűbb böngészőalkalmazás, ami a Content API-ra épül. Arra használják, hogy a
+Content Module-t és a Blink-et tesztelhessék, debuggolhassák anélkül, hogy egy teljes
+böngészőalkalmazást (pl. Chrome) le kellene fordítani.
 
 \subsection{Felépítés}
-Az előző fejezet alapján a \texttt{Chromium}-ot 3 rétegre oszthatjuk fel:
+Az eddigiek alapján a Chromium-ot 3 rétegre oszthatjuk fel:
 \begin{description}
     \item[Chrome]
         Felhasználói felület (UI) és böngészőalkalmazás funkciók
         (pl.: history, könyvjelzők, favicon, stb.)
     \item[Blink]
-        Webes tartalom feldolgozása és renderelése. A \texttt{V8} JavaScript motort a \\
-        \texttt{Blink}-en keresztül érjük el és közös processzben futnak.
+        Webes tartalom feldolgozása és renderelése. A V8 JavaScript motort a
+        Blink-en keresztül érjük el és közös processzben futnak.
     \item[Content]
         Ez a réteg valósítja meg a multi-processz architektúrát,
         felel a web platform funkciókért és a hardveres GPU gyorsításért.
 \end{description}
-A \ref{fig-chromium-architecture} ábra mutatja, hogyan is állnak össze ezek a részek egy
-egységes egésszé.
+A \ref{fig-chromium-architecture} ábra mutatja, hogyan is állnak össze a Chromium rétegei.
+Itt a Blink böngészőmotor még ``WebKit''-nek van jelölve.
+A legfelső réteg a Chrome, helyére a saját beépítő alkalmazás kerül.
 
 \begin{figure}[h]
     \centering
@@ -531,18 +522,14 @@ egységes egésszé.
     }
 \end{figure}
 
-Az \ref{fig-chromium-architecture} ábrán a \texttt{Blink} böngésző motor még
-\texttt{WebKit}-nek van jelölve.
-A legfelső réteg a \texttt{Chrome} (böngészőalkalmazás), helyére a saját beépítő alkalmazás
-kerül.
 
 \subsection{Chromium Release}
-Egy \texttt{Chromium} release verzió száma 4 részből tevődik össze:
+Egy Chromium release verzió száma 4 részből tevődik össze:
 \begin{center}
     \texttt{MAJOR.MINOR.BUILD.PATCH}
 \end{center}
-A dolgozatomban a fő verzió számra (MAJOR) hivatkozok.
-A \texttt{Chromium} közösség előre tervezett menetrend szerint 1-1.5 havonta vált fő
+A dolgozatomban a fő verzió számra (\texttt{MAJOR}) hivatkozok.
+A Chromium közösség előre tervezett menetrend szerint 1-1.5 havonta vált fő
 verziószámot. Dolgozatom készítése idején az 51-es verziójú volt a legfrissebb stabil kiadás.
 Az itt leírtak erre a verzióra vonatkoznak.
 
@@ -552,8 +539,8 @@ A Qt egy nyílt forrású, cross-platform alkalmazás keretrendszer. Úgy ahogy 
 Chromium úgy a Qt is elérhető napjaink legnépszerűbb desktop és mobil
 operációs rendszerein. Ez a keretrendszer nyújt \texttt{C++} függvénykönyvtárakat (library),
 binding-okat más programozási nyelvekhez (pl.: Python, Java), saját programozási nyelvet
-(QML), saját integrált fejlesztői környezetet (QtCreator), saját build rendszert
-(qmake) és kiterjesztéseket is a \texttt{C++} nyelvhez (pl.: signal-slot model).
+(\texttt{QML}), saját integrált fejlesztői környezetet (QtCreator), saját build rendszert
+(qmake) és kiterjesztéseket is a \texttt{C++} programozási nyelvhez (pl.: signal-slot model).
 \cite{bib-qt-wiki-about-qt}
 
 \subsection{Qt Történelem}
@@ -592,13 +579,13 @@ keretrendszer részei voltak, ennélfogva a Qt-ra épültek. Amikor 2001-ben az 
 fejlesztői forkolták ezeket a library-kat, a céljuk éppen az volt, hogy a Qt-tól független
 böngésző motort valósítsanak meg.
 
-A Qt 4.7-es verzió másik nagyon fontos újítása a QtQuick és a QML.
-Ez az új technológia a mobil fejlesztés szempontjából nagyon fontos. A QML egy
+A Qt 4.7-es verzió másik nagyon fontos újítása a QtQuick és a \texttt{QML}.
+Ez az új technológia a mobil fejlesztés szempontjából nagyon fontos. A \texttt{QML} egy
 új deklaratív programozási nyelv, a QtQuick pedig a hozzátartozó eszközkészlet vagy
 ``függvénykönvytár''. Ezek segítségével a Qt egy új megközelítést nyújtott GUI
 megvalósítására. A legnagyobb előnye (a könnyű használhatóságot és a gyors fejlesztési
 ciklust nem számítva), hogy mobil alkalmazás felhasználói felületének
-lefejlesztéséhez nincs szükség szimulátorra, hiszen a QML-ben írt alkalmazás
+lefejlesztéséhez nincs szükség szimulátorra, hiszen a \texttt{QML}-ben írt alkalmazás
 platform független és ugyanúgy fut/néz ki desktop-on mint mobilon.
 
 \subsubsection{2011-2013}
