@@ -557,6 +557,7 @@ binding-okat más programozási nyelvekhez (pl.: Python, Java), saját programoz
 \cite{bib-qt-wiki-about-qt}
 
 \subsection{Qt Történelem}
+\subsubsection{1995-2000}
 A Qt első verziója 1995-ben adta ki a Trolltech. Akkor még a projekt egy
 cross-platform GUI fejlesztői keretrendszernek indult.
 Nem sokkal később (1998-ban), jelent meg a
@@ -567,11 +568,13 @@ A Qt eszköztára az évek során fokozatosan
 bővült. Új API-k jelentek meg adatbázis kezeléshez (SQL), hálózati programozáshoz,
 multimédiás alkalmazások készítéséhez, XML dokumentumok feldolgozásához stb.
 
+\subsubsection{2000-2008}
 2000-ben megjelent a Qt-ra épülő Qt/Embedded keretrendszer Linux-os beágyazott eszközökre.
 Ezzel az új technológiával a Qt meg is jelent az első okos telefonokon (2003: Motorola A760)
 és a korabeli PDA-kon. 2006-ban a Trolltech még a saját fejlesztésű mobil telefonját is
-kiadta Greenphone néven.
+kiadta, Greenphone néven.
 
+\subsubsection{2008-2011}
 Talán a Trolltech beágyazott platformokon és mobil telefonokon szerzett tapasztalata
 miatt került arra sor, hogy 2008-ban, az akkori egyik vezető mobiltelefon gyártó, a Nokia,
 felvásárolta a céget. A következő pár évben a fejlesztés még inkább a mobil eszközök
@@ -584,7 +587,7 @@ A WebKit az Apple által fejlesztett nyílt forrású böngésző motor, a QtWeb
 a ``Qt portja''. Ez azt jelenti, hogy az API természetesen ``Qt-s'', továbbá a legfontosabb
 ``alacsony szintű'' feladatokat is a Qt látja el, mint például a hálózat kezelés
 (pl. tartalom letöltése) és az oldalak kirajzolása (renderelése).
-A projekt érdekessége, hogy a WebKit elődjei a KHTML és KJS projektek, melyek a KDE
+Ironikus a történetben, hogy a WebKit elődjei a KHTML és KJS projektek, melyek a KDE
 keretrendszer részei voltak, ennélfogva a Qt-ra épültek. Amikor 2001-ben az Apple
 fejlesztői forkolták ezeket a library-kat, a céljuk éppen az volt, hogy a Qt-tól független
 böngésző motort valósítsanak meg.
@@ -598,6 +601,7 @@ ciklust nem számítva), hogy mobil alkalmazás felhasználói felületének
 lefejlesztéséhez nincs szükség szimulátorra, hiszen a QML-ben írt alkalmazás
 platform független és ugyanúgy fut/néz ki desktop-on mint mobilon.
 
+\subsubsection{2011-2013}
 2011 elején a Nokia szerződést kötött a Microsoft-tal. A Nokia készülékek elsődleges
 platformja a Windows Phone lett, így a Nokia elkezdte fokozatosan leépíteni a
 szoftver kutatás-fejlesztés részlegét. 2012-re a Qt teljes egészében a Digia
@@ -621,28 +625,36 @@ Az 5-ös verzió másik újítása QtQuick2 volt. A QtQuick első verziója (QtQ
 \texttt{QGraphicsView}-ra épül, ami szoftveres renderelést használ a megjelenítéshez.
 Ez a megoldás lassú, ráadásul widget függősége is van. A QtQuick2 API-ja kompatibilis a
 QtQuick1-el, viszont teljesen újraírták. Nincs többé widget függőség mivel ezentúl a
-\texttt{QtQuick2} a \texttt{QSceneGraph}-ra épül. Ez a scene graph Open GL ES 2.0-ra vagy
+QtQuick2 a \texttt{QSceneGraph}-ra épül. Ez a scene graph Open GL ES 2.0-ra vagy
 Open GL 2.0-ra épül, így a renderelés a GPU-n történik. Ez a megoldás sokkal gyorsabb,
 viszont nem működik olyan platformokon ahol nincs OpenGL 2.0.
 
 2013-ban a Qt fejlesztői úgy döntenek szakítanak a WebKit-el és, hogy böngésző motor
 API-jukat ezentúl a Chromium felé építik. \cite{bib-qt-blog-introducing-qtwebengine}
 Az új modult QtWebEngine-nek hívják és 5.4-es verzióban jelent meg először.
-
-2014 óta \dots \textit{The Qt Company} \dots
 \cite{bib-qt-wiki-qt-history}
 
-\begin{itemize}
-    \item Qt-t használó alkalmazások: skype, VirtualBox, spotify
-\end{itemize}
+\subsubsection{2014-napjainkig}
+2014-ben a Qt részlege kivált a Digia-ból és létrejött a \textit{The Qt Company},
+mint a Digia leányvállalata. A kiválás oka, hogy a Qt üzleti logikája és piaca eltér a
+Digia-étól, ezért másfajta vezetésre, fejlesztésre és befektetési tervre van szükség.
+Ez a folyamat még 2016-ban is tart és terv szerint 2016 májusában a The Qt Company megjelenik
+a tőzsdén is.
+\cite{bib-qt-about-us}
+
+A Qt hányattatásai ellenére még ma is töretlen népszerűségnek örvend és talán az egyik
+legjobb legjobb \texttt{C++} alkalmazás keretrendszer a piacon. Ezt bizonyítja,
+hogy több, napjainkban is népszerű és széles körben elterjedt alkalmazás is a
+Qt keretrendszerre épül. Ilyenek például a Skype, a Google Earth, a VirtualBox,
+a VLC média lejátszó és a Spotify is.
 
 \subsection{Qt Modulok}
-Qt 5.0 óta moduláris felépítés \dots
+Qt 4 óta moduláris felépítés \dots
 \begin{itemize}
     \item bináris kompatibilitás
     \item csak azokat a modulokat linkeljük az alkalmazáshoz, amire szükség van
-    \item essentials and add-ons
-    \item Git hogyan tükrözi a modularizációt?
+    \item Qt 5: essentials and add-ons
+    \item Qt 5: Git hogyan tükrözi a modularizációt?
 \end{itemize}
 
 \subsection{Qt GUI}
@@ -1075,6 +1087,10 @@ GUI fejlesztésre 2 API: a ``hagyományos'' Widget és a ``modern'' Quick \dots
     \bibitem{bib-qt-doc-webengine-overview}
         Qt Documentation: Qt WebEngine Overview \\
         \url{http://doc.qt.io/qt-5/qtwebengine-overview.html}
+
+    \bibitem{bib-qt-about-us}
+        The Qt Company: About Us \\
+        \url{http://www.qt.io/about-us}
 
 \end{thebibliography}
 
