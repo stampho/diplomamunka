@@ -636,12 +636,33 @@ Qt keretrendszerre épül. Ilyenek például a Skype, a Google Earth, a VirtualB
 a VLC média lejátszó és a Spotify is.
 
 \subsection{Qt Modulok}
-Qt 4 óta moduláris felépítés \dots
+A 4-es Qt verzióban megtörtént az első lépés a modularizáció felé: minden modulnak külön
+library-ként jelenik meg ahelyett, hogy egy nagy közös library-je lenne a Qt-nak.
+Ennek előnye, hogy a fejlesztőnek nem kell olyan modulokat az alkalmazásához linkelnie,
+amit nem is használ.
+
+Az 5-ös Qt verzióban kiterjesztették a modularizációt a projekt struktúrájára is. A projekt
+többé nem egy nagy közös repository, hanem több önálló repository-ból áll össze, melyeket
+a modulok szerint választottak el. Ennek előnye, hogy egyes modulok külön is release-elhetőek
+(egyes modulok gyorsabban fejlődnek, mások nem), a tesztelés és buildelés rugalmasabb és
+gyorsabb lett, hiszen nem kell mindig a teljes rendszert tesztelni vagy buildelni.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[scale=0.6]{qt_repos_and_modules}
+    \caption{
+        \label{fig-qt-repos-and-modules}
+        Qt repository-k és modulok
+    }
+\end{figure}
+
+Természetesen a modulok között függőségek is vannak. \dots
+
 \begin{itemize}
-    \item bináris kompatibilitás
-    \item csak azokat a modulokat linkeljük az alkalmazáshoz, amire szükség van
+    \item qtcore-tól minden függ -> qtbase minden projekt/komponens függősége
+    \item függőségek hol/hogyan vannak definiálva?
+    \item bináris kompatibilitás?
     \item Qt 5: essentials and add-ons
-    \item Qt 5: Git hogyan tükrözi a modularizációt?
 \end{itemize}
 
 \subsection{Qt GUI}
@@ -657,17 +678,19 @@ GUI fejlesztésre 2 API: a ``hagyományos'' Widget és a ``modern'' Quick \dots
 \subsubsection{Quick}
 \begin{itemize}
     \item QtQuick2 OpenGL nélkül nem megy
-    \item Library: Quick
-    \item Declarative language: QML
+    \item Library: Quick - Qt UI Creation Kit
+    \item Declarative language: QML - Qt Modeling Language
+    \item Fluid UI
     \item Logika: JavaScript
     \item QML-t is JavaScript engine dolgozza fel, jelenleg: v4
 \end{itemize}
 
 \subsection{Qt Web}
 \begin{itemize}
-    \item QtWebKit
     \item QtWebView (natív WebView, Android)
     \item QWebChannel
+    \item QtWebSockets
+    \item QtWebKit
     \item QtWebEngine
     \item etc.
 \end{itemize}
@@ -746,13 +769,12 @@ GUI fejlesztésre 2 API: a ``hagyományos'' Widget és a ``modern'' Quick \dots
 \end{itemize}
 
 \subsection{Felépítés}
-%\begin{figure}[h]
 \begin{figure}[ht]
     \centering
     \includegraphics[scale=0.75]{qtwebengine_architecture}
     \caption{
         \label{fig-qtwebengine-architecture}
-        Qt WebEngine Architecture (forrás: \url{http://doc.qt.io/}
+        QtWebEngine Architecture (forrás: \url{http://doc.qt.io/}
         \cite{bib-qt-doc-webengine-overview})
     }
 \end{figure}
