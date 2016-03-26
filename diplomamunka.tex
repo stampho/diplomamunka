@@ -14,6 +14,8 @@
 \usepackage{graphicx}
 \graphicspath{{figures/}}
 
+\usepackage[bottom,hang,flushmargin]{footmisc}
+
 \usepackage{enumitem}
 \usepackage{fancyhdr}
 \usepackage{hyperref}
@@ -699,15 +701,6 @@ a komponensek közötti függőséget külön jelezni kell. Erre a ``felhasznál
     );
 \end{verbatim}
 
-\begin{figure}[h]
-    \centering
-    \includegraphics[scale=.66]{qtwebengine-dependencies}
-    \caption{
-        \label{fig:qtwebengine-dependencies}
-        QtWebEngine függőségei
-    }
-\end{figure}
-
 \noindent
 Ebben az esetben, a komponensre, mint a modult tároló repository-ra kell
 gondolni\footnote{Tovább bonyolítja a helyzetet, hogy sok esetben a komponenseket is
@@ -718,6 +711,14 @@ még explicit meg kell adni.
 Az \ref{fig:qtwebengine-dependencies} ábra mutatja, hogy a fenti \texttt{sync.profile} script
 alapján a QtWebEngine függőségei hogyan alakulnak.
 
+\begin{figure}[h]
+    \centering
+    \includegraphics[scale=.66]{qtwebengine-dependencies}
+    \caption{
+        \label{fig:qtwebengine-dependencies}
+        QtWebEngine függőségei
+    }
+\end{figure}
 
 \subsection{Qt GUI}
 \label{sec:qt-gui}
