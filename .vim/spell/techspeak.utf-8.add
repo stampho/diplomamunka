@@ -66,3 +66,11 @@ iOS
 QtGUI
 QtCore
 QtBase
+QtWidgets
+QScrollBar
+QButton
+QLabel
+QStyle
+QLayout
+QtQml
+QQuickItem

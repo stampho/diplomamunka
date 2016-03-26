@@ -617,7 +617,7 @@ Az 5-ös verzió másik újítása QtQuick2 volt. A QtQuick első verziója (QtQ
 \texttt{QGraphicsView}-ra épül, ami szoftveres renderelést használ a megjelenítéshez.
 Ez a megoldás lassú, ráadásul widget függősége is van. A QtQuick2 API-ja kompatibilis a
 QtQuick1-el, viszont teljesen újraírták. Nincs többé widget függőség mivel ezentúl a
-QtQuick2 a \texttt{QSceneGraph}-ra épül. Ez a scene graph Open GL ES 2.0-ra vagy
+QtQuick2 a saját Qt Quick Scene Graph-ot valósít meg. Ez a scene graph Open GL ES 2.0-ra vagy
 Open GL 2.0-ra épül, így a renderelés a GPU-n történik. Ez a megoldás sokkal gyorsabb,
 viszont nem működik olyan platformokon ahol nincs OpenGL 2.0.
 
@@ -722,29 +722,89 @@ alapján a QtWebEngine függőségei hogyan alakulnak.
 
 \subsection{Qt GUI}
 \label{sec:qt-gui}
-\begin{itemize}
-    \item GUI fejlesztésre 2 API: a ``hagyományos'' Widget és a ``modern'' Quick \dots
-    \item 2D: raster
-    \item OpenGL integration
-    \item QT -= gui
-\end{itemize}
+A Qt keretrendszer grafikus felhasználói felületek (GUI) megvalósítására gazdag
+eszközkészletet kínál a fejlesztők számára. A QtGUI modul az, amely alacsony szintű API-t
+nyújt 2D (rasztergrafika) és 3D (OpenGL API) rajzoláshoz, esemény kezeléshez, képek és
+szövegek megjelenítéséhez. A Qt build rendszere automatikusan linkeli ezt a modult az
+alkalmazásunkhoz, feltételezvén azt, hogy az úgy is rendelkezik GUI-val. Ha ez nem így
+lenne, a QtGUI modul letiltható ha a következő sort adjuk GUI nélküli alkalmazás
+projekt file-jához:
+\begin{verbatim}
+    QT -= gui
+\end{verbatim}
+
+Egy grafikus felület megvalósításához nem érdemes csak a QtGUI modult használni. A Qt nyújt
+magasabb szintű, QtGUI-ra épülő API-kat is. Jelenleg két egymástól eltérő megközelítés
+elérhető: a \textbf{Widget} és a \textbf{Quick}.
+\cite{bib:qt-doc-qt-gui, bib:qt-doc-user-interfaces}
 
 \subsubsection{Widget}
-\begin{itemize}
-    \item widget elemek
-    \item layoutok
-    \item Alkalmazás: designer
-\end{itemize}
+A widget API-n keresztül a ``klasszikus'' felhasználói felületeket lehet megvalósítani,
+melyeknek megjelenítéséhez a Qt a futtató operációs rendszer stílusát adja\footnote{
+\textit{native look'n'feel}}. A widget-ek jellemzően olyan statikus GUI elemek, amelyek
+általában desktop-on használt alkalmazások használnak. Megjeleníthetnek vagy tárolhatnak
+információt és/vagy felhasználói eseményeket kezelhetnek. Például: gomb (\texttt{QButton}),
+címke (\texttt{QLabel}), görgetősáv (\texttt{QScrollBar}), stb. Az a widget, aminek nincs
+szülője, az ablak.
+\cite{bib:qt-doc-qt-widgets}
+
+A Qt beépített widget-jei a \textbf{QtWidgets} modulból elérhetőek, de saját widget-ek is
+készíthetőek. A widget-ek tartalmát a \texttt{QGraphicsView} jeleníti meg. A rajzolás
+szoftveresen történik, nincs hardveres gyorsítás.
+
+A QtWidgets modul a widget-eken túl még tartalmaz API-t a widget-ek megjelenítésének
+testreszabásához (\texttt{QStyle}) és beépített stílusokat is natív megjelenéshez különböző
+platformokon. A widget-ek elrendezésére a beépített \texttt{QLayout} osztályok használhatóak.
+
+A widget alapú GUI-t első sorban \texttt{C++} API-n keresztül lehet felépíteni, de a Qt
+keretrendszer tartalmaz egy Qt Designer elnevezésű eszközt is, aminek segítségével,
+akár programozási ismeret nélkül össze lehet állítani a GUI-t. A Qt Designer a widget-eket
+fába rendezi és XML formátumban tárolja egy \texttt{.ui} kiterjesztésű file-ban. Az XML
+file-ból a User Interface Compiler (uic) generál buildelhető \texttt{C++} forrás állományt.
 
 \subsubsection{Quick}
-\begin{itemize}
-    \item QtQuick2 OpenGL nélkül nem megy
-    \item Library: Quick - Qt UI Creation Kit
-    \item Declarative language: QML - Qt Modeling Language
-    \item Fluid UI
-    \item Logika: JavaScript
-    \item QML-t is JavaScript engine dolgozza fel, jelenleg: v4
-\end{itemize}
+Az új Quick technológia segítségével modern megjelenésű, dinamikus elemekből felépített,
+``fluid'' GUI-t lehet összeállítani. Megvalósítás ``deklaratív módszerrel'' történik, ami
+magasabb szintű, mint a widget API esetében használatos imperatív paradigma: nem azt kell
+leprogramozni, hogyan legyen megjelenítve a GUI, hanem azt, hogy hogyan nézzen ki
+(mint például a HTML esetében). A technológia használatához alapvetően 2 modulra van
+szükség: \textbf{QtQml}-re és a \textbf{QtQuick}-re.
+
+A Qt egy saját nyelvet nyújt a deklaratív programozáshoz és ez \texttt{QML} (Qt Modeling
+Language). Ez a nyelv a \textbf{QtQml} modulon keresztül válik elérhetővé.
+A modul rendelkezik \texttt{C++} és \texttt{QML} API-val is, hogy \texttt{QML} nyelv saját
+típusokkal és  funkciókkal bővíthető legyen.
+A Quick GUI akár ezen a \texttt{C++} API-n keresztül is megvalósítható, de erre a célra
+sokkal inkább a \texttt{QML} nyelv használata ajánlott.
+A \texttt{QML} nyelv ``JSON-szerű'' szintaxison keresztül írja a UI komponensek
+hierarchiáját és kapcsolatait. A \texttt{QML} programot egy külön erre a célra fejlesztett
+\texttt{JavaScript} motor dolgozza fel, a \textit{v4}. Ezáltal lehetővé válik, hogy a
+UI kódja akár futásidőben is dinamikusan változtatható legyen. \texttt{JavaScript}
+kód szabadon hozzáadható a \texttt{QML} forráshoz, így akár logikát is meg lehet valósítani a
+\texttt{QML} programon belül. \texttt{JavaScript} használatánál érdemes csak az
+eseménykezelésre szorítkozni és a többi vezérlést a QtQml \texttt{C++} API-ján keresztül
+\texttt{C++} nyelven megvalósítani.
+\cite{bib:qt-doc-qt-qml}
+
+Habár a QtQml modul rendelkezésünkre bocsájtja a \texttt{QML} deklaratív nyelvet, az még
+nem rendelkezik olyan elemekkel, amelyekből össze lehetne állítani egy GUI-t. Ezeket a
+GUI elemeket \textbf{QtQuick} és a \textbf{QtQuickControls} modulok szolgálgatják.
+Majdnem minden elem megtalálható, ami widget API-ban, sőt még több is. További lehetőség
+nyílik a felület elemeinek meganimálására QtQuick API-n keresztül.
+A QtQuick \texttt{C++} API-ját használva pedig saját \texttt{QQuickItem}-ek hozhatóak létre,
+melyek a QtQml API-ján keresztül beregisztrálhatóak a \texttt{QML} nyelvbe.
+\cite{bib:qt-doc-qt-quick}
+
+A QtQuick modul felel a Quick GUI elemek megjelenítéséért, kirajzolásáért.
+Korábban (QtQuick1) ez ugyanúgy történt, mint a widget esetén, az elemek a \\
+\texttt{QGraphicsView}-ra voltak kirajzolva. Ez a megoldás lassú, különösen, ha egy folyton
+változó dinamikus felhasználói felületről beszélünk. A jelenleg is használt QtQuick verzióban
+(QtQuick2) megjelent a Qt Quick Scene Graph. A Qt Quick Scene Graph a QtQuick modul része,
+ezért nem használható önállóan, viszont a modul nyújt hozzá API-t. A scene graph a UI
+elemeiből épített fa struktúra, amelyet aztán a modul OpenGL ES 2.0 vagy OpenGL 2.0
+API-n keresztül megjelenít. Emiatt a Quick technológia nem használható olyan platformokon,
+ahol nem érhető el legalább az OpenGL 2.0 API.
+\cite{bib:qt-doc-qt-quick-scene-graph}
 
 \subsection{Qt Web}
 \begin{itemize}
@@ -1166,6 +1226,32 @@ alapján a QtWebEngine függőségei hogyan alakulnak.
     \bibitem{bib:qt-doc-qtmodules}
         Qt Documentation: All Modules \\
         \url{http://doc.qt.io/qt-5/qtmodules.html}
+
+    \bibitem{bib:qt-doc-qt-gui}
+        Qt Documentation: Qt GUI \\
+        \url{http://doc.qt.io/qt-5/qtgui-index.html}
+
+    \bibitem{bib:qt-doc-user-interfaces}
+        Qt Documentation: User Interfaces \\
+        \url{http://doc.qt.io/qt-5/topics-ui.html}
+
+    \bibitem{bib:qt-doc-qt-widgets}
+        Qt Documentation: Qt Widgets \\
+        \url{http://doc.qt.io/qt-5/qtwidgets-index.html}
+
+    \bibitem{bib:qt-doc-qt-qml}
+        Qt Documentation: Qt QML \\
+        \url{http://doc.qt.io/qt-5/qtqml-index.html}
+
+    \bibitem{bib:qt-doc-qt-quick}
+        Qt Documentation: Qt Quick \\
+        \url{http://doc.qt.io/qt-5/qtquick-index.html}
+
+    \bibitem{bib:qt-doc-qt-quick-scene-graph}
+        Qt Documentation: Qt Quick Scene Graph \\
+        \href{http://doc.qt.io/qt-5/qtquick-visualcanvas-scenegraph.html}
+        {http://doc.qt.io/qt-5/\\
+        qtquick-visualcanvas-scenegraph.html}
 
 \end{thebibliography}
 
