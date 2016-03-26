@@ -13,8 +13,9 @@
 
 \usepackage{enumitem}
 \usepackage{fancyhdr}
-\usepackage{hyperref}
 \usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{verbatim}
 \usepackage{xcolor}
 
 % Margins
@@ -63,7 +64,7 @@
 
 \hyphenation{QtWebEngine QtWebKit WebKit Chromium Content Apple Google Quick Widget}
 
-\def\title{A QtWebEngine modul bővítése és bemutatása saját böngészőalkalmazás segítségével}
+\def\title{A QtWebEngine bővítése és bemutatása saját böngészőalkalmazás segítségével}
 
 \begin{document}
 
@@ -126,8 +127,8 @@
 \addcontentsline{toc}{section}{Feladatkiírás}
 
 \noindent
-A QtWebEngine modul bővítése úgy, hogy a QtWebKit modult használó fejlesztők \\
-könnyen portolhassák a projektjüket QtWebEngine-re.
+A QtWebEngine bővítése úgy, hogy a QtWebKit-et használó fejlesztők könnyen portolhassák
+a projektjüket QtWebEngine-re.
 Továbbá, olyan új funkciók megvalósítása is fontos, amelyek hozzásegítik a
 QtWebEngine-t, hogy lépést tartson a fejlődő web technológiákkal (pl. HTML5).
 Az újonnan implementált funkciókat tesztelni kell.
@@ -166,7 +167,7 @@ A fejlesztés során az alábbi szempontokat kell figyelembe venni:
     \item \textbf{A téma megnevezése:} \\
         \title
     \item \textbf{A megadott feladat megfogalmazása:} \\
-        A QtWebEngine modul bővítése új funkciókkal és azok tesztelése a
+        A QtWebEngine bővítése új funkciókkal és azok tesztelése a
         Qt teszt keretrendszerének segítségével. Az új funkciók bemutatása
         egy saját böngészőalkalmazás megvalósításával.
     \item \textbf{A megoldási mód:} \\
@@ -200,10 +201,10 @@ A fejlesztés során az alábbi szempontokat kell figyelembe venni:
 A QtWebEngine-t 2013-ban kezdték el fejleszteni a Qt fejlesztői kísérleti jelleggel
 a WebKit--Chromium szétválás után. A szétválás előtt a Qt fejlesztői csapata volt a harmadik
 legtermékenyebb contributor-a (hozzájárulója) a WebKit kód bázisnak, az Apple és a
-Google után. A kérdés adott volt: megtartsa e a Qt jól bevált QtWebKit modulját és maradjon
-az Apple szárnysegédje, vagy beálljon az új lehetőségeket és irányt mutató Google mögé
-azáltal, hogy az ő web platformjára épít egy új modult. Végül az utóbbi mellett döntöttek,
-a QtWebKit projektet parkolópályára helyezték és a QtWebEngine éles lett.
+Google után. A kérdés adott volt: megtartsa e a Qt jól bevált QtWebKit komponensét és
+maradjon az Apple szárnysegédje, vagy beálljon az új lehetőségeket és irányt mutató Google
+mögé azáltal, hogy az ő web platformjára épít egy új API-t. Végül az utóbbi mellett
+döntöttek, a QtWebKit projektet parkolópályára helyezték és a QtWebEngine éles lett.
 \cite{bib-qt-blog-introducing-qtwebengine}
 
 2014 elején kapcsolódtam be a projektbe és azóta is részmunkaidőben veszek részt a
@@ -525,9 +526,9 @@ A legfelső réteg a Chrome, helyére a saját beépítő alkalmazás kerül.
 
 \subsection{Chromium Release}
 Egy Chromium release verzió száma 4 részből tevődik össze:
-\begin{center}
-    \texttt{MAJOR.MINOR.BUILD.PATCH}
-\end{center}
+\begin{verbatim}
+    MAJOR.MINOR.BUILD.PATCH
+\end{verbatim}
 A dolgozatomban a fő verzió számra (\texttt{MAJOR}) hivatkozok.
 A Chromium közösség előre tervezett menetrend szerint 1-1.5 havonta vált fő
 verziószámot. Dolgozatom készítése idején az 51-es verziójú volt a legfrissebb stabil kiadás.
@@ -600,10 +601,10 @@ teljesen kompatibilis maradt. Az igazán fontos változás a Qt kód struktúrá
 A 4-es verzióban a kódot már modulokra bontották, hogy a Qt-s alkalmazások méretét
 csökkentsék azzal, hogy a nem használt modult (gyakorlatilag library-t) nem linkelik
 az alkalmazáshoz. Az 5-ös verzióban a fejlesztők tovább mentek: a keretrendszert több,
-kisebb modulra bontották és az összetartozó modulokat közös repository-ba rakták. Ezzel
-megszűnt a 4-es verzió ``egy-repositorys'' modellje és így a modulok egymástól függetlenül
-is kiadhatóvá, verziózhatóvá váltak.
-A module repository-jait a \texttt{qt5} top-level repository köti össze.
+kisebb modulra bontották és az összetartozó modulokat közös repository-ba rakták
+(komponensek). Ezzel megszűnt a 4-es verzió ``egy-repositorys'' modellje és így a
+modulok/komponensek egymástól függetlenül is kiadhatóvá, verziózhatóvá váltak.
+Az új repository-kat a \texttt{qt5} top-level repository köti össze.
 Ez hivatkozásokat (git submodule) tartalmaz a modulok repository-jaira, itt találhatóak meg a
 build-hez szükséges scriptek egy része és más build-hez szükséges platform specifikus fájlok
 (QPA plugin-ok, mkspecs, stb.) is.
@@ -618,7 +619,7 @@ viszont nem működik olyan platformokon ahol nincs OpenGL 2.0.
 
 2013-ban a Qt fejlesztői úgy döntenek szakítanak a WebKit-el és, hogy böngésző motor
 API-jukat ezentúl a Chromium felé építik. \cite{bib-qt-blog-introducing-qtwebengine}
-Az új modult QtWebEngine-nek hívják és 5.4-es verzióban jelent meg először.
+Az új komponenst QtWebEngine-nek hívják és 5.4-es verzióban jelent meg először.
 \cite{bib-qt-wiki-qt-history}
 
 \subsubsection{2014-napjainkig}
@@ -635,7 +636,7 @@ hogy több, napjainkban is népszerű és széles körben elterjedt alkalmazás 
 Qt keretrendszerre épül. Ilyenek például a Skype, a Google Earth, a VirtualBox,
 a VLC média lejátszó és a Spotify is.
 
-\subsection{Qt Modulok}
+\subsection{Qt Modulok és Komponensek}
 A 4-es Qt verzióban megtörtént az első lépés a modularizáció felé: minden modulnak külön
 library-ként jelenik meg ahelyett, hogy egy nagy közös library-je lenne a Qt-nak.
 Ennek előnye, hogy a fejlesztőnek nem kell olyan modulokat az alkalmazásához linkelnie,
@@ -649,24 +650,81 @@ gyorsabb lett, hiszen nem kell mindig a teljes rendszert tesztelni vagy buildeln
 
 \begin{figure}[h]
     \centering
-    \includegraphics[scale=0.6]{qt_repos_and_modules}
+    \includegraphics[scale=.66]{qt_repos_and_modules}
     \caption{
         \label{fig-qt-repos-and-modules}
         Qt repository-k és modulok
     }
 \end{figure}
 
-Természetesen a modulok között függőségek is vannak. \dots
+Továbbá, Qt 5 óta a modulokat két kategóriába sorolják: \textbf{Qt Essentials} és
+\textbf{Qt Add-Ons}. A Qt Essentials-ba tartoznak azok a modulok, amelyek működnek az
+összes támogatott platform-on és a legtöbb Qt alkalmazás használja is őket. Ezeknek a
+moduloknak az API-ja az 5-ös verzión belül visszafele kompatibilis marad.
+A Qt Add-on modulok nem általános célú, "opcionális" modulok. Vannak köztük olyanok,
+amelyek nem használhatóak bizonyos Qt által támogatott platformokon vagy olyanok, amelyek
+hamarosan eltávolításra kerülnek a Qt keretrendszerből, csak kompatibilitási okokból vannak
+még bent (pl. QtScript). A QtWebEngine moduljai is Qt Add-On kategóriába vannak sorolva,
+hiszen a legtöbb alkalmazásnak nincs szüksége böngésző funkciókra. API kompatibilitás
+szabályait minden Add-On modul saját magának határozza meg.
+\cite{bib-qt-doc-qtmodules}
 
-\begin{itemize}
-    \item qtcore-tól minden függ -> qtbase minden projekt/komponens függősége
-    \item függőségek hol/hogyan vannak definiálva?
-    \item bináris kompatibilitás?
-    \item Qt 5: essentials and add-ons
-\end{itemize}
+Ha egy Qt-s alkalmazás használ egy Qt modult, akkor azt annak a projekt file-jában
+(\texttt{.pro}) meg kell adni:
+\begin{verbatim}
+    QT += network widgets qml quick
+\end{verbatim}
+Ez alól kivétel a \texttt{QtCore} és a \texttt{QtGUI} modul. A \texttt{QtCore} modult
+minden Qt-s alkalmazás használja, ezért azt a Qt build rendszere implicit linkeli.
+Ebben a modulban vannak megvalósítva a Qt típusok és adatszerkezetek, a Qt specifikus nyelvi
+elemek és makrók (pl.: \texttt{Q\_OBJECT}, \texttt{signals}, \texttt{slots}),
+smart pointerek, stb. A \texttt{QtGUI} modulra a grafikus felhasználói felület
+megvalósításához van szükség, de nem kötelező használni (explicit le lehet tiltani).
+A \texttt{QtGUI} modulról bővebben a \ref{sec-qt-gui} fejezetben lesz szó.
+
+Ahogy a Qt-s alkalmazások, használnak egy Qt-s modult, úgy a Qt-s modulok is használják
+egymást. Az alkalmazáséhoz hasonlóan a modul projekt file-jában is meg kell adni a
+függőséget. Továbbá, ha egy komponens modulja használja egy másik komponens modulját, akkor
+a komponensek közötti függőséget külön jelezni kell. Erre a ``felhasználó'' komponens
+\texttt{sync.profile} script-jében van lehetőség:
+\begin{verbatim}
+    %dependencies = (
+        "qtbase" => "",
+        "qtdeclarative" => "",
+        "qtxmlpatterns" => "",
+        "qtquickcontrols" => "",
+        "qtwebchannel" => "",
+    );
+\end{verbatim}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[scale=.66]{qtwebengine_dependencies}
+    \caption{
+        \label{fig-qtwebengine-dependencies}
+        QtWebEngine függőségei
+    }
+\end{figure}
+
+\noindent
+Ebben az esetben, a komponensre, mint a modult tároló repository-ra kell
+gondolni\footnote{Tovább bonyolítja a helyzetet, hogy sok esetben a komponenseket is
+``modul'' elnevezéssel illetjük. Például: ``a QtWebEngine modul függősége a QtBase modul''},
+ezért, ha a \texttt{QtCore} modul minden más modul függősége, értelemszerűen az őt tartalmazó
+\texttt{QtBase} komponens minden más komponens függősége is lesz, amit ezen a szinten
+még explicit meg kell adni.
+Az \ref{fig-qtwebengine-dependencies} ábra mutatja, hogy a fenti \texttt{sync.profile} script
+alapján a QtWebEngine függőségei hogyan alakulnak.
+
 
 \subsection{Qt GUI}
-GUI fejlesztésre 2 API: a ``hagyományos'' Widget és a ``modern'' Quick \dots
+\label{sec-qt-gui}
+\begin{itemize}
+    \item GUI fejlesztésre 2 API: a ``hagyományos'' Widget és a ``modern'' Quick \dots
+    \item 2D: raster
+    \item OpenGL integration
+    \item QT -= gui
+\end{itemize}
 
 \subsubsection{Widget}
 \begin{itemize}
@@ -769,6 +827,7 @@ GUI fejlesztésre 2 API: a ``hagyományos'' Widget és a ``modern'' Quick \dots
 \end{itemize}
 
 \subsection{Felépítés}
+%\begin{figure}[h]
 \begin{figure}[ht]
     \centering
     \includegraphics[scale=0.75]{qtwebengine_architecture}
@@ -1100,6 +1159,10 @@ GUI fejlesztésre 2 API: a ``hagyományos'' Widget és a ``modern'' Quick \dots
     \bibitem{bib-qt-about-us}
         The Qt Company: About Us \\
         \url{http://www.qt.io/about-us}
+
+    \bibitem{bib-qt-doc-qtmodules}
+        Qt Documentation: All Modules \\
+        \url{http://doc.qt.io/qt-5/qtmodules.html}
 
 \end{thebibliography}
 
