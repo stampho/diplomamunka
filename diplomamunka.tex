@@ -11,9 +11,11 @@
 \usepackage{amssymb}
 \usepackage{amsthm}
 
+\usepackage{graphicx}
+\graphicspath{{figures/}}
+
 \usepackage{enumitem}
 \usepackage{fancyhdr}
-\usepackage{graphicx}
 \usepackage{hyperref}
 \usepackage{verbatim}
 \usepackage{xcolor}
@@ -205,7 +207,7 @@ Google után. A kérdés adott volt: megtartsa e a Qt jól bevált QtWebKit komp
 maradjon az Apple szárnysegédje, vagy beálljon az új lehetőségeket és irányt mutató Google
 mögé azáltal, hogy az ő web platformjára épít egy új API-t. Végül az utóbbi mellett
 döntöttek, a QtWebKit projektet parkolópályára helyezték és a QtWebEngine éles lett.
-\cite{bib-qt-blog-introducing-qtwebengine}
+\cite{bib:qt-blog-introducing-qtwebengine}
 
 2014 elején kapcsolódtam be a projektbe és azóta is részmunkaidőben veszek részt a
 fejlesztésekben. Az azóta eltelt több, mint 2 év alatt sokat tanultam a Qt-ról,
@@ -241,14 +243,14 @@ része \texttt{C++} nyelven íródott. Támogatja napjaink legnépszerűbb oper�
 QNX).
 A Chromium nem egy böngésző alkalmazás, hanem egy tabokat használó ablakkezelő (vagy shell)
 a web-hez.
-\cite{bib-wiki-chromium}
+\cite{bib:wiki-chromium}
 
 \subsection{Chrome}
 A Google saját Chromium-ra épülő böngésző alkalmazása a Google Chrome.
 Ez az alkalmazás Chromium-mal szemben nem nyílt forrású, viszont a böngésző
 megvalósításának nagy része a Chromium projektben megtalálható.
 A Chrome nem nyílt részei például a beépített Adobe Flash Player (Pepper Flash Player)
-és az automatikus frissítésekért felelős komponens (GoogleUpdate). \cite{bib-wiki-chrome}
+és az automatikus frissítésekért felelős komponens (GoogleUpdate). \cite{bib:wiki-chrome}
 Egy másik, szintén népszerű Chromium-ra épülő böngésző alkalmazás az Opera.
 
 \subsection{Blink}
@@ -257,7 +259,7 @@ A böngésző motor elsődleges feladata a webes tartalom megjelenítése a kép
 ebből is látszik, hogy a Blink talán a legfontosabb komponense a Chromium-nak.
 A Chromium a 28-es verzió előtt WebKit-et használt, a Google ezt a projektet forkolta és
 nevezte el Blink-nek. Pontosabban, annak csak egy részét, név szerint a WebCore-t.
-\cite{bib-wiki-blink}
+\cite{bib:wiki-blink}
 
 A Blink nem tartalmazza a WebKit-ben alkalmazott multi-processz architektúrát és sandbox
 megoldást, ezek a feladatok a Chromium más szintjein vannak megvalósítva, így egyszerűbbé
@@ -267,7 +269,7 @@ bele, hiszen a Chromium-nak van sajátja, a V8. Ezektől eltekintve a Blink még
 hasonlít a WebCore-ra/WebKit-re. A Chromium forrásában és könyvtár struktúrájában továbbra is
 ``WebKit'' néven hivatkoznak erre a komponensre\footnote{Például, a Blink forrása a
 \texttt{third\_party/WebKit} könyvtárban található a Chromium repository-n belül}.
-\cite{bib-chromium-displays-web-pages, bib-chromium-blink}
+\cite{bib:chromium-displays-web-pages, bib:chromium-blink}
 
 A Blink az a komponens, ami a weboldal tartalmát feldolgozza és előkészíti megjelenítésre.
 Az oldal tartalmát először parse-olja és a HTML elemekből \texttt{Node} objektumokat gyárt.
@@ -283,15 +285,15 @@ ami pedig a \texttt{RenderLayer Tree}.
 
 \begin{figure}[h]
     \centering
-    \includegraphics[scale=0.46]{rendering_trees}
+    \includegraphics[scale=0.46]{rendering-trees}
     \caption{
-        \label{fig-rendering-trees}
-        Rendering Trees (forrás: \url{https://www.chromium.org} \cite{bib-chromium-oopifs})
+        \label{fig:rendering-trees}
+        Rendering Trees (forrás: \url{https://www.chromium.org} \cite{bib:chromium-oopifs})
     }
 \end{figure}
 
 \noindent
-Az \ref{fig-rendering-trees} ábra szemlélteti, hogyan is állnak össze ezek a struktúrák.
+Az \ref{fig:rendering-trees} ábra szemlélteti, hogyan is állnak össze ezek a struktúrák.
 A \texttt{DOM Tree} és a \texttt{Render Tree} szinte azonos, annyi különbséggel, hogy
 a \texttt{Render Tree} csak a megjeleníthető \texttt{Node}-okat tartalmazza.
 A \texttt{RenderLayer Tree} a \texttt{Render Tree} egy lecsupaszított változata, amit a
@@ -312,7 +314,7 @@ esetben, a \texttt{RenderObject} nem bitmap-be ``rajzolja bele magát'', hanem 3
 keresztül (OpenGL vagy Windows-on esetleg D3D) utasításokat küld közvetlenül a GPU
 utasítás pufferébe (command buffer) végrehajtásra. Ezt az eljárást már a
 Chrome Compositor (CC) végzi.
-\cite{bib-chromium-gpu, bib-chromium-oopifs}
+\cite{bib:chromium-gpu, bib:chromium-oopifs}
 
 \subsection{Chrome Compositor (CC)}
 A Chrome Compositor már nem része a Blink-nek (ahogy a Skia sem). Ennek az az oka,
@@ -329,24 +331,24 @@ textúrák a GPU memóriájában vannak tárolva és úgy nevezett texture mailb
 azonosítják. A texture mailbox egy OpenGL extension kiterjesztés, ami egyedi és globális
 string azonosítót rendel a textúrához és lehetővé teszi, hogy más OpenGL context-en
 is elérhető legyen a textúra, ami normális esetben nem lenne megosztva.
-\cite{bib-chromium-gpu, bib-chromium-oopifs}
+\cite{bib:chromium-gpu, bib:chromium-oopifs}
 
 A texture mailbox-nak hála az összeállított képet nem kell az IPC-n (Inter-Process
 Communication) keresztül megosztani a processzek között (mint a szoftveres rendering
 esetében), hanem a GPU memórián keresztül bármelyik processz hozzáférhet a textúrához, így
 elég csak a textúra azonosítót átküldeni IPC-n.
-\cite{bib-chromium-texture-mailbox}
+\cite{bib:chromium-texture-mailbox}
 
 \subsection{Multi-processz Architektúra}
 Chromium volt az egyik első olyan böngésző, ami úgy lett megtervezve, hogy több processzre
 legyen felosztva. A WebKit multi-processz architektúrára épülő API-ja (WebKit2) is a
-Chromium-ról vette a mintát. \cite{bib-webkit-webkit2}
+Chromium-ról vette a mintát. \cite{bib:webkit-webkit2}
 Ez az API a Blink-nek nem része, viszont a QtWebEngine elődjének, a QtWebKit-nek
 Quick API-ja a WebKit2-re épül.
 
 A multi-processz architektúrán alapuló böngésző alapgondolata az, hogy a böngészőalkalmazás
 UI-ért felelős része saját processzben fut, míg a weboldalak megjelenítésért más
-processzek felelnek. Ennek több előnye is van: \cite{bib-chromium-blog-multi-process}
+processzek felelnek. Ennek több előnye is van: \cite{bib:chromium-blog-multi-process}
 \begin{description}
     \item[Felhasználói élmény]
         Előfordulhat, hogy egy weboldalon futó script (vagy ``webalkalmazás'')
@@ -385,17 +387,17 @@ viszont nem tölt be vagy dolgoz fel web tartalmat.
 
 \subsubsection{Render Process}
 A renderelő motor egy nagyon összetett és bonyolult szoftver komponens. Szinte lehetetlen
-olyat implementálni, ami sosem hibázik és/vagy omlik össze. \cite{bib-chromium-multi-process}
+olyat implementálni, ami sosem hibázik és/vagy omlik össze. \cite{bib:chromium-multi-process}
 Ezért racionális döntés az egymástól független oldalak renderelését egymástól független
 processzekben végrehajtani. Amennyiben egy Render Process összeomlik, arról a
-Browser Process értesül és az oldal helyett az \ref{fig-sad-tab} ábrán látható,
+Browser Process értesül és az oldal helyett az \ref{fig:sad-tab} ábrán látható,
 úgynevezett, ``sad tab'' értesítést jeleníti meg.
 
 \begin{figure}[h]
     \centering
-    \includegraphics[scale=0.8]{sad_tab}
+    \includegraphics[scale=0.8]{sad-tab}
     \caption{
-        \label{fig-sad-tab}
+        \label{fig:sad-tab}
         Sad Tab
     }
 \end{figure}
@@ -427,7 +429,7 @@ Alapértelmezetten a \textit{Process-per-site-instance} modellt használja a bö
 ettől függetlenül előfordulhat, hogy több site is osztozik, ugyanazon a processzen.
 Erre vagy akkor van szükség amikor két site hivatkozik script-ből egymásra,
 vagy amikor a futó Render Proess-ek száma elér egy limitet.
-\cite{bib-chromium-process-models}
+\cite{bib:chromium-process-models}
 
 \subsubsection{Plugin Process}
 A pluginok okozzák a legtöbb problémát a böngésző stabilitásának szempontjából. A plugint
@@ -437,13 +439,13 @@ futtatni. A legtöbb plugin nem futhat sandbox-ban, mivel olyan
 képességekkel bővítik a böngészőt, amelyekhez szükség van hozzáférésre a rendszer
 erőforrásaihoz. Ezért a Render Process-en kívül szükség van egy újabb processz típusra is,
 amelyben a pluginok futhatnak.
-\cite{bib-chromium-plugins}
+\cite{bib:chromium-plugins}
 
 \subsubsection{GPU Process}
 A renderelés a Render Process-ben történik, viszont ez a processz sandbox-ban fut és ezért
 nem küldhet parancsokat GPU-nak. Hardveres gyorsítás esetén a compositing-ot és a rajzolást
 egy külön processzben kell végezni, ami nem sandbox-ban fut.
-\cite{bib-chromium-gpu} \\
+\cite{bib:chromium-gpu} \\
 A Chromium úgy is konfigurálható, hogy a GPU Process feladatát a Browser Process lássa el.
 
 \subsection{Chromium Content Module}
@@ -454,7 +456,7 @@ a hardveres GPU gyorsítás. Böngészőalkalmazás specifikus funkcionalitások
 Content Module-nak. Lényegében csak az van benne, ami a web tartalom
 megjelenítéséhez\footnote{\textit{content} = web tartalom} szükséges, azaz olyan kód,
 amit minden böngészőt integráló alkalmazásnak szüksége van.
-\cite{bib-chromium-content-module}
+\cite{bib:chromium-content-module}
 
 A modul célja, hogy az opcionális böngésző funkcionalitások (amire nem feltétlenül van
 szüksége a beágyazó alkalmazásnak (pl. Chrome) le legyenek választva, ezáltal
@@ -478,20 +480,20 @@ Ezeken kívül vannak olyan interfészek is, amelyeket a Content Module implemen
 (például, oldal betöltése: \texttt{LoadURLWithParams()} vagy az URL lekérdezése: \\
 \texttt{GetVisibleURL()}).
 Ezek az interfészek \textit{pure abstract} interfészek, mivel csak egy megvalósításuk lehet
-és az is a Content Module-on belül. \cite{bib-chromium-content-api}
+és az is a Content Module-on belül. \cite{bib:chromium-content-api}
 
 \subsubsection{Chromium Content Shell}
 \begin{figure}[h]
     \centering
-    \includegraphics[scale=0.5]{content_shell}
+    \includegraphics[scale=0.5]{content-shell}
     \caption{
-        \label{fig-content-shell}
+        \label{fig:content-shell}
         Content Shell
     }
 \end{figure}
 
 \noindent
-Az \ref{fig-content-shell} ábrán látható alkalmazás a Content Shell. Ez a lehető
+Az \ref{fig:content-shell} ábrán látható alkalmazás a Content Shell. Ez a lehető
 legegyszerűbb böngészőalkalmazás, ami a Content API-ra épül. Arra használják, hogy a
 Content Module-t és a Blink-et tesztelhessék, debuggolhassák anélkül, hogy egy teljes
 böngészőalkalmazást (pl. Chrome) le kellene fordítani.
@@ -509,17 +511,17 @@ Az eddigiek alapján a Chromium-ot 3 rétegre oszthatjuk fel:
         Ez a réteg valósítja meg a multi-processz architektúrát,
         felel a web platform funkciókért és a hardveres GPU gyorsításért.
 \end{description}
-A \ref{fig-chromium-architecture} ábra mutatja, hogyan is állnak össze a Chromium rétegei.
+A \ref{fig:chromium-architecture} ábra mutatja, hogyan is állnak össze a Chromium rétegei.
 Itt a Blink böngészőmotor még ``WebKit''-nek van jelölve.
 A legfelső réteg a Chrome, helyére a saját beépítő alkalmazás kerül.
 
 \begin{figure}[h]
     \centering
-    \includegraphics[scale=0.6]{chromium_architecture}
+    \includegraphics[scale=0.6]{chromium-architecture}
     \caption{
-        \label{fig-chromium-architecture}
+        \label{fig:chromium-architecture}
         Architectural Diagram
-        (forrás: \url{https://www.chromium.org} \cite{bib-chromium-content-module})
+        (forrás: \url{https://www.chromium.org} \cite{bib:chromium-content-module})
     }
 \end{figure}
 
@@ -542,7 +544,7 @@ operációs rendszerein. Ez a keretrendszer nyújt \texttt{C++} függvénykönyv
 binding-okat más programozási nyelvekhez (pl.: Python, Java), saját programozási nyelvet
 (\texttt{QML}), saját integrált fejlesztői környezetet (QtCreator), saját build rendszert
 (qmake) és kiterjesztéseket is a \texttt{C++} programozási nyelvhez (pl.: signal-slot model).
-\cite{bib-qt-wiki-about-qt}
+\cite{bib:qt-wiki-about-qt}
 
 \subsection{Qt Történelem}
 \subsubsection{1995-2000}
@@ -618,9 +620,9 @@ Open GL 2.0-ra épül, így a renderelés a GPU-n történik. Ez a megoldás sok
 viszont nem működik olyan platformokon ahol nincs OpenGL 2.0.
 
 2013-ban a Qt fejlesztői úgy döntenek szakítanak a WebKit-el és, hogy böngésző motor
-API-jukat ezentúl a Chromium felé építik. \cite{bib-qt-blog-introducing-qtwebengine}
+API-jukat ezentúl a Chromium felé építik. \cite{bib:qt-blog-introducing-qtwebengine}
 Az új komponenst QtWebEngine-nek hívják és 5.4-es verzióban jelent meg először.
-\cite{bib-qt-wiki-qt-history}
+\cite{bib:qt-wiki-qt-history}
 
 \subsubsection{2014-napjainkig}
 2014-ben a Qt részlege kivált a Digia-ból és létrejött a \textit{The Qt Company},
@@ -628,7 +630,7 @@ mint a Digia leányvállalata. A kiválás oka, hogy a Qt üzleti logikája és 
 Digia-étól, ezért másfajta vezetésre, fejlesztésre és befektetési tervre van szükség.
 Ez a folyamat még 2016-ban is tart és terv szerint 2016 májusában a The Qt Company megjelenik
 a tőzsdén is.
-\cite{bib-qt-about-us}
+\cite{bib:qt-about-us}
 
 A Qt hányattatásai ellenére még ma is töretlen népszerűségnek örvend és talán az egyik
 legjobb legjobb \texttt{C++} alkalmazás keretrendszer a piacon. Ezt bizonyítja,
@@ -650,9 +652,9 @@ gyorsabb lett, hiszen nem kell mindig a teljes rendszert tesztelni vagy buildeln
 
 \begin{figure}[h]
     \centering
-    \includegraphics[scale=.66]{qt_repos_and_modules}
+    \includegraphics[scale=.66]{qt-repos-and-modules}
     \caption{
-        \label{fig-qt-repos-and-modules}
+        \label{fig:qt-repos-and-modules}
         Qt repository-k és modulok
     }
 \end{figure}
@@ -667,7 +669,7 @@ hamarosan eltávolításra kerülnek a Qt keretrendszerből, csak kompatibilitá
 még bent (pl. QtScript). A QtWebEngine moduljai is Qt Add-On kategóriába vannak sorolva,
 hiszen a legtöbb alkalmazásnak nincs szüksége böngésző funkciókra. API kompatibilitás
 szabályait minden Add-On modul saját magának határozza meg.
-\cite{bib-qt-doc-qtmodules}
+\cite{bib:qt-doc-qtmodules}
 
 Ha egy Qt-s alkalmazás használ egy Qt modult, akkor azt annak a projekt file-jában
 (\texttt{.pro}) meg kell adni:
@@ -680,7 +682,7 @@ Ebben a modulban vannak megvalósítva a Qt típusok és adatszerkezetek, a Qt s
 elemek és makrók (pl.: \texttt{Q\_OBJECT}, \texttt{signals}, \texttt{slots}),
 smart pointerek, stb. A \texttt{QtGUI} modulra a grafikus felhasználói felület
 megvalósításához van szükség, de nem kötelező használni (explicit le lehet tiltani).
-A \texttt{QtGUI} modulról bővebben a \ref{sec-qt-gui} fejezetben lesz szó.
+A \texttt{QtGUI} modulról bővebben a \ref{sec:qt-gui} fejezetben lesz szó.
 
 Ahogy a Qt-s alkalmazások, használnak egy Qt-s modult, úgy a Qt-s modulok is használják
 egymást. Az alkalmazáséhoz hasonlóan a modul projekt file-jában is meg kell adni a
@@ -699,9 +701,9 @@ a komponensek közötti függőséget külön jelezni kell. Erre a ``felhasznál
 
 \begin{figure}[h]
     \centering
-    \includegraphics[scale=.66]{qtwebengine_dependencies}
+    \includegraphics[scale=.66]{qtwebengine-dependencies}
     \caption{
-        \label{fig-qtwebengine-dependencies}
+        \label{fig:qtwebengine-dependencies}
         QtWebEngine függőségei
     }
 \end{figure}
@@ -713,12 +715,12 @@ gondolni\footnote{Tovább bonyolítja a helyzetet, hogy sok esetben a komponense
 ezért, ha a \texttt{QtCore} modul minden más modul függősége, értelemszerűen az őt tartalmazó
 \texttt{QtBase} komponens minden más komponens függősége is lesz, amit ezen a szinten
 még explicit meg kell adni.
-Az \ref{fig-qtwebengine-dependencies} ábra mutatja, hogy a fenti \texttt{sync.profile} script
+Az \ref{fig:qtwebengine-dependencies} ábra mutatja, hogy a fenti \texttt{sync.profile} script
 alapján a QtWebEngine függőségei hogyan alakulnak.
 
 
 \subsection{Qt GUI}
-\label{sec-qt-gui}
+\label{sec:qt-gui}
 \begin{itemize}
     \item GUI fejlesztésre 2 API: a ``hagyományos'' Widget és a ``modern'' Quick \dots
     \item 2D: raster
@@ -830,11 +832,11 @@ alapján a QtWebEngine függőségei hogyan alakulnak.
 %\begin{figure}[h]
 \begin{figure}[ht]
     \centering
-    \includegraphics[scale=0.75]{qtwebengine_architecture}
+    \includegraphics[scale=0.75]{qtwebengine-architecture}
     \caption{
-        \label{fig-qtwebengine-architecture}
+        \label{fig:qtwebengine-architecture}
         QtWebEngine Architecture (forrás: \url{http://doc.qt.io/}
-        \cite{bib-qt-doc-webengine-overview})
+        \cite{bib:qt-doc-webengine-overview})
     }
 \end{figure}
 
@@ -1060,107 +1062,107 @@ alapján a QtWebEngine függőségei hogyan alakulnak.
 \begin{thebibliography}{9}
     \addcontentsline{toc}{section}{Irodalomjegyzék}
 
-    \bibitem{bib-qt-blog-introducing-qtwebengine}
+    \bibitem{bib:qt-blog-introducing-qtwebengine}
         Qt Blog: Introducing the Qt WebEngine \\
         \href{http://blog.qt.io/blog/2013/09/12/introducing-the-qt-webengine/}
         {http://blog.qt.io/blog/2013/09/12/\\
         introducing-the-qt-webengine/}
 
-    \bibitem{bib-wiki-chromium}
+    \bibitem{bib:wiki-chromium}
         Wikipedia: Chromium (web browser) \\
         \url{https://en.wikipedia.org/wiki/Chromium_(web_browser)}
 
-    \bibitem{bib-wiki-chrome}
+    \bibitem{bib:wiki-chrome}
         Wikipedia: Google Chrome \\
         \url{https://en.wikipedia.org/wiki/Google_Chrome}
 
-    \bibitem{bib-wiki-blink}
+    \bibitem{bib:wiki-blink}
         Wikipedia: Blink (web engine) \\
         \url{https://en.wikipedia.org/wiki/Blink_(web_engine)}
 
-    \bibitem{bib-chromium-displays-web-pages}
+    \bibitem{bib:chromium-displays-web-pages}
         Chromium: How Chromium Displays Web Pages \\
         \href{https://www.chromium.org/developers/design-documents/displaying-a-web-page-in-chrome}
         {https://www.chromium.org/developers/design-documents/\\
          displaying-a-web-page-in-chrome}
 
-    \bibitem{bib-chromium-blink}
+    \bibitem{bib:chromium-blink}
         Chromium: Blink \\
         \url{http://www.chromium.org/blink}
 
-    \bibitem{bib-chromium-gpu}
+    \bibitem{bib:chromium-gpu}
         Chromium: GPU Accelerated Compositing in Chrome \\
         \href{https://www.chromium.org/developers/design-documents/gpu-accelerated-compositing-in-chrome}
         {https://www.chromium.org/developers/design-documents/\\
         gpu-accelerated-compositing-in-chrome}
 
-    \bibitem{bib-chromium-oopifs}
+    \bibitem{bib:chromium-oopifs}
         Chromium: Rendering and compositing out of process iframes \\
         \href{https://www.chromium.org/developers/design-documents/oop-iframes/oop-iframes-rendering}
         {https://www.chromium.org/developers/design-documents/\\
         oop-iframes/oop-iframes-rendering}
 
-    \bibitem{bib-chromium-texture-mailbox}
+    \bibitem{bib:chromium-texture-mailbox}
         Chromium: CHROMIUM\_texture\_mailbox.txt \\
         \href{https://src.chromium.org/viewvc/chrome/trunk/src/gpu/GLES2/extensions/CHROMIUM/CHROMIUM_texture_mailbox.txt}
         {https://src.chromium.org/viewvc/chrome/trunk/src/gpu/\\
         GLES2/extensions/CHROMIUM/CHROMIUM\_texture\_mailbox.txt}
 
-    \bibitem{bib-webkit-webkit2}
+    \bibitem{bib:webkit-webkit2}
         WebKit: WebKit2 \\
         \url{https://trac.webkit.org/wiki/WebKit2}
 
-    \bibitem{bib-chromium-multi-process}
+    \bibitem{bib:chromium-multi-process}
         Chromium: Multi-process Architecture \\
         \href{https://www.chromium.org/developers/design-documents/multi-process-architecture}
         {https://www.chromium.org/developers/design-documents/\\
         multi-process-architecture}
 
-    \bibitem{bib-chromium-blog-multi-process}
+    \bibitem{bib:chromium-blog-multi-process}
         Chromium Blog: Multi-process Architecture \\
         \href{http://blog.chromium.org/2008/09/multi-process-architecture.html}
         {http://blog.chromium.org/2008/09/\\
         multi-process-architecture.html}
 
-    \bibitem{bib-chromium-process-models}
+    \bibitem{bib:chromium-process-models}
         Chromium: Process Models \\
         \href{https://www.chromium.org/developers/design-documents/process-models}
         {https://www.chromium.org/developers/design-documents/\\
         process-models}
 
-    \bibitem{bib-chromium-plugins}
+    \bibitem{bib:chromium-plugins}
         Chromium: Plugin Architecture \\
         \href{https://www.chromium.org/developers/design-documents/plugin-architecture}
         {https://www.chromium.org/developers/design-documents/\\
         plugin-architecture}
 
-    \bibitem{bib-chromium-content-module}
+    \bibitem{bib:chromium-content-module}
         Chromium: Content module \\
         \url{https://www.chromium.org/developers/content-module}
 
-    \bibitem{bib-chromium-content-api}
+    \bibitem{bib:chromium-content-api}
         Chromium: Content API \\
         \href{https://www.chromium.org/developers/content-module/content-api}
         {https://www.chromium.org/developers/content-module/\\
         content-api}
 
-    \bibitem{bib-qt-wiki-about-qt}
+    \bibitem{bib:qt-wiki-about-qt}
         Qt Wiki: About Qt \\
         \url{https://wiki.qt.io/About_Qt}
 
-    \bibitem{bib-qt-wiki-qt-history}
+    \bibitem{bib:qt-wiki-qt-history}
         Qt Wiki: Qt History \\
         \url{https://wiki.qt.io/Qt_History}
 
-    \bibitem{bib-qt-doc-webengine-overview}
+    \bibitem{bib:qt-doc-webengine-overview}
         Qt Documentation: Qt WebEngine Overview \\
         \url{http://doc.qt.io/qt-5/qtwebengine-overview.html}
 
-    \bibitem{bib-qt-about-us}
+    \bibitem{bib:qt-about-us}
         The Qt Company: About Us \\
         \url{http://www.qt.io/about-us}
 
-    \bibitem{bib-qt-doc-qtmodules}
+    \bibitem{bib:qt-doc-qtmodules}
         Qt Documentation: All Modules \\
         \url{http://doc.qt.io/qt-5/qtmodules.html}
 
