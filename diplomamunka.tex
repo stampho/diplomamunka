@@ -529,14 +529,15 @@ A legfelső réteg a Chrome, helyére a saját beépítő alkalmazás kerül.
 \end{figure}
 
 
-\subsection{Chromium Release}
+\subsection{Release}
 Egy Chromium release verzió száma 4 részből tevődik össze:
 \begin{verbatim}
     MAJOR.MINOR.BUILD.PATCH
 \end{verbatim}
-A dolgozatomban a fő verzió számra (\texttt{MAJOR}) hivatkozok.
-A Chromium közösség előre tervezett menetrend szerint 1-1.5 havonta vált fő
-verziószámot. Dolgozatom készítése idején az 51-es verziójú volt a legfrissebb stabil kiadás.
+A dolgozatomban a főverzió számra (\texttt{MAJOR}) hivatkozok.
+A Chromium közösség előre tervezett menetrend szerint 1-1.5 havonta vált főverzió számot
+(ad ki új release-t).
+Dolgozatom készítése idején az 51-es verziójú volt a legfrissebb stabil kiadás.
 Az itt leírtak erre a verzióra vonatkoznak.
 
 
@@ -549,7 +550,7 @@ binding-okat más programozási nyelvekhez (pl.: Python, Java), saját programoz
 (qmake) és kiterjesztéseket is a \texttt{C++} programozási nyelvhez (pl.: signal-slot model).
 \cite{bib:qt-wiki-about-qt}
 
-\subsection{Qt Történelem}
+\subsection{Történelem}
 \subsubsection{1995-2000}
 A Qt első verziója 1995-ben adta ki a Trolltech. Akkor még a projekt egy
 cross-platform GUI fejlesztői keretrendszernek indult.
@@ -641,7 +642,7 @@ hogy több, napjainkban is népszerű és széles körben elterjedt alkalmazás 
 Qt keretrendszerre épül. Ilyenek például a Skype, a Google Earth, a VirtualBox,
 a VLC média lejátszó és a Spotify is.
 
-\subsection{Qt Modulok és Komponensek}
+\subsection{Modulok és Komponensek}
 A 4-es Qt verzióban megtörtént az első lépés a modularizáció felé: minden modulnak külön
 library-ként jelenik meg ahelyett, hogy egy nagy közös library-je lenne a Qt-nak.
 Ennek előnye, hogy a fejlesztőnek nem kell olyan modulokat az alkalmazásához linkelnie,
@@ -721,7 +722,7 @@ alapján a QtWebEngine függőségei hogyan alakulnak.
     }
 \end{figure}
 
-\subsection{Qt GUI}
+\subsection{GUI}
 \label{sec:qt-gui}
 A Qt keretrendszer grafikus felhasználói felületek (GUI) megvalósítására gazdag
 eszközkészletet kínál a fejlesztők számára. A QtGUI modul az, amely alacsony szintű API-t
@@ -807,7 +808,7 @@ API-n keresztül megjelenít. Emiatt a Quick technológia nem használható olya
 ahol nem érhető el legalább az OpenGL 2.0 API.
 \cite{bib:qt-doc-qt-quick-scene-graph}
 
-\subsection{Qt Web}
+\subsection{Web}
 A Qt keretrendszerben nem a QtWebEngine az egyetlen komponens/modul ami a
 web-hez, web alkalmazásokhoz nyújt API-t.
 
@@ -870,12 +871,16 @@ QtWebSockets segítségével, de akár IPC-n keresztül is.
 \cite{bib:qt-doc-qt-webchannel, bib:kdab-qt-webchannel}
 
 
-\subsection{Qt Release}
-\begin{itemize}
-    \item Félévente jelennek meg új kiadások
-    \item legfrissebb stabil az 5.6
-    \item a dolgozatban 5.7
-\end{itemize}
+\subsection{Release}
+Egy Qt release verzió száma 3 részből tevődik össze:
+\begin{verbatim}
+    MAJOR.MINOR.PATCH
+\end{verbatim}
+A dolgozatomban bemutatott fejlesztések mind az 5-ös főverzióban (\texttt{MAJOR})
+jelentek meg. Ahol ez egyértelmű feltüntetem az alverzió számot is (\texttt{MINOR}).
+A Qt közösség előre tervezett menetrend szerint fél évente vált alverzió számot (ad ki új
+release-t). Dolgozatom készítése idején a Qt 5.6 a legfrissebb stabil kiadás, viszont egyes
+bemutatott funkcionalitások, majd csak a Qt 5.7-ben lesznek elérhetőek.
 
 \section{QtWebEngine}
 \begin{itemize}
