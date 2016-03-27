@@ -523,7 +523,7 @@ A legfelső réteg a Chrome, helyére a saját beépítő alkalmazás kerül.
     \includegraphics[scale=0.6]{chromium-architecture}
     \caption{
         \label{fig:chromium-architecture}
-        Architectural Diagram
+        Chromium Architecture
         (forrás: \url{https://www.chromium.org} \cite{bib:chromium-content-module})
     }
 \end{figure}
@@ -883,25 +883,53 @@ release-t). Dolgozatom készítése idején a Qt 5.6 a legfrissebb stabil kiadá
 bemutatott funkcionalitások, majd csak a Qt 5.7-ben lesznek elérhetőek.
 
 \section{QtWebEngine}
-\begin{itemize}
-    \item Qt module
-    \item Unstable \texttt{Chromium Content API} felett egy stable Qt API
-    \item Chromium Content Module-t beágyazó ``alkalmazás''
-    \item ``Együttműködés'' (integrálhatóság) más Qt API-kal
-    \item OpenGL nélkül nem megy
-    \item SceneGraph
-    \item Qt függőségek
-        \begin{itemize}
-            \item qtbase
-            \item qtdeclarative
-            \item \dots
-        \end{itemize}
-    \item Lecsupaszított \texttt{Chromium} fork is a része
-    \item QtWebChannel: browser és render process, a browser process-ben van a
-        webengine API, DOM a render processzben, változtatni szeretnénk a DOM-on
-\end{itemize}
+A QtWebEngine váltotta le a QtWebKit-et a Qt keretrendszer 5.4-es verziójában. A célja
+megegyezik a QtWebKit-ével: webes tartalom integrálása és manipulálása Qt alkalmazásban.
+A QtWebEngine a Chromium-ra épül, pontosabba a Chromium Content Module unstable API-ja
+felé implementál egy stable API-t. Az \ref{fig:chromium-architecture} ábra alapján,
+a Chrome böngésző alkalmazás helyére a Chromium stack tetején a QtWebEngine kerül és
+az lesz a Chromium Content Module-t beágyazó ``alkalmazás''.
+
+A QtWebEngine fejlesztői forkolták a Chromium-ot és ennek a forknak a karbantartása jelentős
+nehézséget okoz a QtWebEngine fejlesztőinek. Körülbelül 6 hetente jelenik meg új Chromium
+verzió aminek változik az API-ja. Minden új verzió tartalmazhat biztonsági javításokat is,
+amelyeket nem backportolnak korábbi verziókba\footnote{A Chromium-nak nincs LTS (Long Term
+Support) verziója}, ezért a rendszeres frissítésekre szükség van. Habár amikor csak
+lehetséges ezek a javítások cherry-pick-elve vannak a forkba.
+
+A QtWebEngine-nek legnagyobb részét ez a Chromium forknak a kódja teszi ki, habár sok
+nem használt Chromium komponens eltávolításra került (pl. Chrome). Viszont egyes
+``backend'' komponensek, amelyek lecserélhetőek voltak QtWebKit-ben Qt modulokra, már
+nem lecserélhetőek a Chromium-ban. Ilyen például a network library.
+
+A web elemek kirajzolását viszont a Qt végzi. A mailbox texture id-k segítségével a
+QtWebEngine hozzáfér a Chrome Compositor által összeállított textúrákhoz, amelyek a
+megosztott OpenGL context-en vannak tárolva. Ezeket a textúrákat pedig a Qt Quick Scene
+Graph fogja kirajzolni. Emiatt, a Chromium-ban a GPU process ki van kapcsolva, mert a GPU-t
+a Qt használja, ami a Browser process-ben fut.
+
+A scene graph függőség miatt a QtWebEngine nem működik olyan környezetben, ahol nincs
+OpenGL ES 2.0 vagy OpenGL 2.0. Ez igaz a QtWebEngine Widget API-jára is, mivel a web tartalom
+kirajzolásának megvalósítása közös.
+
+A QtWebEngine tartalmazza a QtWebEngine Process-t és 3 modult: a QtWebEngine és a
+QtWebEngineWidgets rendre a Quick és Widget API-kat valósítják meg. A QtWebEngineCore
+modul tartalmazza a Chromium forkot és QtWebEngine funkcionalitások közös részét, amin a
+Quick és a Widget API-k osztoznak. A QtWebEngine felépítését a
+\ref{fig:qtwebengine-architecture} ábra mutatja.
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[scale=0.75]{qtwebengine-architecture}
+    \caption{
+        \label{fig:qtwebengine-architecture}
+        QtWebEngine Architecture (forrás: \url{http://doc.qt.io/}
+        \cite{bib:qt-doc-webengine-overview})
+    }
+\end{figure}
 
 \subsection{QtWebEngine Process}
+A QtWebEngine Process a Chromium Render Process-ét valósítja meg. \dots
 \begin{itemize}
     \item Hogyan indul?
     \item Miért felel?
@@ -923,7 +951,8 @@ bemutatott funkcionalitások, majd csak a Qt 5.7-ben lesznek elérhetőek.
             \item Delegate osztályok
             \item Adapterek
         \end{itemize}
-    \item \dots
+    \item QtWebChannel: browser és render process, a browser process-ben van a
+        webengine API, DOM a render processzben, változtatni szeretnénk a DOM-on
 \end{itemize}
 
 \subsection{QtWebEngine API}
@@ -949,18 +978,6 @@ bemutatott funkcionalitások, majd csak a Qt 5.7-ben lesznek elérhetőek.
             \item Bizonyos események (signal-ok) bekövetkezésének a sorrendje nem garantált
         \end{itemize}
 \end{itemize}
-
-\subsection{Felépítés}
-%\begin{figure}[h]
-\begin{figure}[ht]
-    \centering
-    \includegraphics[scale=0.75]{qtwebengine-architecture}
-    \caption{
-        \label{fig:qtwebengine-architecture}
-        QtWebEngine Architecture (forrás: \url{http://doc.qt.io/}
-        \cite{bib:qt-doc-webengine-overview})
-    }
-\end{figure}
 
 
 \chapter{Új funkciók a QtWebEngine-ben}
