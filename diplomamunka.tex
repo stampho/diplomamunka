@@ -900,13 +900,14 @@ lehetséges ezek a javítások cherry-pick-elve vannak a forkba.
 A QtWebEngine-nek legnagyobb részét ez a Chromium forknak a kódja teszi ki, habár sok
 nem használt Chromium komponens eltávolításra került (pl. Chrome). Viszont egyes
 ``backend'' komponensek, amelyek lecserélhetőek voltak QtWebKit-ben Qt modulokra, már
-nem lecserélhetőek a Chromium-ban. Ilyen például a network library.
+nem lecserélhetőek a Chromium-ban. Ilyen például a Chromium network library.
 
-A web elemek kirajzolását viszont a Qt végzi. A mailbox texture id-k segítségével a
+A web elemek kirajzolását viszont a Qt végzi. A mailbox texture azonosítók segítségével a
 QtWebEngine hozzáfér a Chrome Compositor által összeállított textúrákhoz, amelyek a
-megosztott OpenGL context-en vannak tárolva. Ezeket a textúrákat pedig a Qt Quick Scene
-Graph fogja kirajzolni. Emiatt, a Chromium-ban a GPU process ki van kapcsolva, mert a GPU-t
-a Qt használja, ami a Browser process-ben fut.
+megosztott OpenGL context-en vannak tárolva.
+A textúrákból a QtWebEngine épít scene graph fát (\texttt{QSGNode} tree), amit majd a
+Qt Quick Scene Graph fog kirajzolni. Emiatt, a Chromium-ban a GPU process ki van kapcsolva,
+mert a GPU-t a Qt használja, ami a Browser process-ben fut (\texttt{switches:kInProcessGPU}).
 
 A scene graph függőség miatt a QtWebEngine nem működik olyan környezetben, ahol nincs
 OpenGL ES 2.0 vagy OpenGL 2.0. Ez igaz a QtWebEngine Widget API-jára is, mivel a web tartalom
@@ -928,24 +929,15 @@ Quick és a Widget API-k osztoznak. A QtWebEngine felépítését a
     }
 \end{figure}
 
-\subsection{QtWebEngine Process}
-A QtWebEngine Process a Chromium Render Process-ét valósítja meg. \dots
-\begin{itemize}
-    \item Hogyan indul?
-    \item Miért felel?
-        \begin{itemize}
-            \item Rendering
-            \item etc.
-        \end{itemize}
-    \item IPC kommunikáció a processzek között
-    \item Thread-ek
-    \item Single Process mode
-\end{itemize}
+\subsection{Process}
+A QtWebEngine Process a Chromium Render Process-t fedi el. Ez processz felel a web tartalom
+rendereléséért és a \texttt{JavaScript} kódok végrehajtásáért. A QtWebEngine \\
+Process-t a Browser Process fogja elindítani, OS X-en és Linuxon sandbox-ban.
 
-\subsection{QtWebEngine Core}
+\subsection{Core}
 \begin{itemize}
-    \item Mi van benne?
-    \item Új (5.7): publikus API, mire jó?
+    \item Ez tartalmazza a Chromium fork-ot
+    \item internal API: elfedi Content API-t a publikus API-k elől
     \item Design Pattern
         \begin{itemize}
             \item Delegate osztályok
@@ -955,28 +947,47 @@ A QtWebEngine Process a Chromium Render Process-ét valósítja meg. \dots
         webengine API, DOM a render processzben, változtatni szeretnénk a DOM-on
 \end{itemize}
 
-\subsection{QtWebEngine API}
+\subsection{API}
 \begin{itemize}
-    \item D pointeres dolog (private class-ok)
-    \item Bináris kompatibilitás
-    \item Miért a 2 API?
-    \begin{itemize}
-        \item A Quick a fontosabb
-        \item A 2 API között vannak funkcióbeli különbségek (``az egyik tudja, a másik nem'')
-    \end{itemize}
+    \item design pattern: d-pointer vagy opaque pointer
+        \begin{itemize}
+            \item implementáció rejtve marad
+            \item implementációban a változtatások nem sértik a bináris kompatibilitást
+            \item private osztályok általában a core internal API-t hívják, vagy
+                előfordul, hogy maga az osztály a core-ban a public API private osztálya
+        \end{itemize}
+    \item Bináris kompatibilitás: a Qt alkalmazás alatt újra buildelés nélkül ki lehet
+        cserélni a Qt library-t egy újabb verzióra
+    \item Ne változtassuk meg a public osztály méretét és elrendezését. Megoldás: d-pointer
+    \item A 2 API (Quick és Widget) között vannak funkcióbeli különbségek
+        (``az egyik tudja, a másik nem'')
+    \item nem használhatják közvetlenül a chromium API-t -> a fordítási egységnek ne legyen
+        chromium függősége (core API-ra ez értelemszerűen nem igaz)
+\end{itemize}
+
+\subsubsection{Core}
+\begin{itemize}
+    \item modul: QtWebEngineCore
+    \item Új (5.7): publikus API
+    \item olyan API-k melyeken a Widget és a Quick API-k osztoznak
+    \item webengine és webenginewidgets modulok automatikusan behúzzák
+    \item \texttt{QtWebEngineCore::initialize()} -> OpenGL context inicializálása, \\
+        hogy megosztott legyen processzek között
 \end{itemize}
 
 \subsubsection{Widget}
 \begin{itemize}
-    \item Szinkron API -> könnyebb tesztelés
+    \item modul: QtWebEngineWidgets
+    \item \texttt{C++} osztályok widget GUI létrehozására
+    \item view -> page: egy view-hoz, csak egy page tartozik! (mi értelme?)
+    \item profile -> shared settings, scripts, cookies
 \end{itemize}
 
 \subsubsection{Quick}
 \begin{itemize}
-    \item Aszinkron API -> állandó probléma a tesztelésnél
-        \begin{itemize}
-            \item Bizonyos események (signal-ok) bekövetkezésének a sorrendje nem garantált
-        \end{itemize}
+    \item modul: QtWebEngine
+    \item QML típusok, QML/Quick alkalmazások létrehozására
+    \item ugyanaz, mint a widget, csak a page a view-ba van integrálva
 \end{itemize}
 
 
