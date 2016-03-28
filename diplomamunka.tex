@@ -930,22 +930,36 @@ Quick és a Widget API-k osztoznak. A QtWebEngine felépítését a
 \end{figure}
 
 \subsection{Process}
-A QtWebEngine Process a Chromium Render Process-t fedi el. Ez processz felel a web tartalom
-rendereléséért és a \texttt{JavaScript} kódok végrehajtásáért. A QtWebEngine \\
-Process-t a Browser Process fogja elindítani, OS X-en és Linuxon sandbox-ban.
+A QtWebEngine Process a Chromium Render Process-t fedi el. Különálló program saját belépési
+ponttal (\texttt{main()} függvénnyel), amit a Browser Process indít el. Önálló fordítási
+egység, de a hozzátartozó kód a QtWebEngine Core modulban van.
+Ez processz felel a web tartalom rendereléséért és a \texttt{JavaScript} kódok
+végrehajtásáért. A processz OS X-en és Linux-on sandbox-ban fut, Windowson a sandbox
+környezet még nem támogatott.
 
 \subsection{Core}
-\begin{itemize}
-    \item Ez tartalmazza a Chromium fork-ot
-    \item internal API: elfedi Content API-t a publikus API-k elől
-    \item Design Pattern
-        \begin{itemize}
-            \item Delegate osztályok
-            \item Adapterek
-        \end{itemize}
-    \item QtWebChannel: browser és render process, a browser process-ben van a
-        webengine API, DOM a render processzben, változtatni szeretnénk a DOM-on
-\end{itemize}
+A QtWebEngine Core modul tartalmazza a Chromium fork-ot és implementálja a \\
+Chromium Content API interface-eit. Belső (internal) API-ja elfedi a publikus API-k
+(Widget, Quick) elől a Chromium Content API-t, így a publikus API-knak nincsenek közvetlen
+Chromium függőségeik. A publikus API-k számára közös adapter interface-t \\
+(\texttt{WebContentsAdapterClient}) definiál, amit a publikus API-nak kell megvalósítania.
+
+A modul része a Qt Quick Scene Graph integráció is: ő hozza létre a Chromium-ból
+kinyert textúrákból a scene graph node-okat (\texttt{QSGNode}) és épít belőle fát a
+megjelenítésre (compositing). Továbbá itt található meg a Browser Process és a QtWebEngine
+Process inicializációja (\texttt{WebEngineContext}), a QtWebEngine beállításainak továbbítása
+a Chromium felé (\texttt{WebEngineSettings}), controller osztályok az API specifikus
+dialog ablakok megvalósításához (\texttt{pl.: JavaScriptDialogController}) és még sok minden
+más.
+
+Továbbá, QtWebEngine Core modul függősége Qt WebChannel modul, hogy a publikus API-t
+használva tetszőlegese saját Qt-s objektum elérhető legyen a weboldal (vagy webalkalmazás)
+számára. Ezáltal a fejlesztő hybrid alkalmazást hozhat létre, amelyben a QtWebEngine-el
+megjelenített weboldal, kommunikálhat a QtWebEngine-t beágyazó alkalmazással.
+A Qt WebChannel Qt WebSockets-ra épülő backendjét a QtWebEngine Core cseréli le úgy,
+hogy a kommunikáció a Chromium IPC felett történjen, továbbá beregisztrálja a web channel-t
+a V8\footnote{a Chromium JavaScript motorja} API-n keresztül az érintett oldal
+\texttt{JavaScript} context-jébe.
 
 \subsection{API}
 \begin{itemize}

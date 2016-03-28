@@ -88,3 +88,7 @@ WebView
 fallback
 WinRT
 WebKit1
+WebContentsAdapterClient
+WebEngineContext
+JavaScriptDialogController
+QSGNode
