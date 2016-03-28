@@ -956,49 +956,58 @@ Továbbá, QtWebEngine Core modul függősége Qt WebChannel modul, hogy a publi
 használva tetszőlegese saját Qt-s objektum elérhető legyen a weboldal (vagy webalkalmazás)
 számára. Ezáltal a fejlesztő hybrid alkalmazást hozhat létre, amelyben a QtWebEngine-el
 megjelenített weboldal, kommunikálhat a QtWebEngine-t beágyazó alkalmazással.
-A Qt WebChannel Qt WebSockets-ra épülő backendjét a QtWebEngine Core cseréli le úgy,
+A Qt WebChannel Qt WebSockets-ra épülő backend-jét a Qt WebEngine Core cseréli le úgy,
 hogy a kommunikáció a Chromium IPC felett történjen, továbbá beregisztrálja a web channel-t
 a V8\footnote{a Chromium JavaScript motorja} API-n keresztül az érintett oldal
 \texttt{JavaScript} context-jébe.
 
-\subsection{API}
-\begin{itemize}
-    \item design pattern: d-pointer vagy opaque pointer
-        \begin{itemize}
-            \item implementáció rejtve marad
-            \item implementációban a változtatások nem sértik a bináris kompatibilitást
-            \item private osztályok általában a core internal API-t hívják, vagy
-                előfordul, hogy maga az osztály a core-ban a public API private osztálya
-        \end{itemize}
-    \item Bináris kompatibilitás: a Qt alkalmazás alatt újra buildelés nélkül ki lehet
-        cserélni a Qt library-t egy újabb verzióra
-    \item Ne változtassuk meg a public osztály méretét és elrendezését. Megoldás: d-pointer
-    \item A 2 API (Quick és Widget) között vannak funkcióbeli különbségek
-        (``az egyik tudja, a másik nem'')
-    \item nem használhatják közvetlenül a chromium API-t -> a fordítási egységnek ne legyen
-        chromium függősége (core API-ra ez értelemszerűen nem igaz)
-\end{itemize}
+A Qt 5.6-os verziója óta a Qt WebEngine Core modul rendelkezik publikus API-val is.
+Ez az API a Chromium-hoz enged hozzáférést és jellemzően a Widget és Quick API-kkal kell
+együtt használni. Ennélfogva a QtWebEngine Core modulját nem szükséges explicit hozzáadni,
+a saját Qt-s alkalmazás projektjéhez, mert a Qt WebEngine Widgets és Qt WebEngine (Quick)
+modulok automatikusan behúzzák. Ennek az API-nak része a
+\texttt{QtWebEngineCore::initialize()} függvény is, amivel a QtWebEngine-t integráló
+alkalmazást ``inicializálni'' kell, azért, hogy a megjelenítéshez használt OpenGL context
+a processzek között megosztott legyen (\texttt{Qt::AA\_ShareOpenGLContexts}).
 
-\subsubsection{Core}
-\begin{itemize}
-    \item modul: QtWebEngineCore
-    \item Új (5.7): publikus API
-    \item olyan API-k melyeken a Widget és a Quick API-k osztoznak
-    \item webengine és webenginewidgets modulok automatikusan behúzzák
-    \item \texttt{QtWebEngineCore::initialize()} -> OpenGL context inicializálása, \\
-        hogy megosztott legyen processzek között
-\end{itemize}
+\subsection{Widget és Quick API}
+A QtWebEngine Widget és Quick API-ját rendre a \textbf{Qt WebEngine Widgets} és
+\textbf{Qt WebEngine} modulok valósítják meg.
+Ezek a modulok nem implementálják vagy hívják közvetlenül a Chromium Content API-t,
+hanem azt a Qt WebEngine Core modulon keresztül érik el. A két API között előfordulhatnak
+funkcionalitásban előfordulhatnak különbségek, például az egyikben elérhető egy API
+függvény a másikban még nem.
 
-\subsubsection{Widget}
+A publikus API-k megvalósításánál nagyon fontos szempont a bináris kompatibilitás
+biztosítása. Ez nem csak annyit jelent, hogy a meglévő API-k nem változnak, hanem a publikus
+(exportált) \texttt{C++} osztályok sem mérete, sem pedig az elrendezése (layout) nem
+változhat. Ez a felhasználó számára annyit jelent, hogy saját Qt-s alkalmazása alatt
+főverzión belül (esetünkben ez az 5-ös) kicserélheti (frissítheti) a Qt library-t anélkül,
+hogy az alkalmazását újra kellene buildelni.
+
+A bináris kompatibilitás megőrzése érdekében a publikus API-k implementálásakor
+\textit{d-pointer} (vagy más néven \textit{opaque pointer}) tervezési mintát alkalmazunk.
+Ez nem csak a QtWebEngine API-jaira igaz, hanem az összes publikus Qt API-ra is.
+
+A tervezési minta lényege az, hogy az API-ban megvalósított logikát egy rejtett
+(\textit{private}) osztály tartalmazza. Az API maga egy másik, publikus (\textit{public})
+osztály, ami egy pointer-t tartalmaz rejtett osztályra. Ez a pointer a névadó,
+\textit{d-pointer} (private data member). Ezáltal az API implementációja ``rejtve'' marad,
+az implementációban módosítások nem változtatják a publikus API-t és publikus API header
+file-a átláthatóbb, mert nem tartalmaz olyan metódust vagy adattagot, ami nem a publikus
+API része.
+\cite{bib:qt-wiki-d-pointer}
+
+\subsubsection{Qt WebEngine Widget}
 \begin{itemize}
-    \item modul: QtWebEngineWidgets
     \item \texttt{C++} osztályok widget GUI létrehozására
     \item view -> page: egy view-hoz, csak egy page tartozik! (mi értelme?)
     \item profile -> shared settings, scripts, cookies
 \end{itemize}
 
-\subsubsection{Quick}
+\subsubsection{Qt WebEngine}
 \begin{itemize}
+    \item Quick API
     \item modul: QtWebEngine
     \item QML típusok, QML/Quick alkalmazások létrehozására
     \item ugyanaz, mint a widget, csak a page a view-ba van integrálva
@@ -1371,6 +1380,10 @@ a V8\footnote{a Chromium JavaScript motorja} API-n keresztül az érintett oldal
     \bibitem{bib:kdab-qt-webchannel}
         KDAB: Qt WebChannel: bridging the gap between C++/QML and the web \\
         \url{http://doc.qt.io/qt-5/qtwebchannel-index.html}
+
+    \bibitem{bib:qt-wiki-d-pointer}
+        Qt Wiki: D-Pointer \\
+        \url{https://wiki.qt.io/D-Pointer}
 
 \end{thebibliography}
 

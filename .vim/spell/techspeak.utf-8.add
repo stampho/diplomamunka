@@ -92,3 +92,7 @@ WebContentsAdapterClient
 WebEngineContext
 JavaScriptDialogController
 QSGNode
+WebEngine
+ShareOpenGLContexts
+QtWebEngineCore
+backend
