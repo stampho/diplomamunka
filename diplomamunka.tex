@@ -999,10 +999,17 @@ API része.
 \cite{bib:qt-wiki-d-pointer}
 
 \subsubsection{Qt WebEngine Widget}
+A Qt WebEngine Widget modul \texttt{C++} osztályokat nyújt widget GUI létrehozására. Az API
+fő komponense a \texttt{QWebEngineView} widget, amely a web tartalom megjelenítésért felel.
+Minden \texttt{QWebEngineView} objektumhoz egy \texttt{QWebEnginePage} példány tartozik.
+A \texttt{QWebEnginePage} API-n keresztül kérdezhető le és változtatható a web oldal
+tartalma.
+
 \begin{itemize}
-    \item \texttt{C++} osztályok widget GUI létrehozására
-    \item view -> page: egy view-hoz, csak egy page tartozik! (mi értelme?)
-    \item profile -> shared settings, scripts, cookies
+    \item navigation history: látogatott oldalak listája
+    \item profile: weboldalak közös beállításokkal (offTheRecord -> privát mód)
+    \item settings: beállítások
+    \item user scriptek
 \end{itemize}
 
 \subsubsection{Qt WebEngine}

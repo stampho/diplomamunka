@@ -96,3 +96,5 @@ WebEngine
 ShareOpenGLContexts
 QtWebEngineCore
 backend
+QWebEngineView
+QWebEnginePage
