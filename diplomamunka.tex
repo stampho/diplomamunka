@@ -1012,12 +1012,11 @@ beállításokkal (pl.: ``inkognitó'' mód: \texttt{QWebEngineProfile::isOffThe
 \texttt{QWebEngineScript} JavaScript-ek beágyazására.
 
 \subsubsection{Qt WebEngine}
-\begin{itemize}
-    \item Quick API
-    \item modul: QtWebEngine
-    \item QML típusok, QML/Quick alkalmazások létrehozására
-    \item ugyanaz, mint a widget, csak a page a view-ba van integrálva
-\end{itemize}
+A Qt WebEngine ``fő'' modulja a Quick API. QML típusokat definiál QML/Quick alkalmazások
+létrehozására. A nagyjából ugyanazok az API-k állnak rendelkezésre, mint a Widget esetén.
+Egy fontos eltérést nem számítva: nincs külön \texttt{WebEnginePage} QML típus az oldal
+tartalmának kezelésére, hanem annak API-ja is a \texttt{WebEngineView} QML típusba lett
+beépítve.
 
 
 \chapter{Új funkciók a QtWebEngine-ben}
