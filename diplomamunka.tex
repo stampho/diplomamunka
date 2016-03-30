@@ -962,7 +962,7 @@ a V8\footnote{a Chromium JavaScript motorja} API-n keresztül az érintett oldal
 \texttt{JavaScript} context-jébe.
 
 A Qt 5.6-os verziója óta a Qt WebEngine Core modul rendelkezik publikus API-val is.
-Ez az API a Chromium-hoz enged hozzáférést és jellemzően a Widget és Quick API-kkal kell
+Ez az API a Chromium-hoz enged hozzáférést és jellemzően a Widget vagy Quick API-val kell
 együtt használni. Ennélfogva a QtWebEngine Core modulját nem szükséges explicit hozzáadni,
 a saját Qt-s alkalmazás projektjéhez, mert a Qt WebEngine Widgets és Qt WebEngine (Quick)
 modulok automatikusan behúzzák. Ennek az API-nak része a
@@ -999,18 +999,17 @@ API része.
 \cite{bib:qt-wiki-d-pointer}
 
 \subsubsection{Qt WebEngine Widget}
-A Qt WebEngine Widget modul \texttt{C++} osztályokat nyújt widget GUI létrehozására. Az API
+A Qt WebEngine Widget modul C++ osztályokat nyújt widget GUI létrehozására. Az API
 fő komponense a \texttt{QWebEngineView} widget, amely a web tartalom megjelenítésért felel.
 Minden \texttt{QWebEngineView} objektumhoz egy \texttt{QWebEnginePage} példány tartozik.
 A \texttt{QWebEnginePage} API-n keresztül kérdezhető le és változtatható a web oldal
 tartalma.
 
-\begin{itemize}
-    \item navigation history: látogatott oldalak listája
-    \item profile: weboldalak közös beállításokkal (offTheRecord -> privát mód)
-    \item settings: beállítások
-    \item user scriptek
-\end{itemize}
+További API-k: \texttt{QWebEngineHistory} a már látogatott oldalak nyilvántartására és
+visszatöltésére, \texttt{QWebEngineProfile} weboldal csoportok kezelésére közös
+beállításokkal (pl.: ``inkognitó'' mód: \texttt{QWebEngineProfile::isOffTheRecord()}),
+\texttt{QWebEngineSettings} a weboldalak beállításainak kezelésére, \\
+\texttt{QWebEngineScript} JavaScript-ek beágyazására.
 
 \subsubsection{Qt WebEngine}
 \begin{itemize}

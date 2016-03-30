@@ -98,3 +98,8 @@ QtWebEngineCore
 backend
 QWebEngineView
 QWebEnginePage
+QWebEngineHistory
+QWebEngineProfile
+QWebEngineSettings
+isOffTheRecord
+QWebEngineScript
