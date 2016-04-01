@@ -19,6 +19,7 @@
 \usepackage{enumitem}
 \usepackage{fancyhdr}
 \usepackage{hyperref}
+\usepackage{makecell}
 \usepackage{verbatim}
 \usepackage{xcolor}
 
@@ -54,6 +55,10 @@
 
 \newcommand{\fixme}[1]{%
     \textcolor{red}{\textbf{FIXME}}\footnote{\textcolor{red}{\textbf{FIXME:} #1}}
+}
+
+\newcommand{\gerrit}[1]{%
+    \textcolor[HTML]{44A51C}{\origurl{https://codereview.qt-project.org/\#/c/#1}}
 }
 
 \setdescription{
@@ -1024,23 +1029,29 @@ beépítve.
 \section{Navigation History}
 
 \begin{itemize}
-    \item Hiányzó Quick API megvalósítása
-    \item Backward, Forward list model
-    \item TODO: Example gyártása?
+    \item \gerrit{81252}
+    \item Qt 5.4
+    \item Qt 5.5: API átalakítva, experimental-ból átmozgatva
+    \item Hiányzó Quick API megvalósítása, widget már kész, mintaként szolgált
+    \item Experimental API: csak Quick, próbáljuk eltüntetni
+    \item Az API már megváltozott, ez az implementáció a QtWebKit API-t másolta
+    \item Mi az a QML ListModel?
+    \item URL és Title van tárolva
+    \item \texttt{plugin.cpp}
 \end{itemize}
 
 \begin{table}[h!]
     \centering
-    \begin{tabular}{ | l | l | l | }
+    \begin{tabular}{ | l | l | p{238pt} | }
         \hline
         \textbf{Property} & \textbf{Típus} & \textbf{Leírás} \\ \hline
 
         \texttt{backItems} & \texttt{ListModel} &
-        TODO
+        Az aktuális oldal előtt látogatott oldalak listája
         \\ \hline
 
         \texttt{forwardItems} & \texttt{ListModel} &
-        TODO
+        Azon oldalak listája, melyek az aktuális oldal után lettek betöltve
         \\ \hline
     \end{tabular}
     \caption{
@@ -1051,26 +1062,29 @@ beépítve.
 
 \dots
 
-\begin{table}[h!]
+%\begin{table}[h!]
+\begin{table}[ht!]
     \centering
-    \begin{tabular}{ | l | l | l | }
+    \begin{tabular}{ | l | l | p{152pt} | }
         \hline
         \textbf{Property} & \textbf{Típus} & \textbf{Leírás} \\ \hline
 
         \texttt{navigationHistory} & \texttt{WebEngineHistory} &
-        TODO
+        Az aktuális view-hoz (tab-hoz) tartozó \texttt{WebEngineHistory} példány
         \\ \hline
 
-        \texttt{currentNavigationEntryIndex} & \texttt{int} &
-        TODO
+        \makecell[l]{\texttt{currentNavigation} \\ \texttt{EntryIndex}} & \texttt{int} &
+        \makecell[l]{Az aktuális oldal indexe a \\ history-ban}
         \\ \hline
 
-        \texttt{goBackTo} & \texttt{slot} &
-        TODO
+        \texttt{goBackTo(int)} & \texttt{slot} &
+        A paraméterben átadott index-el lép vissza a \texttt{backItems} listában és tölti
+        be az oldalt
         \\ \hline
 
-        \texttt{goForwardTo} & \texttt{slot} &
-        TODO
+        \texttt{goForwardTo(int)} & \texttt{slot} &
+        A paraméterben átadott index-el lép előre a \texttt{forwardItems} listában és tölti
+        be az oldalt
         \\ \hline
     \end{tabular}
     \caption{
