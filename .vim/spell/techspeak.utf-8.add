@@ -119,3 +119,7 @@ activeMatchOrdinal
 findText
 didFindText
 matchCount
+SetMinLogLevel
+ContentMainDelegate
+PreSandboxStartup
+kLoggingLevel

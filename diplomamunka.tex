@@ -1272,12 +1272,63 @@ került át a mainline API-ba minimális változtatással és dokumentációval.
 
 
 \section{Log Level}
-\begin{itemize}
-    \item Parancssori kapcsoló
-    \item Hibakeresés
-    \item \texttt{-{}-log-level}
-\end{itemize}
-\pagebreak
+
+\begin{center}
+    \begin{reviewbox}
+        \begin{itemize}
+            \renewcommand{\labelitemi}{\textcolor{qtgreen}{$\blacktriangleright$}}
+            \item \gerrit{94266}
+        \end{itemize}
+    \end{reviewbox}
+\end{center}
+
+\noindent
+A \textbf{Log Level} funkció esetében nem egy új API-ról vagy egy meglévő bővítéséről van
+szó, hanem egy új kapcsoló a \texttt{-{}-log-level=[0123]} hozzáadásáról a Qt WebEngine-hez.
+Az új funkció természetéből adódóan nincs szükség/lehetőség tesztelésre sem.
+
+Az új kapcsolóra azért volt szükség, mert a Qt WebEngine-t beépítő alkalmazások rengeteg
+üzenetet írtak ki a konzolra, ami a Chromium-tól jött. Ezeknek túlnyomó része lényegtelen
+információ a QtWebEngine-t használó fejlesztő számára, ezért az elsődleges cél ezek
+letiltása volt. Viszont hibakeresés szempontjából fontosak lehetnek a hibaüzenetek a
+fejlesztés során, ezért egy kapcsolóra volt szükség, ami ezt szabályozza.
+
+Az üzenetek szűrésére a Chromium log szinteket definiál:
+\begin{description}[
+            labelsep=-0.5cm,
+            itemsep=0cm,
+            before={\renewcommand\makelabel[1]{\bfseries ##1}}]
+    \item[0] \texttt{LOG\_INFO}
+    \item[1] \texttt{LOG\_WARNING}
+    \item[2] \texttt{LOG\_ERROR}
+    \item[3] \texttt{LOG\_FATAL}
+\end{description}
+Ezek közül a Qt WebEngine szempontjából csak a \texttt{LOG\_FATAL} szintű üzenetek
+relevánsak, tehát minimum log szintnek ezt kell beállítani. \\
+Erre szolgál a Chromium \texttt{logging::SetMinLogLevel} függvénye:
+\begin{verbatim}
+    int logLevel = logging::LOG_FATAL;
+    logging::SetMinLogLevel(logLevel);
+\end{verbatim}
+A \texttt{logging::SetMinLogLevel} függvény, nem a Content API része, hanem a \\
+Chromium base modulé, továbbá a Qt-s üzenetekre semmilyen hatással nincsen. \\
+A \texttt{-{}-log-level} kapcsoló segítségével, ezt a minimum szintet lehet
+parancssorból felüldefiniálni. A kapcsoló is a Chromium része, a
+\texttt{switches::kLoggingLevel} azonosítóval lehet rá hivatkozni:
+\begin{verbatim}
+    std::string logLevelValue = parsedCommandLine->
+    GetSwitchValueASCII(switches::kLoggingLevel);
+\end{verbatim}
+
+A megvalósítás során a legnagyobb kihívást a függvény megtalálása jelentette, ahol a minimum
+log szintet mind a browser, mind a render processzekre be lehet állítani.
+A választás a \texttt{ContentMainDelegate::PreSandboxStartup} függvényre esett, mivel
+meghívódik a browser processzben és a render processzben is a sandbox inicializáció előtt,
+továbbá a Chromium Content API-n keresztül felüldefiniálható.
+
+A \texttt{-{}-log-level} kapcsoló a Qt WebEngine-el együtt jelent meg a Qt 5.4-es
+verziójában.
+
 
 \section{Test Support API}
 \begin{itemize}
