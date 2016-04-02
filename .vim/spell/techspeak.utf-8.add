@@ -114,3 +114,8 @@ forwardItems
 backItems
 NavigationHistory
 NavigationHistoryListModel
+quicktestbrowser
+activeMatchOrdinal
+findText
+didFindText
+matchCount

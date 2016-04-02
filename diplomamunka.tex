@@ -1186,19 +1186,12 @@ API-ban ezért csak a Quick API-t kellett megvalósítani a Qt WebKit implement�
 A funkció lényege, hogy adott szöveget keressen meg az oldalon, a legközelebbi előfordulást
 emelje ki a view-ban, és legyen lehetőség találat esetén az esemény kezelésre.
 
-\dots
-
-\begin{itemize}
-    \item Csak Quick API
-    \item Tesztek portolása QtWebKit-ből
-    \item Callback függvény hogyan nez ki? -> didFindText(requestId, matchCount)
-    \item activeMatchOrdinal: Chromium bug miatt nem került bele (a callback paraméterbe)
-    \item activeMatchOrdinal a widget API-ban sem volt benne
-    \item activeMatchOrdinal: hanyadik találat?
-    \item quicktestbrowser: Ctrl+F
-    \item Qt 5.4: experimental API
-    \item Qt 5.5: mainline API, nincs változás, csak mozgatva és dokumentálva
-\end{itemize}
+Ehhez a funkcióhoz elegendő egyetlen függvényt hozzáadni az API-hoz és ez a \\
+\texttt{findText}. Mivel a keresést a view-ban kirenderelt szövegen kell végrehajtani,
+ezért értelemszerűen \texttt{WebEngineView} API része kell, hogy legyen. Mivel, a
+\texttt{findText} is kísérleti funkcióként kezdte, ezért először a
+\texttt{WebEngineViewExperimental} API-hoz lett hozzáadva a \ref{tab:find-text-api}
+táblázatban látható módon.
 
 \begin{table}[h!]
     \centering
@@ -1231,7 +1224,51 @@ emelje ki a view-ban, és legyen lehetőség találat esetén az esemény kezel�
     }
 \end{table}
 
-\pagebreak
+A megvalósításhoz ismét a már meglévő belső Core API-t kellett használni a következő módon:
+a \texttt{WebEngineViewExperimental::findText} függvény meghívja
+a \texttt{WebContentsAdapater::findText} függvényt a Core-ban,
+annak átadja a keresett stringet és megfelelő formában a keresés ``konfigurációját'',
+ha a keresett string nem üres.
+Ha üres, akkor megállítja az éppen futó kereséseket és meghívja a paraméterben
+megadott callback függvényt (ha van), azzal az eredménnyel, hogy 0 egyezést talált.
+
+Ha a \texttt{WebContentsAdapater::findText} függvényt hívta, akkor az egy azonosítóval
+tér vissza (\texttt{requestId}), amire a callback függvény beregisztrálásához van szükség.
+A callback függvény használata opcionális, amennyiben nincs megadva az azonosító nem lesz
+beregisztrálva. A \texttt{WebEngineView} API közös\footnote{más API függvényeknek is lehet
+callback-je, pl.: \texttt{runJavaScript}} tárolót (map-et) definiál a callback függvények
+tárolására, ahol a kulcs az azonosító, az érték a JavaScript callback függvény:
+\begin{verbatim}
+    QMap<quint64, QJSValue> m_callbacks;
+\end{verbatim}
+A keresés aszinkron történik (párhuzamosan a render processzben), ezért a \\
+\texttt{didFindText} függvény itt véget ér és nem ad vissza semmilyen eredményt. Ha volt
+beállítva callback függvény akkor a fejlesztő azon keresztül értesül a találatról, különben
+a megtalált szöveg a view-ban lesz kiemelve. Amint a Chromium befejezte a keresést a
+Content API-n keresztül értesíti a WebEngine Core-t, ami pedig az API-ban meghívja a
+\texttt{WebEngineViewExperimental::didFindText} függvényt. Ez a függvény kikeresi a
+paraméterében kapott azonosító a alapján a beregisztrált callback függvényt és meghívja azt.
+
+A JavaScript callback függvénynek egy paramétere van, ami a találatok \\
+száma (\texttt{matchCount}). Ha ez a paraméter 0, akkor a keresés sikertelen volt.
+Tervben van a callback függvény kiegészítése egy második, az úgy nevezett \\
+\texttt{activeMatchOrdinal} paraméterrel is, ami azt mondja meg, hogy az összes találat
+közül melyik van éppen kiemelve. Minden újabb \texttt{findText} hívással, amelyben nem
+változik a keresett string , a következő találat lesz kiemelve és az \\
+\texttt{activeMatchOrdinal} értéke nő eggyel, amíg a keresés körbe nem ér.
+Ez a funkció, azért nem lett megvalósítva a Qt WebEngine-ben, mert mikor
+ez az implementáció készült, a Chromium \texttt{activeMatchOrdinal} funkciója hibás volt.
+
+Az új funkcióhoz a tesztek a QtWebKit-ből lettek áthozva és átalakítva úgy, hogy
+támogassák az új callback alapú API-t (a QtWebKit API-ja signal-okkal jelezte, ha van
+találat). A tesztelés során azt ellenőrízük, hogy különböző oldalakon a \texttt{findText}
+megfelelő darabszámú egyezést talált-e. Továbbá, az új API függvény be lett építve a
+Qt WebEngine teszt böngészőjébe (quicktestbrowser), ahol \texttt{Ctrl+f} billentyű kombináció
+hatására felugrik egy felület a kereséshez, ahol keresést lehet indítani, megszakítani és
+oda-vissza navigálni a találatok között.
+
+Ez a kísérleti funkció a Qt WebEngine-el együtt jelent meg a Qt 5.4-ben, majd a Qt 5.5-ben
+került át a mainline API-ba minimális változtatással és dokumentációval.
 
 
 \section{Log Level}
