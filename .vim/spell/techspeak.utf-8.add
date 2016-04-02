@@ -112,3 +112,5 @@ WebEngineHistory
 ListModel
 forwardItems
 backItems
+NavigationHistory
+NavigationHistoryListModel

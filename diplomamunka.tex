@@ -15,6 +15,7 @@
 \graphicspath{{figures/}}
 
 \usepackage[bottom,hang,flushmargin]{footmisc}
+\usepackage[many]{tcolorbox}
 
 \usepackage{enumitem}
 \usepackage{fancyhdr}
@@ -32,6 +33,9 @@
 \headheight 10mm
 \headsep 5mm
 \textheight 237mm
+
+% Colors
+\definecolor{qtgreen}{HTML}{44A51C}
 
 % URL style
 \hypersetup{
@@ -58,7 +62,7 @@
 }
 
 \newcommand{\gerrit}[1]{%
-    \textcolor[HTML]{44A51C}{\origurl{https://codereview.qt-project.org/\#/c/#1}}
+    \textcolor{qtgreen}{\origurl{https://codereview.qt-project.org/\#/c/#1}}
 }
 
 \setdescription{
@@ -70,6 +74,19 @@
     before={\renewcommand\makelabel[1]{\bfseries ########1:}},
     %font=\sffamily\bfseries,
 }
+
+\newtcolorbox{reviewbox}[1][]
+  {title=Gerrit Code Review,
+   width=12.5cm,
+   left=0pt,
+   right=0pt,
+   fonttitle=\bfseries,
+   coltitle=white,
+   colframe=qtgreen,
+   colback=white,
+   #1
+}
+
 
 \hyphenation{QtWebEngine QtWebKit WebKit Chromium Content Apple Google Quick Widget WebSocket
 QtWebSockets QtWebChannel Android}
@@ -1028,17 +1045,34 @@ beépítve.
 
 \section{Navigation History}
 
-\begin{itemize}
-    \item \gerrit{81252}
-    \item Qt 5.4
-    \item Qt 5.5: API átalakítva, experimental-ból átmozgatva
-    \item Hiányzó Quick API megvalósítása, widget már kész, mintaként szolgált
-    \item Experimental API: csak Quick, próbáljuk eltüntetni
-    \item Az API már megváltozott, ez az implementáció a QtWebKit API-t másolta
-    \item Mi az a QML ListModel?
-    \item URL és Title van tárolva
-    \item \texttt{plugin.cpp}
-\end{itemize}
+
+\begin{center}
+    \begin{reviewbox}
+        \begin{itemize}
+            \item[->] \gerrit{81252}
+        \end{itemize}
+    \end{reviewbox}
+\end{center}
+
+\noindent
+Az új \textbf{Navigation History} Quick API valósítja meg a böngészési előzmények kezelését,
+tárolását. A Widget API már kész volt, ezért az mintaként szolgált, továbbá a Core modulban
+a szükséges belső API már meg volt valósítva.
+
+Az alapgondolat az volt, hogy a böngészési előzményeket 2 listában tároljuk az szerint,
+hogy az éppen megjelenített oldalnál előbb (\texttt{backItems}) vagy \\
+később (\texttt{forwardItems}) lettek betöltve az adott oldalak. Az adatok tárolására
+a QML nyelv a \texttt{ListModel} QML típust nyújtja. Az előzmények tárolására specializált \\
+\texttt{ListModel}-re van szükség, amit a \texttt{NavigationHistoryListModel} új QML típus
+valósít meg. Az új model tárolja az oldalak URL-jét és címét (title), továbbá, lekéri
+a látogatott oldalak listáját a Core modul belső API-ján keresztül.
+
+A két \texttt{NavigationHistoryListModel} példány tárolására
+egy új Quick Item, a \texttt{NavigationHistory} lett megvalósítva. A Quick Item-eket QML
+szinten ugyanúgy ``típusokként'' kezeljük, a különbség mindösszesen annyi, hogy az Item,
+a Quick C++ API-jával kerül létrehozásra nem pedig az Qt QML API egy beépített típusának
+specializálásával. A \texttt{NavigationHistory} típus (vagy item) tulajdonképpen maga a
+böngészési előzményekhez írt API.
 
 \begin{table}[h!]
     \centering
@@ -1056,35 +1090,60 @@ beépítve.
     \end{tabular}
     \caption{
         \label{tab:navigation-history-history-api}
-        Az új \texttt{WebEngineHistory} QML típus
+        Az új \texttt{NavigationHistory} QML típus
     }
 \end{table}
 
-\dots
+Az új QML típusok a Qt QML modul C++ API-jával lettek beregisztrálva a QML nyelvbe, viszont
+QML-ből nem példányosíthatóak. Minden \texttt{WebEngineView}-hoz (tab-hoz) tartozik egy
+\texttt{NavigationHistory}, ezért azt értelemszerűen a view expliciten példányosítja.
+A \texttt{NavigationHistoryListModel} példányok a \\
+\texttt{NavigationHistory}-hoz tartoznak, ezért azok azzal együtt jönnek létre.
+Ebből kifolyólag, ha hozzáférünk az expliciten példányosított \texttt{NavigationHistory}-hoz,
+hozzáférünk a listákhoz is. Az \texttt{NavigationHistory} példányt pedig az azt létrehozó
+\texttt{WebEngineView} API-n keresztül érdemes lekérni, de ehhez ezt az API-t is bővíteni
+kell.
 
-%\begin{table}[h!]
-\begin{table}[ht!]
+Ennek a funkcionalitásnak a megvalósításakor, a \texttt{WebEngineView} két API-ra volt
+bontva. Volt egy ``mainline'' (maga a \texttt{WebEngineView}) és annak egy ``része'', a \\
+\texttt{WebEngineViewExperimental}. A \texttt{WebEngineViewExperimental} egy ``kísérleti''
+API, ami olyan funkcionalitásokat nyújtott, amelyek újak és még véglegesítésre várnak
+(ezért unstable API), vagy pedig csak a teszteléshez szükségesek (nem javasolt a használata).
+Ez a módszer Qt WebKit-ből került át, viszont a legújabb Qt WebEngine verziókban
+próbálunk a \texttt{WebEngineViewExperimental} API-tól megszabadulni, ezért abba már nem
+kerülnek új funkcionalitások, továbbá dokumentálva sincsen.
+
+Mivel a \texttt{NavigationHistory} még a Qt WebKit-ben is kísérleti API volt, ezért az a
+Qt WebEngine-ben is csak a \texttt{WebEngineViewExperimental} API-n keresztül vált
+elérhetővé. Mivel önmagában az előzmények kilistázásának nem sok haszna van, ezért a view
+API-hoz további funkcionalitások lettek hozzáadva, amelyek a már látogatott oldalak
+újratöltését tették könnyebbé. Ezek listája a \ref{tab:navigation-history-experimental-api}
+táblázatban látható.
+
+\begin{table}[h!]
     \centering
-    \begin{tabular}{ | l | l | p{152pt} | }
+    \begin{tabular}{ | l | l | p{194pt} | }
         \hline
         \textbf{Property} & \textbf{Típus} & \textbf{Leírás} \\ \hline
 
-        \texttt{navigationHistory} & \texttt{WebEngineHistory} &
-        Az aktuális view-hoz (tab-hoz) tartozó \texttt{WebEngineHistory} példány
+        \texttt{navigationHistory} & \makecell[l]{\texttt{Navigation} \\ \texttt{History}} &
+        \makecell[l]{Az aktuális view-hoz tartozó \\ \texttt{NavigationHistory} példány}
         \\ \hline
 
         \makecell[l]{\texttt{currentNavigation} \\ \texttt{EntryIndex}} & \texttt{int} &
-        \makecell[l]{Az aktuális oldal indexe a \\ history-ban}
+        Az aktuális oldal indexe a history-ban
         \\ \hline
 
         \texttt{goBackTo(int)} & \texttt{slot} &
-        A paraméterben átadott index-el lép vissza a \texttt{backItems} listában és tölti
-        be az oldalt
+        \makecell[l]{A paraméterben átadott index-el lép \\
+                     vissza a \texttt{backItems} listában és \\
+                     tölti be az oldalt}
         \\ \hline
 
         \texttt{goForwardTo(int)} & \texttt{slot} &
-        A paraméterben átadott index-el lép előre a \texttt{forwardItems} listában és tölti
-        be az oldalt
+        \makecell[l]{A paraméterben átadott index-el lép \\
+                     előre a \texttt{forwardItems} listában és \\
+                     tölti be az oldalt}
         \\ \hline
     \end{tabular}
     \caption{
@@ -1092,6 +1151,22 @@ beépítve.
         Új funkciók a \texttt{WebEngineViewExperimental} QML típusban
     }
 \end{table}
+
+Az új funkciók tesztelésére a Qt WebKit-ben is használt teszt lett portolva a \\
+Qt WebEngine-be és további teszt esetekkel lett kibővítve a lefedettség javítására.
+A tesztelés módszere, hogy a \texttt{WebEngineView} API segítségével navigálunk oldalak
+között és minden (sikeres) oldal betöltés után ellenőrizzük a \texttt{NavigationHistory}-ben
+tárolt listák méretét.
+
+A fent bemutatott funkció a Qt 5.4-es verziójában jelent meg a Qt WebEngine bekerülésével
+együtt a kísérleti API részeként. A cél az volt, hogy a Qt WebKit \\
+\texttt{NavigationHistory} megvalósítása legyen átültetve a Qt WebEngine-be a lehető
+legkevesebb API módosítással.
+A Qt 5.5-ös verzióban ez az API már a ``mainline'' API-ba került át, jelentős
+változtatásokkal az API-n. A legnagyobb eltérés, hogy a QML típusok esetén a
+\texttt{NavigationHistory} elnevezést/prefixet \texttt{WebEngineHistory}-ra cseréltük,
+viszont a \texttt{WebEngineView.navigationHistory} property elnevezés megmaradt, visszafele
+kompatibilitási okokból.
 
 \pagebreak
 
