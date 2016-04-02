@@ -54,11 +54,11 @@
 }
 
 \newcommand{\todo}[1]{%
-    \textcolor{red}{\textbf{TODO}}\footnote{\textcolor{red}{\textbf{TODO:} #1}}
+    \textcolor{red}{\textbf{TODO:} #1}
 }
 
 \newcommand{\fixme}[1]{%
-    \textcolor{red}{\textbf{FIXME}}\footnote{\textcolor{red}{\textbf{FIXME:} #1}}
+    \textcolor{red}{\textbf{FIXME:} #1}
 }
 
 \newcommand{\gerrit}[1]{%
@@ -1050,9 +1050,16 @@ beépítve.
         \begin{itemize}
             \renewcommand{\labelitemi}{\textcolor{qtgreen}{$\blacktriangleright$}}
             \item \gerrit{81252}
+            \item \gerrit{82029}
+            \item \gerrit{82380}
+            \item \gerrit{81934}
         \end{itemize}
     \end{reviewbox}
 \end{center}
+
+\noindent
+\todo{document 82029 fix}
+\bigskip
 
 \noindent
 Az új \textbf{Navigation History} Quick API valósítja meg a böngészési előzmények kezelését,
@@ -1074,7 +1081,8 @@ a Quick C++ API-jával kerül létrehozásra nem pedig az Qt QML API egy beépí
 specializálásával. A \texttt{NavigationHistory} típus (vagy item) tulajdonképpen maga a
 böngészési előzményekhez írt API.
 
-\begin{table}[h!]
+%\begin{table}[h!]
+\begin{table}[ht!]
     \centering
     \begin{tabular}{ | l | l | p{238pt} | }
         \hline
@@ -1331,7 +1339,18 @@ verziójában.
 
 
 \section{Test Support API}
+
+\begin{center}
+    \begin{reviewbox}
+        \begin{itemize}
+            \renewcommand{\labelitemi}{\textcolor{qtgreen}{$\blacktriangleright$}}
+            \item \gerrit{107089}
+        \end{itemize}
+    \end{reviewbox}
+\end{center}
+
 \begin{itemize}
+    \item Csak Quick API
     \item Olyan feature-ök tesztelése ami nem jelenhet meg a publikus API-ban
     \item Pl. error page, az error page signal-okat elrejtjük a fejlesztő elől, de tesztelni
         kell.
@@ -1339,6 +1358,14 @@ verziójában.
     \item Nincs dokumentálva
     \item Fontos lépés a tesztelés szempontjából
     \item Experimental API eltávolítása
+
+    \item \texttt{ENABLE\_QML\_TESTSUPPPORT\_API} makró
+    \item Build rendszer megpiszkálása: csak akkor buildelődjön ha tesztek is engedélyezve
+        vannak
+    \item error page tesztek hozzáadása
+    \item új QML típus
+    \item ütközés elkerülése az experimental API-val
+    \item warning ha valaki testsupport API-te letiltva tesztel
 \end{itemize}
 \pagebreak
 
