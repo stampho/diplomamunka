@@ -1045,11 +1045,11 @@ beépítve.
 
 \section{Navigation History}
 
-
 \begin{center}
     \begin{reviewbox}
         \begin{itemize}
-            \item[->] \gerrit{81252}
+            \renewcommand{\labelitemi}{\textcolor{qtgreen}{$\blacktriangleright$}}
+            \item \gerrit{81252}
         \end{itemize}
     \end{reviewbox}
 \end{center}
@@ -1168,14 +1168,71 @@ változtatásokkal az API-n. A legnagyobb eltérés, hogy a QML típusok esetén
 viszont a \texttt{WebEngineView.navigationHistory} property elnevezés megmaradt, visszafele
 kompatibilitási okokból.
 
-\pagebreak
 
 \section{Find Text}
+
+\begin{center}
+    \begin{reviewbox}
+        \begin{itemize}
+            \renewcommand{\labelitemi}{\textcolor{qtgreen}{$\blacktriangleright$}}
+            \item \gerrit{91117}
+        \end{itemize}
+    \end{reviewbox}
+\end{center}
+
+\noindent
+A Navigation History-hoz hasonlóan a \textbf{Find Text} is már meg volt valósítva a Widget
+API-ban ezért csak a Quick API-t kellett megvalósítani a Qt WebKit implementációja alapján.
+A funkció lényege, hogy adott szöveget keressen meg az oldalon, a legközelebbi előfordulást
+emelje ki a view-ban, és legyen lehetőség találat esetén az esemény kezelésre.
+
+\dots
+
 \begin{itemize}
     \item Csak Quick API
     \item Tesztek portolása QtWebKit-ből
+    \item Callback függvény hogyan nez ki? -> didFindText(requestId, matchCount)
+    \item activeMatchOrdinal: Chromium bug miatt nem került bele (a callback paraméterbe)
+    \item activeMatchOrdinal a widget API-ban sem volt benne
+    \item activeMatchOrdinal: hanyadik találat?
+    \item quicktestbrowser: Ctrl+F
+    \item Qt 5.4: experimental API
+    \item Qt 5.5: mainline API, nincs változás, csak mozgatva és dokumentálva
 \end{itemize}
+
+\begin{table}[h!]
+    \centering
+    \begin{tabular}[t]{ | l | l | p{188pt} | }
+        \hline
+        \textbf{Property} & \textbf{Típus} & \textbf{Leírás} \\ \hline
+
+        \makecell[l]{\texttt{findText(substring,} \\
+                     \texttt{~~~~~~~~~options,} \\
+                     \texttt{~~~~~~~~~callback)}} & \texttt{slot} &
+        \makecell[l]{Megkeresi \texttt{substring}-et az oldalon, \\
+                     az \texttt{options} beállítások szerint. \\
+                     Találat esetén meghívódik a \\
+                     \texttt{callback} függvény (JavaScript)}
+        \\ \hline
+
+        \texttt{FindBackward} & \makecell[l]{\texttt{FindFlags} \\ \texttt{(enum)}} &
+        \makecell[l]{\texttt{findText} beállítás: az oldalon \\
+                     visszafele keres}
+        \\ \hline
+
+        \texttt{FindCaseSensitively} & \makecell[l]{\texttt{FindFlags} \\ \texttt{(enum)}} &
+        \makecell[l]{\texttt{findText} beállítás: a keresésben \\
+                     kis és nagy betűket megkülönbözteti}
+        \\ \hline
+    \end{tabular}
+    \caption{
+        \label{tab:find-text-api}
+        Új funkciók a \texttt{WebEngineViewExperimental} QML típusban
+    }
+\end{table}
+
 \pagebreak
+
 
 \section{Log Level}
 \begin{itemize}
