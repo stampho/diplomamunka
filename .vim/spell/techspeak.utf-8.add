@@ -123,3 +123,9 @@ SetMinLogLevel
 ContentMainDelegate
 PreSandboxStartup
 kLoggingLevel
+loadingChanged
+WebEngineLoadRequest
+WebEngineErrorPage
+errorPage
+WebEngineTestSupport
+LoadRequest

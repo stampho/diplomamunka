@@ -1349,25 +1349,131 @@ verziójában.
     \end{reviewbox}
 \end{center}
 
-\begin{itemize}
-    \item Csak Quick API
-    \item Olyan feature-ök tesztelése ami nem jelenhet meg a publikus API-ban
-    \item Pl. error page, az error page signal-okat elrejtjük a fejlesztő elől, de tesztelni
-        kell.
-    \item Előfordulhat, hogy a fejlesztő saját felelőségére használja
-    \item Nincs dokumentálva
-    \item Fontos lépés a tesztelés szempontjából
-    \item Experimental API eltávolítása
+\noindent
+A \textbf{Test Support API} kimondottan csak tesztelésre lett létrehozva: olyan funkciók
+érhetőek el innen, amit szándékozunk a publikus API részévé tenni, mert a fejlesztőknek
+nincs rá szüksége, viszont bizonyos publikus API funkciók teszteléséhez elengedhetetlenek.
+Ebből kifolyólag dokumentálva sincsen.
+Ez az API csak QML tesztekhez lett megvalósítva, mivel a Qt WebEngine az elsődleges API
+és Widget oldalon könnyebb a tesztelés. \\
+Másodlagos cél a \texttt{WebEngineViewExperimental} API fokozatos kiváltása volt.
 
-    \item \texttt{ENABLE\_QML\_TESTSUPPPORT\_API} makró
-    \item Build rendszer megpiszkálása: csak akkor buildelődjön ha tesztek is engedélyezve
-        vannak
-    \item error page tesztek hozzáadása
-    \item új QML típus
-    \item ütközés elkerülése az experimental API-val
-    \item warning ha valaki testsupport API-te letiltva tesztel
-\end{itemize}
-\pagebreak
+A teszt, ami behozta ezt az új API-t az \textit{Error Page}-ket tesztelte.
+Ez a funkció sikertelen oldal betöltés esetén egy beépített oldalt jelenít meg a
+hibaüzenettel, ami maga az \textit{Error Page}. A tesztelés azon alapul, hogy a sikeres és
+sikertelen oldal betöltések befejezése után a WebEngineView signal-t küld:
+\texttt{loadingChanged}. A \textit{Error Page} esetén arra számítunk, hogy ennek a signal-nak
+a paramétere hibás oldal betöltésének adatait tárolja. A gond az, hogy a \textit{Error Page}
+is oldal, tehát küld signal-t, ha sikeresen betöltődött.
+
+Kézenfekvőnek tűnik a megoldás, hogy ne küldjük az \textit{Error Page} töltését jelző
+signal-okat, és akkor csak a hibás oldal betöltésének signal-jait kapjuk meg. Ezzel a gond
+az, hogy a tesztbe új oldalt betöltést csak úgy kezdhetünk, ha az \textit{Error Page}
+betöltése már befejeződött, amit signal-ok nélkül nem tudunk ellenőrizni.
+
+Másik lehetőségként merült fel, hogy a hibás oldal, hibát jelző \texttt{loadingChanged}
+signal-ját csak akkor küldjük el, miután az \texttt{Error Page} is betöltődött. Ez további
+problémákat vet fel: nem tudjuk tesztelni, hogy az \texttt{Error Page} betöltése sikeres
+volt e (szélsőséges esetben az \texttt{Error Page} betöltése is meghiúsulhat),
+illetve, ha a felhasználó megszakítja az \texttt{Error Page} betöltését, az API nem értesít
+arról, hogy történt egy hibás oldal betöltés. Továbbá, oldal betöltés során érkeznek más
+signal-ok is (pl.: hány százalékon áll az oldal töltése), aminek lekezelés ebben az esetben
+túl sok hiba lehetőséget hordozna magában.
+
+Végül az első változat lett megvalósítva: a hibás oldal signal-jai változtatás nélkül
+elérhetőek a publikus API-n keresztül, de az \textit{Error Page} signal-jai nem, azt csak
+egy belső, tesztelésre szánt API-n keresztül lehet elérni. Ez lett a
+\textbf{Test Support API}. Az új API-val megoldható lett az, hogy tesztelés során, minden
+\texttt{loadingChanged} signal-t elkapjunk, a hozzátartozó \texttt{LoadRequest}-et egy
+listában tároljuk és a lista elemeit bejárva ellenőrizzük, hogy megfelelő oldal betöltések
+történtek e, a megfelelő sorrendben.
+
+\begin{table}[h!]
+    \centering
+    \begin{tabular}{ | l | l | p{185pt} | }
+        \hline
+        \textbf{Property} & \textbf{Típus} & \textbf{Leírás} \\ \hline
+
+        \makecell[l]{\texttt{loadingChanged} \\ \texttt{(WebEngineLoadRequest)}} &
+        \texttt{signal} &
+        \makecell[l]{
+        Ez a signal lesz kiküldve amikor az \\
+        oldal betöltése megkezdődik, befeje-\\
+        ződik vagy hiba miatt megszakad}
+        \\ \hline
+    \end{tabular}
+    \caption{
+        \label{tab:test-support-webengine-errorpage}
+        Az új \texttt{WebEngineErrorPage} QML típus
+    }
+\end{table}
+
+\begin{table}[h!]
+    \centering
+    \begin{tabular}{ | l | l | p{195pt} | }
+        \hline
+        \textbf{Property} & \textbf{Típus} & \textbf{Leírás} \\ \hline
+
+        \texttt{errorPage} & \texttt{WebEngineErrorPage} &
+        \makecell[l]{
+            \texttt{WebEngineErrorPage} példány, \\
+            a \texttt{WebEngineView}-ba betöltött \\
+            \textit{Error Page} \texttt{loadingChanged} \\
+            signal-jának elkapására}
+        \\ \hline
+    \end{tabular}
+    \caption{
+        \label{tab:test-support-webengine-testsupport}
+        Az új \texttt{WebEngineTestSupport} QML típus
+    }
+\end{table}
+
+Az API megtervezése után a következő kihívást annak kitalálása jelentette, hogy
+hogyan tegyük elérhetővé, a Test Support API-t. Nyilvánvaló, hogy valamilyen módon,
+a \texttt{WebEngineView}-hoz kell kötni. A legkézenfekvőbb megoldásnak a \\
+\texttt{WebEngineView} QML típus kiterjesztése tűnt. Erre a \\
+\texttt{qmlRegisterExtendedType()} függvény nyújt lehetőséget, ami a Qt QML C++ API része.
+A \texttt{WebEngineView} ugyanezzel a megoldással van kiterjesztve az Experimental
+API-val. Ez viszont nem működött, mivel egy ismert, de még nem javított hiba miatt,
+egy QML típust, csak egy másik típussal lehet kiterjeszteni, mert a rákövetkező típus mindig
+felülírja az előzőt. Ez azt jelenti, hogy az ha az Experimental és a Test Support API is
+kiterjesztésként van beregisztrálva, egy QML programban egyszerre csak az egyik
+használható.
+
+Így Test Support API (az Experimental API-val való ütközést elkerülendő), önálló,
+példányosítható QML típusként lett megvalósítva. Az összeköttetést a \\
+\texttt{WebEngineView}-al a \texttt{WebEngineView} API kibővítésével lett megoldva: \\
+a \texttt{testSupport} property-n keresztül beregisztrálható az explicit létrehozott \\
+\texttt{WebEngineTestSupport} példány, a \texttt{WebEngineView} pedig, ha rendelkezik
+ilyen példánnyal, akkor a megfelelő eseményeket át fogja irányítani neki.
+
+\begin{table}[h!]
+    \centering
+    \begin{tabular}{ | l | l | p{216pt} | }
+        \hline
+        \textbf{Property} & \textbf{Típus} & \textbf{Leírás} \\ \hline
+
+        \texttt{testSupport} & \texttt{WebEngineView} &
+        \makecell[l]{
+            Ezen a property-n keresztül regisztrálható \\
+            be az explicit példányosított \\
+            \texttt{WebEngineTestSupport} példány}
+        \\ \hline
+    \end{tabular}
+    \caption{
+        \label{tab:test-support-webengine-view}
+        Az új \texttt{WebEngineTestSupport} QML típus
+    }
+\end{table}
+
+Az ellenőrzés, hogy van e beregisztrált Test Support API többlet költséggel jár, ráadásul
+egy átlag fejlesztőnek nincs is rá szüksége. Ezért a Test Support-hoz tartozó kódok az
+\texttt{ENABLE\_QML\_TESTSUPPORT\_API} makróval lettek guard-olva. Ha Qt úgy lett
+konfigurálva, hogy ne buildeljen teszteket (ahogy release esetén is), akkor a Test Support
+API le lesz tiltva és nem lesz lebuildelve. Ha a fejlesztő később mégis lebuildelné a
+QML teszteket, akkor a build rendszer figyelmeztet, hogy a Test Support API le van tiltva
+és segítséget nyújt, hogyan lehet engedélyezni és lebuildelni.
+
 
 \section{Form Validation}
 \begin{itemize}
