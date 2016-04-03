@@ -1058,10 +1058,6 @@ beépítve.
 \end{center}
 
 \noindent
-\todo{document 82029 fix}
-\bigskip
-
-\noindent
 Az új \textbf{Navigation History} Quick API valósítja meg a böngészési előzmények kezelését,
 tárolását. A Widget API már kész volt, ezért az mintaként szolgált, továbbá a Core modulban
 a szükséges belső API már meg volt valósítva.
@@ -1301,6 +1297,8 @@ információ a QtWebEngine-t használó fejlesztő számára, ezért az elsődle
 letiltása volt. Viszont hibakeresés szempontjából fontosak lehetnek a hibaüzenetek a
 fejlesztés során, ezért egy kapcsolóra volt szükség, ami ezt szabályozza.
 
+\pagebreak
+\noindent
 Az üzenetek szűrésére a Chromium log szinteket definiál:
 \begin{description}[
             labelsep=-0.5cm,
@@ -1473,6 +1471,8 @@ konfigurálva, hogy ne buildeljen teszteket (ahogy release esetén is), akkor a 
 API le lesz tiltva és nem lesz lebuildelve. Ha a fejlesztő később mégis lebuildelné a
 QML teszteket, akkor a build rendszer figyelmeztet, hogy a Test Support API le van tiltva
 és segítséget nyújt, hogyan lehet engedélyezni és lebuildelni.
+
+A \textbf{Test Support API} Qt 5.5-ös verziójában jelent meg.
 
 
 \section{Form Validation}
