@@ -1476,22 +1476,56 @@ A \textbf{Test Support API} Qt 5.5-ös verziójában jelent meg.
 
 
 \section{Form Validation}
+
+\begin{center}
+    \begin{reviewbox}
+        \begin{itemize}
+            \renewcommand{\labelitemi}{\textcolor{qtgreen}{$\blacktriangleright$}}
+            \item \gerrit{107066}
+            \item \gerrit{122727}
+        \end{itemize}
+    \end{reviewbox}
+\end{center}
+
 \begin{itemize}
     \item kódnév: Bubi
     \item Message Bubble
     \item HTML5 feature
-    \item Chromium callback megvalósítása
+    \item Chromium callback-ek megvalósítása
+        \begin{itemize}
+            \item \texttt{WebContentsDelegate::ShowValidationMessage}
+            \item \texttt{WebContentsDelegate::HideValidationMessage}
+            \item \texttt{WebContentsDelegate::MoveValidationMessage}
+        \end{itemize}
     \item Quick és Widget API-ban kétféleképpen megrajzolt buborék
     \item Test Support API teszt
+    \item Qt 5.5
+    \item QML Canvas Item-re rajzol, nincs ikon
+    \item \texttt{UIDelegatesManager}
+    \item \texttt{QT\_UI\_DELEGATES} makró
+    \item \texttt{QtWebEngineWidgetUI} namespace
+    \item Widget: \texttt{QPainter}-el rajzol -> új widget
 \end{itemize}
 \pagebreak
 
 \section{Localization}
+
+\begin{center}
+    \begin{reviewbox}
+        \begin{itemize}
+            \renewcommand{\labelitemi}{\textcolor{qtgreen}{$\blacktriangleright$}}
+            \item \gerrit{111004}
+        \end{itemize}
+    \end{reviewbox}
+\end{center}
+
 \begin{itemize}
     \item Tesztelés miatt: csak angol nyelvű hibaüzenetek
+    \item Form validation teszt
     \item Qt API-n keresztül beállított lokalizáció használata
     \item \texttt{-{}-lang} parancssori kapcsoló lokalizáció felüldefiniálására
     \item \texttt{Chromium} specifikus
+    \item Qt 5.5
 \end{itemize}
 \pagebreak
 
