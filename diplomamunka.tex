@@ -89,7 +89,7 @@
 
 
 \hyphenation{QtWebEngine QtWebKit WebKit Chromium Content Apple Google Quick Widget WebSocket
-QtWebSockets QtWebChannel Android}
+QtWebSockets QtWebChannel Android WebEngine}
 
 \def\title{A QtWebEngine bővítése és bemutatása saját böngészőalkalmazás segítségével}
 
@@ -993,8 +993,8 @@ alkalmazást ``inicializálni'' kell, azért, hogy a megjelenítéshez használt
 a processzek között megosztott legyen (\texttt{Qt::AA\_ShareOpenGLContexts}).
 
 \subsection{Widget és Quick API}
-A QtWebEngine Widget és Quick API-ját rendre a \textbf{Qt WebEngine Widgets} és
-\textbf{Qt WebEngine} modulok valósítják meg.
+A QtWebEngine Widget és Quick API-ját rendre a \\
+\textbf{Qt WebEngine Widgets} és \textbf{Qt WebEngine} modulok valósítják meg.
 Ezek a modulok nem implementálják vagy hívják közvetlenül a Chromium Content API-t,
 hanem azt a Qt WebEngine Core modulon keresztül érik el. A két API között előfordulhatnak
 funkcionalitásban előfordulhatnak különbségek, például az egyikben elérhető egy API
@@ -1487,16 +1487,34 @@ A \textbf{Test Support API} Qt 5.5-ös verziójában jelent meg.
     \end{reviewbox}
 \end{center}
 
+\noindent
+A \textbf{Form Validation} egy HTML5 funkció, amely HTML-ben írt ``űrlapok'' beviteli
+mezőit ellenőrzi scriptek nélkül: ki lett e töltve a beviteli mező, e-mail vagy URL
+formátumú-e a bevitt adat, stb. A feltételeket az input tag-en belül kell megadni és
+egyéni minták is definiálhatóak. Ha az input mezőbe bevitt adat nem felel meg a
+kívánalmaknak, az űrlap elküldése (\textit{submit}) helyett a böngésző felugró buborékban
+(\textit{Message Bubble}) jelzi a hiba okát.
+
+Ez a funkció meg van valósítva a Chromium-ban, viszont a hibaüzenet megjelenítését, már
+a beágyazó alkalmazásra bízza. A Qt WebEngine nem támogatta sem a hibaüzenet továbbítását
+API-n keresztül, sem pedig az üzenet megjelenítését egyik modulban sem. A funkció új API
+helyett \texttt{UI Delegate}-el lett megvalósítva Qt WebEngine és Qt WebEngine Widgets
+modulokban. \texttt{UI Delegate} esetén nem a fejlesztőnek kell lekezelni az eseményt és
+megjelenítenie egy UI elemet, hanem annak megvalósítása már a Qt WebEngine része.
+
+A Chromium Content API 3 callback függvénnyel jelzi, hogy ha a megjelenítendő üzenet állapota
+változik:
+\begin{description}
+    \item[\texttt{ShowValidationMessage}] Az üzenetet meg kell jeleníteni
+    \item[\texttt{HideValidationMessage}] Az üzenetet el kell rejteni
+    \item[\texttt{MoveValidationMessage}] Az üzenet pozíciója megváltozott a képernyőn
+\end{description}
+Ezek a függvények a Core modulban meg lettek valósítva úgy, hogy a \\
+\texttt{WebContentsAdapterClient} megfelelő függvényeit hívják meg, paraméterben
+a megjelenítéshez szükséges adatokat Qt-s típusokra konvertálva. Mindkét modul
+szövegbuborékot rajzol, benne a hibaüzenettel a hibás input mező alá.
+
 \begin{itemize}
-    \item kódnév: Bubi
-    \item Message Bubble
-    \item HTML5 feature
-    \item Chromium callback-ek megvalósítása
-        \begin{itemize}
-            \item \texttt{WebContentsDelegate::ShowValidationMessage}
-            \item \texttt{WebContentsDelegate::HideValidationMessage}
-            \item \texttt{WebContentsDelegate::MoveValidationMessage}
-        \end{itemize}
     \item Quick és Widget API-ban kétféleképpen megrajzolt buborék
     \item Test Support API teszt
     \item Qt 5.5
