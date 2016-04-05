@@ -133,3 +133,4 @@ MessageBubbleWidget
 QtWebEngineWidgetUI
 UIDelegatesManager
 showMessageBubble
+MessageBubble

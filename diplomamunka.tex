@@ -1514,6 +1514,15 @@ Ezek a függvények a Core modulban meg lettek valósítva úgy, hogy a \\
 a megjelenítéshez szükséges adatokat Qt-s típusokra konvertálva. Mindkét modul
 szövegbuborékot rajzol, benne a hibaüzenettel a hibás input mező alá.
 
+\begin{figure}[h]
+    \centering
+    \includegraphics[scale=0.75]{bubi-widget-screenshot}
+    \caption{
+        \label{fig:bubi-widget-screenshot}
+        \texttt{QtWebEngineWidgetUI::MessageBubbleWidget}
+    }
+\end{figure}
+
 A Qt WebEngine Widgets modulban új widget lett megvalósítva a szövegbuborék számára:
 \texttt{MessageBubbleWidget}. Az új widget a \texttt{QtWebEngineWidgetUI} névtérből
 elérhető és csak a Qt WebEngine számára. Az új névtér a \texttt{UI Delegate}-ként szolgál
@@ -1540,7 +1549,14 @@ Ez arra van használva, hogy a buborék méretét kiszámítsuk. A \texttt{mainT
 azonosítója ha az meg van adva. Maga buborék \texttt{QPainter}-el lett megrajzolva, a bal
 felső sarokban található ikon pedig a Qt standard, üzenet mezőhöz tartozó ikonja.
 
-\todo{Screenshot ide a Widget és Quick Bubiról}
+\begin{figure}[ht]
+    \centering
+    \includegraphics[scale=0.75]{bubi-quick-screenshot}
+    \caption{
+        \label{fig:bubi-quick-screenshot}
+        \texttt{MessageBubble} QML típus
+    }
+\end{figure}
 
 A Qt WebEngine modul szövegbuborékja mind megvalósítása, mind megjelenítése némileg eltér
 a widget-es szövegbuboréktól. A szövegbuborék tárolásáról és annak eléréséről
@@ -1573,7 +1589,7 @@ az URL fragment tartalmazza.
 A Form Validation HTML5 funkció támogatása és a hozzátartozó szöveg buborékok a Qt 5.5-ös
 verzióban jelentek meg. A funkció tesztelése már csak az 5.6-os verzióba került be.
 
-
+\pagebreak
 \section{Localization}
 
 \begin{center}
