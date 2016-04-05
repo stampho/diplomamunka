@@ -1540,7 +1540,9 @@ Ez arra van használva, hogy a buborék méretét kiszámítsuk. A \texttt{mainT
 azonosítója ha az meg van adva. Maga buborék \texttt{QPainter}-el lett megrajzolva, a bal
 felső sarokban található ikon pedig a Qt standard, üzenet mezőhöz tartozó ikonja.
 
-A Qt WebEngine modul szövegbuborékja mind megvalósításban, mind megjelenítésben eltér
+\todo{Screenshot ide a Widget és Quick Bubiról}
+
+A Qt WebEngine modul szövegbuborékja mind megvalósítása, mind megjelenítése némileg eltér
 a widget-es szövegbuboréktól. A szövegbuborék tárolásáról és annak eléréséről
 \texttt{UIDelegatesManager} osztály gondoskodik:
 \begin{itemize}
@@ -1558,11 +1560,19 @@ Sajnos ikon használatára nem volt lehetőség, mivel a Qt a QML nyelvben nem n
 ikonokat sem pedig ikon támogatást. A widget-es ikonok használatát kerülni kellett, mert
 a Qt WebEngine modul-nak nem lehet Qt Widgets függősége.
 
-\begin{itemize}
-    \item Test Support API teszt
-    \item Qt 5.5
-\end{itemize}
-\pagebreak
+Az Form Validation funkció tesztelésére a Test Support API lett felhasználva. Mivel a
+Qt WebEngine-ben a Form Validation-nek nincs publikus API-ja a hiba üzeneteket a
+Test Support API teszi elérhetővé a tesztek számára a \\
+\texttt{QQuickWebEngineTestSupport::ValidationMessageShown}
+signal-on keresztül. A hibásan kitöltött űrlapok ellenőrzéséhez az elküldés (submit) gomb
+megnyomására is szükség van a tesztekben. A teszt a gomb megnyomására felhasználói interakció
+híján a Qt Test modul \texttt{keyPress()} függvényét használja. A megfelelő gomb
+kiválasztását (``fókuszálását'') JavaScript kód végzi, ahol a megfelelő gomb azonosítóját
+az URL fragment tartalmazza.
+
+A Form Validation HTML5 funkció támogatása és a hozzátartozó szöveg buborékok a Qt 5.5-ös
+verzióban jelentek meg. A funkció tesztelése már csak az 5.6-os verzióba került be.
+
 
 \section{Localization}
 
