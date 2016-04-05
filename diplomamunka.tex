@@ -1514,15 +1514,53 @@ Ezek a függvények a Core modulban meg lettek valósítva úgy, hogy a \\
 a megjelenítéshez szükséges adatokat Qt-s típusokra konvertálva. Mindkét modul
 szövegbuborékot rajzol, benne a hibaüzenettel a hibás input mező alá.
 
+A Qt WebEngine Widgets modulban új widget lett megvalósítva a szövegbuborék számára:
+\texttt{MessageBubbleWidget}. Az új widget a \texttt{QtWebEngineWidgetUI} névtérből
+elérhető és csak a Qt WebEngine számára. Az új névtér a \texttt{UI Delegate}-ként szolgál
+a Qt WebEngine Widgets modulban. Qt WebEngine-hez tartozó \texttt{UI Delegate}-nek fordítási
+időben letilthatónak kell lennie, ezért az itt implementált funkciók nem lesznek részei
+a Qt WebEngine-nek, ha a projekt a \texttt{WEBENGINE\_CONFIG=no\_ui\_delegates} beállítással
+van konfigurálva.
+
+A \texttt{MessageBubbleWidget} singleton-ként van tárolva \texttt{UI Delegate}-en belül,
+így nem kell mind üzenethez újra felépíteni a widget-et, csak újra rajzolni. Hozzáférést
+az alábbi belső API szolgáltat:
 \begin{itemize}
-    \item Quick és Widget API-ban kétféleképpen megrajzolt buborék
+    \item \texttt{QtWebEngineWidgetUI::MessageBubbleWidget::showBubble(} \\
+                    \texttt{view, anchor, mainText, subText)}
+    \item \texttt{QtWebEngineWidgetUI::MessageBubbleWidget::hideBubble()}
+    \item \texttt{QtWebEngineWidgetUI::MessageBubbleWidget::moveBubble(} \\
+                    \texttt{view, anchor)}
+\end{itemize}
+A \texttt{view} (\texttt{QWebEngineView}) paraméterre azért van szükség, hogy a buborék
+pozíciója meghatározható legyen az ablakon belül. Az \texttt{anchor} (\texttt{QRect}) annak
+a HTML elemnek (beviteli mezőnek) ``körvonala'', amelynek a tartalma a hibát kiváltotta.
+Ez arra van használva, hogy a buborék méretét kiszámítsuk. A \texttt{mainText}
+(\texttt{QString}) maga a hibaüzenet, míg a \texttt{subText} (\texttt{QString)} HTML mező
+azonosítója ha az meg van adva. Maga buborék \texttt{QPainter}-el lett megrajzolva, a bal
+felső sarokban található ikon pedig a Qt standard, üzenet mezőhöz tartozó ikonja.
+
+A Qt WebEngine modul szövegbuborékja mind megvalósításban, mind megjelenítésben eltér
+a widget-es szövegbuboréktól. A szövegbuborék tárolásáról és annak eléréséről
+\texttt{UIDelegatesManager} osztály gondoskodik:
+\begin{itemize}
+    \item \texttt{UIDelegatesManager:showMessageBubble(} \\
+                    \texttt{anchor, mainText, subText}
+    \item \texttt{UIDelegatesManager::hideMessageBubble()}
+    \item \texttt{UIDelegatesManager::moveMessageBubble(anchor)}
+\end{itemize}
+A két API többé kevésbé megegyezik. A legfontosabb különbség, hogy itt nem kell átadni a
+\texttt{view}-t paraméterül, mert az a \texttt{UIDelegatesManager} adattagja. A szövegbuborék
+QML típus QML nyelven lett megvalósítva: \texttt{MessageBubble.qml}. A buborék
+megrajzolás a \texttt{Canvas} QML típus segítségével történik. A \texttt{Canvas} típus
+ugyanolyan JavaScript API-t nyújt a rajzoláshoz, mint a HTML5 \texttt{Canvas} elem.
+Sajnos ikon használatára nem volt lehetőség, mivel a Qt a QML nyelvben nem nyújt beépített
+ikonokat sem pedig ikon támogatást. A widget-es ikonok használatát kerülni kellett, mert
+a Qt WebEngine modul-nak nem lehet Qt Widgets függősége.
+
+\begin{itemize}
     \item Test Support API teszt
     \item Qt 5.5
-    \item QML Canvas Item-re rajzol, nincs ikon
-    \item \texttt{UIDelegatesManager}
-    \item \texttt{QT\_UI\_DELEGATES} makró
-    \item \texttt{QtWebEngineWidgetUI} namespace
-    \item Widget: \texttt{QPainter}-el rajzol -> új widget
 \end{itemize}
 \pagebreak
 
