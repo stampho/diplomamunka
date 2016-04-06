@@ -65,6 +65,10 @@
     \textcolor{qtgreen}{\origurl{https://codereview.qt-project.org/\#/c/#1}}
 }
 
+\newcommand{\qtbug}[1]{%
+    \textcolor{red}{\origurl{https://bugreports.qt.io/browse/QTBUG-#1}}
+}
+
 \setdescription{
     style=standard,
     align=right,
@@ -1601,15 +1605,33 @@ verzióban jelentek meg. A funkció tesztelése már csak az 5.6-os verzióba ke
     \end{reviewbox}
 \end{center}
 
+\noindent
+A \textbf{Localization} funkció felel a Chromium üzeneteinek -- legyen az hiba üzenet vagy
+a Form Validation funkció üzenete -- lefordításáért. Alapértelmezetten az üzenetek a
+rendszer szinten beállított nyelven fognak megjelenni. Ez a nyelv felüldefiniálható
+a \texttt{-{}-lang} kapcsolóval. Erre szükség is van, elsősorban tesztelésnél, ahol a
+hiba üzeneteket, hiba eseteket is ellenőrizni kell.
+
+A kapcsoló szükségessége éppen a Form Validation funkció tesztelésénél merült fel,
+amiről hiba jelentés (bug report) is készült:
+\begin{center}
+    \qtbug{45715}
+\end{center}
+A tesztelésnél angol nyelvű hiba üzeneteket szeretnénk ellenőrizni, ezért kézenfekvő
+megoldásnak tűnt a Chromium \texttt{-{}-lang} kapcsolójával felüldefiniálni a rendszer
+beállítást, azonban az nem működött.
+
 \begin{itemize}
-    \item Tesztelés miatt: csak angol nyelvű hibaüzenetek
-    \item Form validation teszt
-    \item Qt API-n keresztül beállított lokalizáció használata
-    \item \texttt{-{}-lang} parancssori kapcsoló lokalizáció felüldefiniálására
-    \item \texttt{Chromium} specifikus
+    \item Mi hiányzott? -> bug report
+    \item Hogyan lett megoldva, hogy a nyelvi beállítás minden processzre érvényes legyen?
+    \item \texttt{ContentBrowserClient::AppendExtraCommandLineSwitches()}
+    \item Qt API-n keresztül beállított locale is érvényes lesz minden processzre
+    \item \texttt{QLocale::setDefault(QLocale("en"))}
+    \item \texttt{ui::ResourceBundle} -> Mi ez? Miért kell neki locale?
     \item Qt 5.5
 \end{itemize}
 \pagebreak
+
 
 \section{Authentication Dialog}
 \begin{itemize}

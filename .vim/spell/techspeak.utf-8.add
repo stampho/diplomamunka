@@ -134,3 +134,5 @@ QtWebEngineWidgetUI
 UIDelegatesManager
 showMessageBubble
 MessageBubble
+AppendExtraCommandLineSwitches
+ContentBrowserClient
