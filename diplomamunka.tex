@@ -397,7 +397,7 @@ processzek felelnek. Ennek több előnye is van: \cite{bib:chromium-blog-multi-p
         Ha egy oldal betöltésekor vagy egy bővítmény futtatásakor hiba történik és
         összeomlik, az nem rántja magával a teljes böngészőt. Hiba esetén a UI és más
         megnyitott oldalak, tabok megmaradnak.
-    \end{description}
+\end{description}
 
 A multi-processz architektúrának hátrányai is vannak: ez a megoldás sokkal \\
 erőforrás-igényesebb, és a megvalósítás is bonyolultabb (több hibalehetőség).
@@ -1600,34 +1600,50 @@ verzióban jelentek meg. A funkció tesztelése már csak az 5.6-os verzióba ke
     \begin{reviewbox}
         \begin{itemize}
             \renewcommand{\labelitemi}{\textcolor{qtgreen}{$\blacktriangleright$}}
+            \item \gerrit{110958}
             \item \gerrit{111004}
         \end{itemize}
     \end{reviewbox}
 \end{center}
 
 \noindent
-A \textbf{Localization} funkció felel a Chromium üzeneteinek -- legyen az hiba üzenet vagy
-a Form Validation funkció üzenete -- lefordításáért. Alapértelmezetten az üzenetek a
+A \textbf{Localization} funkció felel a Chromium üzeneteinek (legyen az hiba üzenet vagy
+a Form Validation funkció üzenete) lefordításáért. Alapértelmezetten az üzenetek a
 rendszer szinten beállított nyelven fognak megjelenni. Ez a nyelv felüldefiniálható
-a \texttt{-{}-lang} kapcsolóval. Erre szükség is van, elsősorban tesztelésnél, ahol a
-hiba üzeneteket, hiba eseteket is ellenőrizni kell.
+a render processzben a Chromium \texttt{-{}-lang} kapcsolóval. A browser processzben
+ugyanerre a célra a Content API \texttt{ContentBrowserClient::GetApplicationLocale()}
+függvényén keresztül van lehetőség.
 
-A kapcsoló szükségessége éppen a Form Validation funkció tesztelésénél merült fel,
-amiről hiba jelentés (bug report) is készült:
+Tesztelésnél kulcsfontosságú, hogy az üzenetek angol nyelven jelenjenek meg, mivel a
+tesztelés során angol nyelvű hiba üzeneteket használjuk referenciaként. A Chromium
+alapértelmezett nyelvét a Qt által használt nyelvi beállításokkal definiáltuk felül:
+\begin{verbatim}
+std::string ContentBrowserClientQt::GetApplicationLocale()
+{
+    return QLocale().bcp47Name().toStdString();
+}
+\end{verbatim}
+Ez alapján, ahhoz, hogy a tesztekben angol nyelvű hibaüzenetek kapjunk elég a Qt API-n
+keresztül beállítani a nyelvet, a tesztelés inicializálásakor:
+\begin{verbatim}
+QLocale::setDefault(QLocale("en"));
+\end{verbatim}
+Ez a megoldás azonban nem működött és erről hiba jelentés (bug report) is készült:
 \begin{center}
     \qtbug{45715}
 \end{center}
-A tesztelésnél angol nyelvű hiba üzeneteket szeretnénk ellenőrizni, ezért kézenfekvő
-megoldásnak tűnt a Chromium \texttt{-{}-lang} kapcsolójával felüldefiniálni a rendszer
-beállítást, azonban az nem működött.
+
+A hiba oka a Chromium-ban volt, ezért a javítást a \textit{qtwebengine-chromium} Chromium
+forkhoz kellett hozzáadni. A probléma az volt, hogy amelyik rendszeren volt elérhető
+GLib ott arra volt bízva a megfelelő lokalizáció kiválasztása. Qt esetében ezt a kód részt
+(``code path''-t) ki kellett kapcsolni, hogy ne írja felül a Qt beállításait.
+
+\texttt{-{}-lang} kapcsoló \dots funkcionalitás \dots
 
 \begin{itemize}
-    \item Mi hiányzott? -> bug report
     \item Hogyan lett megoldva, hogy a nyelvi beállítás minden processzre érvényes legyen?
-    \item \texttt{ContentBrowserClient::AppendExtraCommandLineSwitches()}
-    \item Qt API-n keresztül beállított locale is érvényes lesz minden processzre
-    \item \texttt{QLocale::setDefault(QLocale("en"))}
-    \item \texttt{ui::ResourceBundle} -> Mi ez? Miért kell neki locale?
+    \item \texttt{ContentBrowserClient::AppendExtraCommandLineSwitches()} \\
+        függvényen keresztül a \texttt{-{}-lang} kapcsoló átadása a többi processznek
     \item Qt 5.5
 \end{itemize}
 \pagebreak
