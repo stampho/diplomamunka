@@ -1666,8 +1666,32 @@ verziójában jelent meg.
 
 
 \section{Authentication Dialog}
+
+\begin{center}
+    \begin{reviewbox}
+        \begin{itemize}
+            \renewcommand{\labelitemi}{\textcolor{qtgreen}{$\blacktriangleright$}}
+            \item \gerrit{124330}
+            \item \gerrit{124331}
+            \item \gerrit{124332}
+            \item \gerrit{124333}
+        \end{itemize}
+    \end{reviewbox}
+\end{center}
+
 \begin{itemize}
     \item Dialog Quick-hez: \texttt{AuthenticationDialogController}
+    \item 4 patch:
+        \begin{itemize}
+            \item WIDGET: bug fix -> ha nincs megadva felhasználónév és jelszó
+                (empty credentials) az nem cancel
+            \item CORE: \texttt{AuthenticationDialogController} megvalósítása, \\
+                    widget API igazítása az új internal Core API-hoz
+                \item WIDGET: bug fix (widget demobrowser) -> jelszóval védett oldalak esetén
+                    nem tudja betölteni a favicon-t
+                \item QUICK: UI Delegate megvalósítása, saját authentication dialog,
+                    a Qt Quick Dialogs nem tartalmaz erre megfelelő dialog ablakot
+        \end{itemize}
     \item HTTP authentication
         \begin{itemize}
             \item Simple authentication
@@ -1688,7 +1712,6 @@ verziójában jelent meg.
             \item Az Image QML elem implicit elvégzi a letöltést, ami a felhasználó elől
                 rejtve marad => nincs lehetőség authentikációra
         \end{itemize}
-    \item Empty credentials és cancel
 \end{itemize}
 \pagebreak
 
