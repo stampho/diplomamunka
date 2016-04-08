@@ -1638,15 +1638,31 @@ forkhoz kellett hozzáadni. A probléma az volt, hogy amelyik rendszeren volt el
 GLib ott arra volt bízva a megfelelő lokalizáció kiválasztása. Qt esetében ezt a kód részt
 (``code path''-t) ki kellett kapcsolni, hogy ne írja felül a Qt beállításait.
 
-\texttt{-{}-lang} kapcsoló \dots funkcionalitás \dots
+Egyes üzenetek a render processztől jönnek, amelyekre nem érvényes a \\
+\texttt{ContentBrowserClient::GetApplicationLocale} beállítása. A render processznek
+és más nem browser processzeknek van egy \texttt{-{}-lang} parancssori kapcsolója, amivel
+megadható a kiválasztott locale. A Content API \\
+\texttt{ContentBrowserClientQt::AppendExtraCommandLineSwitches()} \\
+függvényének implementálásával megadható, hogy amikor a browser processz új processzt indít,
+annak milyen kapcsolót adjon át. Így ezzel a megoldással minden újonnan induló processznek
+átadjuk a \\
+\texttt{ContentBrowserClient::GetApplicationLocale()} függvény által visszaadott
+locale-t a processz \texttt{-{}-lang} kapcsolóján keresztül:
+\begin{verbatim}
+AppendSwitchASCII(switches::kLang, GetApplicationLocale());
+\end{verbatim}
 
-\begin{itemize}
-    \item Hogyan lett megoldva, hogy a nyelvi beállítás minden processzre érvényes legyen?
-    \item \texttt{ContentBrowserClient::AppendExtraCommandLineSwitches()} \\
-        függvényen keresztül a \texttt{-{}-lang} kapcsoló átadása a többi processznek
-    \item Qt 5.5
-\end{itemize}
-\pagebreak
+Ezzel a megoldással a tesztekben kapott Chromium üzenetek minden esetben angolul jelenik meg,
+viszont előfordulhat, hogy a felhasználó is szeretné felül definiálni parancssorból a
+böngésző alkalmazás nyelvét, ezért a Qt WebEngine-ben a browser processzben is meg lett
+valósítva, hogy \texttt{-{}-lang} kapcsolóval átadott érték felülírja a Qt alapértelmezett
+nyelvi beállítását. \\
+Ez a \texttt{WebEngineLibraryInfo::getApplicationLocale()} függvényben
+lett megvalósítva, hogy ha a browser processz \texttt{-{}-lang} kapcsolóval lett indítva,
+akkor annak az értékével térjen vissza és ne kérje le a Qt-tól a locale értékét.
+
+Az új \texttt{-{}-lang} parancssori kapcsoló támogatása és a tesztelés javítása a Qt 5.5-ös
+verziójában jelent meg.
 
 
 \section{Authentication Dialog}

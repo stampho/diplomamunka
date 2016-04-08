@@ -136,3 +136,4 @@ showMessageBubble
 MessageBubble
 AppendExtraCommandLineSwitches
 ContentBrowserClient
+GetApplicationLocale
