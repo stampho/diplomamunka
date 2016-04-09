@@ -1789,43 +1789,189 @@ A javítások és az új Quick Authentication Dialog ablak a Qt 5.6-os verziój�
 
 
 \section{Favicon Manager}
+
 \begin{itemize}
-    \item Ikonok letöltése a Chromium Content API-n keresztül
-    \item Az összes ikon letöltése és a legjobb minőségű propagálása
+    \item Mi a favicon? Touch icon is van
+    \item Célok:
         \begin{itemize}
-            \item Az eredeti megvalósításban a touch ikonok nem voltak kezelve
-            \item Fontos lehet érintő kijelzős eszközökön vagy akár desktop gépeken is
-            \item A history vagy könyvjelzők megjelenítés nagy méretű ikonokkal
+            \item Authentikációs hiba kijavítása a Qt WebEngine-ben
+                \begin{itemize}
+                    \item Megoldás: ikonok letöltése a Chromium Content API-n keresztül
+                \end{itemize}
+            \item Legjobb minőségű ikon propagálása
+                \begin{itemize}
+                    \item Az eredeti megvalósításban a touch ikonok nem voltak kezelve
+                    \item Fontos lehet érintő kijelzős eszközökön vagy akár desktop gépeken is
+                    \item A history vagy könyvjelzők megjelenítés nagy méretű ikonokkal
+                \end{itemize}
         \end{itemize}
-    \item Konfigurálhatóság a WebEngineSettings-en keresztül (``Icon Download Modes'')
+    \item \qtbug{51179}
+\end{itemize}
+
+\begin{center}
+    \begin{reviewbox}
         \begin{itemize}
-            \item Letilthatóak lehessenek az ikonok (sávszélesség, sebesség, saját icon
-                manager)
-            \item Desktop-on alapból nincsenek bekapcsolva a touch ikonok, de engedélyezni
-                lehessen őket
+            \renewcommand{\labelitemi}{\textcolor{qtgreen}{$\blacktriangleright$}}
+            \item \gerrit{127480}
+            \item \gerrit{148542}
         \end{itemize}
-    \item Terv: egy QIcon-ban ``összegyúrva'' az összes ikon
+    \end{reviewbox}
+\end{center}
+
+\begin{itemize}
+    \item Implementáció a Core modulban: Favicon Manager
+    \item \texttt{WebContents::DownloadImage} Content API függvény használata az ikon
+        letöltésére
+    \item Összes ikon letöltése és a legjobb minőségű ikon kiválasztása/propagálása
+    \item Ikon betöltés QRC-ből (Qt Resource System)
+    \item Ikon cache-elése
+    \item Egyszerűség kedvéért: minden tabhoz (webContents) egy Favicon Manager
+    \item Új QML és Widget favicon tesztek
+    \item C++11 for loop-ok használata
+\end{itemize}
+
+\begin{center}
+    \begin{reviewbox}
         \begin{itemize}
-            \item a felhasználó extra API nélkül könnyedén kiválaszthatja a számára
-                megfelelő méretet
-            \item Quick esetében az Image átméretezésekor a megfelelő felbontású ikon
-                kerül betöltésre
+            \renewcommand{\labelitemi}{\textcolor{qtgreen}{$\blacktriangleright$}}
+            \item \gerrit{150668}
         \end{itemize}
-    \item widget API-ra példa QtWebKit-ből
+    \end{reviewbox}
+\end{center}
+
+\begin{itemize}
+    \item Javítás: ne küldjük ki az \texttt{iconChanged} signal-t ha az \texttt{iconUrl}
+        nem is változott
+\end{itemize}
+
+\begin{center}
+    \begin{reviewbox}
         \begin{itemize}
-            \item Azért van szükség módosításra
-            \item kész dokumentáció
+            \renewcommand{\labelitemi}{\textcolor{qtgreen}{$\blacktriangleright$}}
+            \item \gerrit{150667}
         \end{itemize}
-    \item Quick API-hoz icon image provider
+    \end{reviewbox}
+\end{center}
+
+\begin{itemize}
+    \item Azoknak az internal API függvényeknek az eltávolítása, amelyek egy publikus
+        Favicon Manager API-hoz lettek volna szükségesek:
         \begin{itemize}
-            \item problémák: hogyan kössük be a manager-t? Hol kössük be a provider-t az
-                engine-be?
+            \item \texttt{downloadIcon()}
+            \item \texttt{removeIcon()}
         \end{itemize}
+    \item Régi működés megtartása, hogy az első favicon-t propagáljuk => felesleges
+    \item A kiválasztott ikon tárolása a \texttt{NavigationEntry}-ben
     \item Hosszabb távú tervek (Qt 5.8)
         \begin{itemize}
             \item API bővítése az elérhető ikonok listázására és explicit letöltésére
             \item Icon database: merevlemezen tárolt ikonok (oldal betöltése előtt is
                 elérhető legyen vagy offline módban)
+        \end{itemize}
+\end{itemize}
+
+\begin{center}
+    \begin{reviewbox}
+        \begin{itemize}
+            \renewcommand{\labelitemi}{\textcolor{qtgreen}{$\blacktriangleright$}}
+            \item \gerrit{153438}
+        \end{itemize}
+    \end{reviewbox}
+\end{center}
+
+\begin{itemize}
+    \item bestFavicon teszt workaround
+    \item Probléma: 49-es Chromium óta az \texttt{iconChanged} signal majdnem mindig a \\
+        \texttt{loadFinished} után érkezik.
+    \item Két eset lehetséges:
+        \begin{itemize}
+            \item 1 \texttt{iconChanged} signal érkezik: az \texttt{iconChanged} a
+                \texttt{loadFinished} előtt küldődik
+            \item 2 \texttt{iconChanged} signal érkezik: a \texttt{loadFinished} reseteli az
+                ikont, majd a második \texttt{iconChanged} tartalmazza az oldal ikonját
+        \end{itemize}
+    \item A második \texttt{iconChanged} signal küldése sokszor ``késik''
+    \item Ha késik az elrontja a következő teszt eredményét is
+    \item Workaround: ha az \texttt{iconChanged} signal-ban kapott URL üres, akkor vár
+        a második signal-ra
+\end{itemize}
+
+\begin{center}
+    \begin{reviewbox}
+        \begin{itemize}
+            \item \gerrit{151057}
+        \end{itemize}
+    \end{reviewbox}
+\end{center}
+
+\begin{itemize}
+    \item Konfigurálhatóság a WebEngineSettings-en keresztül (``Icon Download Modes'')
+    \item Letilthatóak lehessenek az ikonok (sávszélesség, sebesség, saját icon manager)
+    \item Desktop-on alapból nincsenek bekapcsolva a touch ikonok, de engedélyezni
+        lehessen őket
+    \item 2 beállítás:
+        \begin{itemize}
+            \item \texttt{AutoLoadIconsForPage}: automatikusan töltse le az ikont a \\
+                Qt WebEngine
+            \item \texttt{TouchIconsEnabled}: töltse le a touch ikonokat is
+        \end{itemize}
+    \end{itemize}
+
+\begin{center}
+    \begin{reviewbox}
+        \begin{itemize}
+            \item \gerrit{151314}
+            \item \gerrit{151315}
+        \end{itemize}
+    \end{reviewbox}
+\end{center}
+
+\begin{itemize}
+    \item Widget API ``feljavítása''
+        \begin{itemize}
+            \item \texttt{icon} property a \texttt{QIcon}-hoz,
+                ha változik \texttt{iconChanged}
+            \item \texttt{iconUrl} property a \texttt{QUrl}-hez,
+                ha változik \texttt{iconUrlChanged}
+        \end{itemize}
+    \item Nem csak az URL-t lehet lekérdezni, hanem magát az ikont is
+    \item A Widget demobrowser-ből el lett távolítva a workaround
+    \item Több ikont tartalmazó ikon (``multi-sized icon'') teszt
+    \item Dokumentáció frissítése
+\end{itemize}
+
+\begin{center}
+    \begin{reviewbox}
+        \begin{itemize}
+            \item \gerrit{154018}
+        \end{itemize}
+    \end{reviewbox}
+\end{center}
+
+\begin{itemize}
+    \item Még nem végleges, valószínűleg 2 patch-be lesz szétszedve
+    \item Quick API-hoz icon image provider
+    \item problémák: hogyan kössük be a manager-t? Hol kössük be a provider-t az engine-be?
+    \item tesztelés:
+        \begin{itemize}
+            \item Multi sized icon: minden ikon szürke színű és az árnyalat kódolja az
+                ikon méretét (pl.: 32x32 -> rgb(32, 32, 32)
+            \item Egy pixel kiolvasásával ellenőrizhető, hogy a favicon provider
+                a megfelelő méretű ikont töltötte e be
+            \item hogyan vegyünk ki egy QML item-ből egy pixelt?
+        \end{itemize}
+\end{itemize}
+
+\noindent
+\dots
+
+\begin{itemize}
+    \item 5.7-ben jelent meg
+    \item 5.8-ban bővül
+        \begin{itemize}
+            \item Favicon Manager API
+            \item Favicon Database: \\
+                \qtbug{51184}
         \end{itemize}
 \end{itemize}
 \pagebreak
