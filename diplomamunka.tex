@@ -1679,39 +1679,68 @@ verziójában jelent meg.
     \end{reviewbox}
 \end{center}
 
+\noindent
+Az legtöbb böngésző támogatja a HTTP protokoll által nyújtott bejelentkezés funkciót
+(Basic Access Authentication - RFC 2617), amely a legegyszerűbb módja a web lapok jelszóval
+való védésének. Nincs szükség bejelentkező oldalra, cookie-kra, hanem a HTTP header
+megfelelő mezőit használja az azonosításhoz. Továbbá HTTP protokoll támogatja a HTTP proxy
+szerverre történő bejelentkezést is.
+
+A HTTP protokollon keresztül történő bejelentkezéshez szükséges form (űrlap) nem a web
+oldalon jelenik meg, ezért azt jellemzően a böngészők egy felugró ablakon teszik láthatóvá
+a felhasználó számára. A Chromium megvalósítja a HTTP protokollon keresztül történő
+bejelentkeztetést, viszont a felugró ablakot a beágyazó alkalmazásnak kell megvalósítania
+a Content API-n keresztül. A Qt WebEngine ezt megvalósító funkciója az
+\textbf{Authentication Dialog}.
+
+Az Authentication Dialog már meg volt valósítva a Qt WebEngine Widgets modulban, azonban
+ez a megvalósítás hibás volt, illetve az ehhez tartozó implementáció a Core modulban nem
+volt felhasználható egy Quick UI Delegate megvalósításához. A Quick funkció megvalósítását
+ezért a Widget API javításával és újraírásával kezdtem.
+
+Az első kijavítandó hiba az volt, hogy a Widget megvalósítás nem támogatta az üres
+felhasználónév és jelszó párral történő bejelentkezést, mivel ezt az esetet úgy kezelte,
+hogy a felhasználó megszakítja a bejelentkezést (Mégse/Cancel gomb). A felhasználó név
+és jelszó (credentials) tárolására a Qt Network module saját osztályt definiál:
+\texttt{QAuthenticator}. A hiba javításához megszakítás esetén a \texttt{QAuthenticator}
+példány \texttt{user} és \texttt{password} mezőjébe nem üres string-et tárolunk, hanem
+nem állítunk be semmit és a példány nem inicializált állapotban marad, amit annak az
+\texttt{isNull()} metódusával lehet lekérdezni. Qt Webengine Widgets modul a javításban
+ezt az állapotot ellenőrzi és visszatérési értékében tájékoztatja a Core modult, hogy
+az azonosítás meg lett e szakítva vagy sem.
+
+A másik hiba a Widget API-ban a böngésző ikonok (favicon) megjelenítése volt. Amennyiben a
+felhasználó jelszóval védett oldalt nyitott meg, bejelentkezés után a böngésző nem tudta
+letölteni az oldalhoz tartozó ikont. A probléma oka, hogy az ikon letöltést nem a Chromium
+végezte, hanem a Qt Network modul \texttt{QNetworkAccessManager}-re, aminek nem volt
+hozzáférése a Chromium által tárolt felhasználónév jelszó pároshoz. A problémát a
+Qt WebEngine Widgets module \texttt{demobrowser} példa alkalmazásában kellett orvosolni,
+mivel az \texttt{QNetworkAccessManager}-rel támogatott letöltés nem a Qt WebEngine API része.
+A javítás ezért egy ideiglenes ``workaround'' lett, amíg az ikonok letöltésért felelős
+funkcionalitás/API nincs megvalósítva a Qt WebEngine-ben. A javítás lényege az, hogy a
+legutóbbi Authentication Dialog-ban bevitt felhasználónév/jelszó párost hordozó
+\texttt{QAuthenticator} példányt a böngésző oldalon is tároljuk és amikor a
+\texttt{QNetworkAccessManager} azonosítást igényel, akkor a tárolt a adatokkal próbálja
+azonosítani magát.
+
+Ennél a javításnál különösen kellett ügyelni arra, hogy ez a workaround ne adjon lehetőséget
+visszaélésre, például az eltárolt adatok megszerzésére egy kimondottan erre a célra
+készített web oldal betöltésével. A támadások kivédésére a \texttt{QAuthenticator} példány
+tárol a web oldalhoz vagy a proxy szerverhez tartozó információkat is azok egyértelmű
+azonosításához. Így a \texttt{QNetworkAccessManager} csak olyan lekérésnél próbál meg
+bejelentkezni a \texttt{QAuthenticator}-ban tárolt adatokkal, ahol az azonosítást kérő
+szervert egyértelműen azonosítani tudja. További szépséghibája a javításnak, hogy
+ugyanezt a problémát a QML/Quick API-ra építő böngészőkben nem oldja meg, mivel ott az ikon
+letöltése az \texttt{Image} QML típuson történik, amely nem nyújt lehetőséget az
+autentikációra.
+
 \begin{itemize}
     \item Dialog Quick-hez: \texttt{AuthenticationDialogController}
-    \item 4 patch:
-        \begin{itemize}
-            \item WIDGET: bug fix -> ha nincs megadva felhasználónév és jelszó
-                (empty credentials) az nem cancel
-            \item CORE: \texttt{AuthenticationDialogController} megvalósítása, \\
-                    widget API igazítása az új internal Core API-hoz
-                \item WIDGET: bug fix (widget demobrowser) -> jelszóval védett oldalak esetén
-                    nem tudja betölteni a favicon-t
-                \item QUICK: UI Delegate megvalósítása, saját authentication dialog,
-                    a Qt Quick Dialogs nem tartalmaz erre megfelelő dialog ablakot
-        \end{itemize}
-    \item HTTP authentication
-        \begin{itemize}
-            \item Simple authentication
-            \item Kerberos?
-        \end{itemize}
-    \item Proxy authentication
-    \item Jelszóval védett oldalak esetén dobjon fel ablakot a felhasználó név és jelszó
-        megadásához
-        \begin{itemize}
-            \item pl. \url{wiki.sed.hu}
-        \end{itemize}
-    \item Probléma, authentikált oldalak esetén nem lehet letölteni a favicon-t
-        \begin{itemize}
-            \item Widget: QNAM (QNetworkAccessManager) tölti le az ikont, viszont nem kapja
-                meg a bejelentkezéshez szükséges credentials-t
-            \item Quick: Image QML elem van használva a kép megjelenítésére (ikon támogatás a
-                QML-ben nincs).
-            \item Az Image QML elem implicit elvégzi a letöltést, ami a felhasználó elől
-                rejtve marad => nincs lehetőség authentikációra
-        \end{itemize}
+    \item CORE: \texttt{AuthenticationDialogController} megvalósítása, \\
+            widget API igazítása az új internal Core API-hoz
+    \item QUICK: UI Delegate megvalósítása, saját authentication dialog,
+        a Qt Quick Dialogs nem tartalmaz erre megfelelő dialog ablakot
+    \item példa: \url{wiki.sed.h}
 \end{itemize}
 \pagebreak
 
