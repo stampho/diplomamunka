@@ -137,3 +137,9 @@ MessageBubble
 AppendExtraCommandLineSwitches
 ContentBrowserClient
 GetApplicationLocale
+AuthenticationDialogController
+proxyAuthenticationRequired
+ResourceDispatcherHostLoginDelegate
+authenticationRequired
+QAuthenticator
+ResourceDispatcherHostLoginDelegateQt

@@ -1706,8 +1706,8 @@ hogy a felhasználó megszakítja a bejelentkezést (Mégse/Cancel gomb). A felh
 példány \texttt{user} és \texttt{password} mezőjébe nem üres string-et tárolunk, hanem
 nem állítunk be semmit és a példány nem inicializált állapotban marad, amit annak az
 \texttt{isNull()} metódusával lehet lekérdezni. Qt Webengine Widgets modul a javításban
-ezt az állapotot ellenőrzi és visszatérési értékében tájékoztatja a Core modult, hogy
-az azonosítás meg lett e szakítva vagy sem.
+ezt az állapotot ellenőrzi és továbbítja a Core modulnak, hogy az azonosítás meg lett e
+szakítva vagy sem.
 
 A másik hiba a Widget API-ban a böngésző ikonok (favicon) megjelenítése volt. Amennyiben a
 felhasználó jelszóval védett oldalt nyitott meg, bejelentkezés után a böngésző nem tudta
@@ -1734,15 +1734,59 @@ ugyanezt a problémát a QML/Quick API-ra építő böngészőkben nem oldja meg
 letöltése az \texttt{Image} QML típuson történik, amely nem nyújt lehetőséget az
 autentikációra.
 
-\begin{itemize}
-    \item Dialog Quick-hez: \texttt{AuthenticationDialogController}
-    \item CORE: \texttt{AuthenticationDialogController} megvalósítása, \\
-            widget API igazítása az új internal Core API-hoz
-    \item QUICK: UI Delegate megvalósítása, saját authentication dialog,
-        a Qt Quick Dialogs nem tartalmaz erre megfelelő dialog ablakot
-    \item példa: \url{wiki.sed.h}
-\end{itemize}
-\pagebreak
+Widget hibák javítása után a következő akadályt a Quick API Authentication Dialog-jának
+megvalósításához a Content API \\
+\texttt{ResourceDispatcherHostLoginDelegate} interface-ének implementációja jelentette.
+Ez az interface már meg volt valósítva az egyszerűség kedvéért a Widget ``szinkron''
+API-jának megfelelően. A szinkron API ez esetben azt jelenti, hogy a \\
+\texttt{QWebEnginePrivate::authenticationRequired()} függvényen belül \\
+kiküldött \texttt{authenticationRequired} vagy \texttt{proxyAuthenticationRequired}
+szignálok által kiváltott slot-ok (ez esetben a dialog) végrehajtását a függvény megvárja
+és nem megy tovább, így nem kell a dialog ablak bezárását külön eseménnyel lekezelni.
+A Quick aszinkron API-jával ez nem megoldható, ezért a \\
+\texttt{ResourceDispatcherHostLoginDelegate}-nek olyan közös megvalósítására \\
+van szükség a Core modulban, amely mind két típusú API-val használható.
+
+A új közös belső Core API-t \texttt{AuthenticationDialogController} osztály valósítja meg
+a hasonló \texttt{JavaScriptDialogController} osztály mintájára. \\
+Az \texttt{AuthenticationDialogController} osztály a \\
+\texttt{ResourceDispatcherHostLoginDelegateQt} példányosítja, amikor a Content API jelez,
+hogy új Authentication Dialog ablakra van szükség. Példányosítás után a \\
+\texttt{ResourceDispatcherHostLoginDelegateQt} átadja azt az API-nak, hogy azon keresztül
+az beállíthassa a felhasználótól bekért felhasználónév/jelszó párost.
+
+Az \texttt{AuthenticationDialogController}-en
+belül két slot van megvalósítva: \texttt{accept()} a belépéshez és \texttt{reject()} a
+megszakításhoz. A slotok implementálják Chromium értesítését a Content API-n keresztül a
+felhasználói interakció eredményéről. A Widget API könnyen hozzáigazítható volt az új
+modellhez és hála a két új slot-nak a \texttt{AuthenticationDialogController} alkalmas
+olyan aszinkron API megvalósítására is mint a Qt WebEngine modul, Quick API-ja.
+
+Amíg a Widget API-ban lehetséges a fejlesztőre bízni a dialog megvalósítását, addig a
+QML/Quick API-ban (még) nincs lehetőség saját dialog ablakok összekötésére a Qt WebEngine
+eseményeivel. Ezért a Quick Authentication Dialog-ot Qt WebEngine-en belül kellett
+megvalósítani \texttt{UIDelegatesManager} segítségével akár csak a Form Validation funkció
+szöveg buborékja (\texttt{MessageBubble}) esetén.
+
+Mivel a Qt Declarative komponens nem nyújt bejelentkező (login) dialog ablakot a Quick-hez,
+ezért nem volt elég egy már meglévő QML típust bekötni a \\
+\texttt{UIDelegatesManager}-be, hanem egy újat kellett implementálni erre a célra
+QML nyelven: \texttt{AuthenticationDialog.qml}. Ez az új QML típus csak a QtWebEngine-ből
+használható, a publikus API-n keresztül nem érhető el. A dialog ablak üzenetei és az
+események lekezelése a \texttt{UIDelegatesManager}-en belül vannak megvalósítva C++
+nyelven.
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[scale=0.75]{ad-quick-screenshot}
+    \caption{
+        \label{fig:ad-quick-screenshot}
+        \texttt{AuthenticationDialog} QML típus
+    }
+\end{figure}
+
+A javítások és az új Quick Authentication Dialog ablak a Qt 5.6-os verziójában jelentek meg.
+
 
 \section{Favicon Manager}
 \begin{itemize}
