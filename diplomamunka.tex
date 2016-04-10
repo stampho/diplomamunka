@@ -1790,23 +1790,39 @@ A javítások és az új Quick Authentication Dialog ablak a Qt 5.6-os verziój�
 
 \section{Favicon Manager}
 
+\noindent
+A \textbf{favicon} a web oldalhoz tartozó ikon, vagy más néven \textit{shortcut icon}. A
+favicon-t web oldal HTML kódjában kell megadni az alábbi módon:
+\begin{verbatim}
+<html>
+    <head>
+        <link rel="shortcut icon" href="favicon.png" />
+    </head>
+</html>
+\end{verbatim}
+A böngésző alkalmazás ezt az ikont tetszőleges célokra használhatja fel, jellemzően az URL
+bar-on vagy a tab-on jelenítik meg.
+Az oldalhoz rendelt ikon lehet \textit{touch icon} is. A touch icon jellemzően nagyobb
+felbontású, mint a favicon és főleg érintőképernyős készülékeken használják az előzmények
+és/vagy könyvjelzők megjelenítésére. Egy oldalhoz több favicon és/vagy touch icon is
+tartozhat, jellemzően a böngésző alkalmazás választ közülük.
+
+A \textbf{Favicon Manager} ezeket az ikonokat tölti le a Chromium Content API-n keresztül,
+és nyújt lehetőséget az elérésükre. Megvalósítását több cél is motiválta:
 \begin{itemize}
-    \item Mi a favicon? Touch icon is van
-    \item Célok:
-        \begin{itemize}
-            \item Authentikációs hiba kijavítása a Qt WebEngine-ben
-                \begin{itemize}
-                    \item Megoldás: ikonok letöltése a Chromium Content API-n keresztül
-                \end{itemize}
-            \item Legjobb minőségű ikon propagálása
-                \begin{itemize}
-                    \item Az eredeti megvalósításban a touch ikonok nem voltak kezelve
-                    \item Fontos lehet érintő kijelzős eszközökön vagy akár desktop gépeken is
-                    \item A history vagy könyvjelzők megjelenítés nagy méretű ikonokkal
-                \end{itemize}
-        \end{itemize}
-    \item \qtbug{51179}
+    \item Az jelszóval védett oldalak betöltése esetén ne legyen szükség workaround-ra a
+        böngésző alkalmazás kódjában ahhoz, hogy le lehessen tölteni a favicon-t
+    \item A Qt WebEngine korábbi verziói nem támogatták a touch icon-ok használatát
+    \item A Qt WebEngine korábbi verziói nem támogatták az ikonok közötti választást
+    \item Bizonyos esetekben a touch icon-ok közül is a legnagyobb felbontásúra van szükség
 \end{itemize}
+
+Mivel a Favicon Manager megvalósítása sok részfeladatot foglal magába, ezért funkcióhoz
+tartozó módosításokhoz issue is készült:
+\begin{center}
+    \qtbug{51179}
+\end{center}
+Az alább bemutatott patch-ek a részfeladatokat valósítják meg.
 
 \begin{center}
     \begin{reviewbox}
