@@ -9,7 +9,8 @@ SOURCES += main.cpp
 RESOURCES += qml.qrc
 
 OTHER_FILES += \
-    main.qml
+    main.qml \
+    SliderBar.qml
 
 HEADERS += \
     utils.h

@@ -1,0 +1,85 @@
+import QtQuick 2.6
+
+Rectangle {
+    id: root
+
+    default property alias contents: content.data
+    property int handleHeight: 15
+
+    y: parent.y - height + handleHeight
+
+    SystemPalette {
+        id: palette
+    }
+
+    Behavior on y {
+        NumberAnimation {
+            easing.type: "InBack"
+            duration: 300
+        }
+    }
+
+    Rectangle {
+        id: content
+        width: root.width
+        height: root.height - root.handleHeight
+
+        anchors.top: root.top
+    }
+
+    Rectangle {
+        width: root.width
+        height: root.handleHeight
+
+        anchors.bottom: root.bottom
+
+        color: palette.window
+        clip: true
+
+        MouseArea {
+            anchors.fill: parent
+            onClicked: {
+                var ypos = Math.round(root.y)
+                if (ypos < 0)
+                    root.y = 0
+                else
+                    root.y = root.y - root.height + height
+
+                handleArrow.rotation += 180
+            }
+        }
+
+        Canvas {
+            id: handleArrow
+
+            antialiasing:  true
+            anchors.centerIn: parent
+
+            width: 20
+            height: parent.height - 4
+
+            Behavior on rotation {
+                NumberAnimation {
+                    easing.type: "InCubic"
+                    duration: 300
+                }
+            }
+
+            onPaint: {
+                var ctx = getContext("2d")
+
+                ctx.strokeStyle = Qt.darker(palette.window)
+                ctx.fillStyle = Qt.darker(palette.window)
+                ctx.lineWidth = 1
+                ctx.lineJoin = "round"
+
+                ctx.moveTo(width / 2, height )
+                ctx.lineTo(0, 0)
+                ctx.lineTo(width, 0)
+                ctx.closePath()
+
+                ctx.fill()
+            }
+        }
+    }
+}
