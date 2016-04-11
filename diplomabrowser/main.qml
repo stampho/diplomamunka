@@ -13,10 +13,16 @@ ApplicationWindow {
             title: qsTr("File")
             MenuItem {
                 text: qsTr("&Open")
-                onTriggered: console.log("Open action triggered");
+                shortcut: "Ctrl+l"
+                onTriggered: {
+                    urlBar.open()
+                    urlField.forceActiveFocus()
+                    urlField.selectAll()
+                }
             }
             MenuItem {
-                text: qsTr("Exit")
+                text: qsTr("&Quit")
+                shortcut: "Ctrl+q"
                 onTriggered: Qt.quit();
             }
         }
@@ -28,6 +34,8 @@ ApplicationWindow {
         height: 50
 
         TextField {
+            id: urlField
+
             anchors.fill: parent
             text: webEngineView && webEngineView.url
             onAccepted: webEngineView.url = utils.fromUserInput(text)
@@ -41,5 +49,10 @@ ApplicationWindow {
         width: parent.width
 
         url: utils.fromUserInput("http://www.google.com")
+
+        onLoadingChanged: {
+            if (loadRequest.status == WebEngineView.LoadSucceededStatus)
+                urlBar.close()
+        }
     }
 }

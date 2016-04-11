@@ -6,6 +6,21 @@ Rectangle {
     default property alias contents: content.data
     property int handleHeight: 15
 
+    function open() {
+        if (Math.round(root.y) == 0)
+            return
+
+        y = 0;
+        handleArrow.rotation += 180
+    }
+
+    function close() {
+        if (Math.round(root.y) != 0)
+            return
+        y = parent.y - height + handleHeight
+        handleArrow.rotation += 180
+    }
+
     y: parent.y - height + handleHeight
 
     SystemPalette {
@@ -41,11 +56,9 @@ Rectangle {
             onClicked: {
                 var ypos = Math.round(root.y)
                 if (ypos < 0)
-                    root.y = 0
+                    root.open()
                 else
-                    root.y = root.y - root.height + height
-
-                handleArrow.rotation += 180
+                    root.close()
             }
         }
 
