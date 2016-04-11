@@ -1834,17 +1834,32 @@ Az alább bemutatott patch-ek a részfeladatokat valósítják meg.
     \end{reviewbox}
 \end{center}
 
-\begin{itemize}
-    \item Implementáció a Core modulban: Favicon Manager
-    \item \texttt{WebContents::DownloadImage} Content API függvény használata az ikon
-        letöltésére
-    \item Összes ikon letöltése és a legjobb minőségű ikon kiválasztása/propagálása
-    \item Ikon betöltés QRC-ből (Qt Resource System)
-    \item Ikon cache-elése
-    \item Egyszerűség kedvéért: minden tabhoz (webContents) egy Favicon Manager
-    \item Új QML és Widget favicon tesztek
-    \item C++11 for loop-ok használata
-\end{itemize}
+Az új funkció alapját a WebEngine Core modulban implementált \texttt{FaviconManager} osztály
+jelenti. Ez az osztály fogja letölteni a megjelenített oldalhoz tartozó ikonokat, fogja
+kiválasztani közülük a megfelelőt, jelez az API-nak ha az ikon megváltozott, teszi azt
+elérhetővé és nyújt belső API-t az ikonok manipulálására egy jövőbeni publikus API számára.
+A megvalósításban már a C++11 szabvány \textit{range-based for} nyelvi eleme van felhasználva
+az optimálisabb kód érdekében.
+
+Az ikonok letöltéséhez a Content API \texttt{WebContents::DownloadImage()} \\
+függvényét használja, kivéve, ha az ikon a QRC-ben (Qt Resource System) van tárolva,
+ugyanis ebben az esetben nincs szükség letöltésre.
+Alapvetően a Favicon Manager az összes web oldalhoz tartozó ikont megpróbálja letölteni és
+a letöltötteket egy \texttt{QMap}-ben tárolja, ahol a kulcs az ikon URL-je. Mielőtt a
+manager letöltené az ikont, ellenőrzi, hogy le van e már töltve a map-ben, így nem kell az
+ikonokat minden oldal betöltés után újra és újra a Chromium-tól elkérni.
+
+Minden tab-nak (WebEngineView-nak) saját Favicon Manager-re van, ebből kifolyólag
+előfordulhat egy ikon többször is tárolva van a memóriában. Ennek a modellnek az az előnye,
+hogy gyorsabb lehet a szükséges ikon megkeresése (kevesebb bejegyzés) és az implementáció
+is jelentősen egyszerűbb. A WebEngineView API a \texttt{iconChanged()} signal-al jelzi,
+hogy ha megváltozott a view-hoz tartozó ikon. Ez az ikon az API-n keresztül lekérhető,
+az API pedig a Favicon Manager-től kéri el. A Favicon Manager a letöltött ikonok közül
+a legnagyobb felbontásút fogja felajánlani.
+
+A publikus API-k közvetlenül nem változtak, viszont működésük némileg igen. Így indokolttá
+vált a Quick és Widget API-k favicon tesztjeinek kibővítése és lefedettségük növelése, ami
+az első Favicon Manager patch jelentős részét teszi ki.
 
 \begin{center}
     \begin{reviewbox}
