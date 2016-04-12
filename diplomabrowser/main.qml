@@ -89,6 +89,9 @@ ApplicationWindow {
         onLoadingChanged: {
             if (loadRequest.status == WebEngineView.LoadSucceededStatus)
                 urlBar.close()
+
+            if (loadRequest.status == WebEngineView.LoadStartedStatus)
+                urlBar.open()
         }
     }
 }
