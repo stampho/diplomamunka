@@ -1,5 +1,6 @@
 import QtQuick 2.6
 import QtQuick.Controls 1.5
+import QtQuick.Controls.Styles 1.4
 import QtQuick.Layouts 1.1
 import QtWebEngine 1.2
 
@@ -31,12 +32,13 @@ ApplicationWindow {
 
     SliderBar {
         id: urlBar
-        width: parent.width
-        height: 50
+        width: parent.width - 4
+        height: 60
+        anchors.horizontalCenter: parent.horizontalCenter
 
         RowLayout {
             anchors.fill: parent
-            spacing: 0
+            spacing: 2
 
             BrowserButton {
                 width: height
@@ -65,6 +67,16 @@ ApplicationWindow {
                 Layout.fillHeight: true
                 text: webEngineView && webEngineView.url
                 onAccepted: webEngineView.url = utils.fromUserInput(text)
+
+                style: TextFieldStyle {
+                    textColor: "black"
+                    background: Rectangle {
+                        radius: 6
+                        border.color: Qt.darker(urlBar.color, 1.2)
+                        border.width: 1
+                    }
+
+                }
             }
 
             BrowserButton {

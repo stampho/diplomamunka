@@ -5,6 +5,7 @@ Rectangle {
 
     default property alias contents: content.data
     property int handleHeight: 15
+    property int paddingTop: 8
 
     function open() {
         if (Math.round(root.y) == 0)
@@ -35,11 +36,21 @@ Rectangle {
     }
 
     Rectangle {
-        id: content
+        id: padding
         width: root.width
-        height: root.height - root.handleHeight
+        height: root.paddingTop
 
         anchors.top: root.top
+
+        color: palette.window
+    }
+
+    Rectangle {
+        id: content
+        width: root.width
+        height: root.height - root.handleHeight - root.paddingTop
+
+        anchors.top: padding.bottom
 
         color: palette.window
     }
@@ -70,8 +81,8 @@ Rectangle {
             antialiasing:  true
             anchors.centerIn: parent
 
-            width: 20
-            height: parent.height - 4
+            width: 14
+            height: parent.height - 6
 
             Behavior on rotation {
                 NumberAnimation {
