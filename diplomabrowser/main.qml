@@ -1,5 +1,6 @@
 import QtQuick 2.6
 import QtQuick.Controls 1.5
+import QtQuick.Layouts 1.1
 import QtWebEngine 1.2
 
 ApplicationWindow {
@@ -33,12 +34,47 @@ ApplicationWindow {
         width: parent.width
         height: 50
 
-        TextField {
-            id: urlField
-
+        RowLayout {
             anchors.fill: parent
-            text: webEngineView && webEngineView.url
-            onAccepted: webEngineView.url = utils.fromUserInput(text)
+            spacing: 0
+
+            BrowserButton {
+                width: height
+                height: parent.height
+                enabled: webEngineView && webEngineView.canGoBack
+                text: "<"
+
+                shortcut: "Ctrl+["
+                onClicked: webEngineView.goBack()
+            }
+
+            BrowserButton {
+                width: height
+                height: parent.height
+                enabled: webEngineView && webEngineView.canGoForward
+                text: ">"
+
+                shortcut: "Ctrl+]"
+                onClicked: webEngineView.goForward()
+            }
+
+            TextField {
+                id: urlField
+
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                text: webEngineView && webEngineView.url
+                onAccepted: webEngineView.url = utils.fromUserInput(text)
+            }
+
+            BrowserButton {
+                width: height
+                height: parent.height
+                text: webEngineView && webEngineView.loading ? "X" : "R"
+
+                shortcut: "Ctrl+r"
+                onClicked: webEngineView && webEngineView.loading ? webEngineView.stop() : webEngineView.reload()
+            }
         }
     }
 

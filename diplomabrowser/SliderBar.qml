@@ -40,6 +40,8 @@ Rectangle {
         height: root.height - root.handleHeight
 
         anchors.top: root.top
+
+        color: palette.window
     }
 
     Rectangle {
