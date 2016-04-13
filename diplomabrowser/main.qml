@@ -3,12 +3,19 @@ import QtQuick.Controls 1.5
 import QtQuick.Controls.Styles 1.4
 import QtQuick.Layouts 1.1
 import QtWebEngine 1.2
+import Qt.labs.settings 1.0
 
 ApplicationWindow {
     visible: true
     width: 640
     height: 480
     title: qsTr("Diploma Browser")
+
+    Settings {
+        id: appSettings
+
+        property alias lockUrlBar: lockUrlBar.checked
+    }
 
     menuBar: MenuBar {
         Menu {
@@ -27,6 +34,15 @@ ApplicationWindow {
                 onTriggered: Qt.quit();
             }
         }
+        Menu {
+            title: qsTr("View")
+            MenuItem {
+                id: lockUrlBar
+                text: qsTr("&Lock URL Bar")
+                checkable: true
+                checked: urlBar.lock
+            }
+        }
     }
 
     SliderBar {
@@ -34,6 +50,8 @@ ApplicationWindow {
         width: parent.width - 4
         height: 50
         anchors.horizontalCenter: parent.horizontalCenter
+
+        property bool lock: appSettings.lockUrlBar
 
         RowLayout {
             anchors.fill: parent
@@ -90,10 +108,10 @@ ApplicationWindow {
         url: utils.fromUserInput("http://www.google.com")
 
         onLoadingChanged: {
-            if (loadRequest.status == WebEngineView.LoadSucceededStatus)
+            if (!urlBar.lock && loadRequest.status == WebEngineView.LoadSucceededStatus)
                 urlBar.close()
 
-            if (loadRequest.status == WebEngineView.LoadStartedStatus)
+            if (!urlBar.lock && loadRequest.status == WebEngineView.LoadStartedStatus)
                 urlBar.open()
         }
     }
