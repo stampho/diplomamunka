@@ -50,6 +50,7 @@ Item {
             x: 5; z: parent.z + 1
             font.bold: true
             anchors.verticalCenter: parent.verticalCenter
+            font.pixelSize: 10
 
             visible: root.progress < 100
         }
