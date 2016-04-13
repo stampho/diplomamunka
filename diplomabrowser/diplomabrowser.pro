@@ -10,6 +10,7 @@ RESOURCES += qml.qrc
 
 OTHER_FILES += \
     main.qml \
+    AddressBar.qml \
     BrowserButton.qml \
     SliderBar.qml
 

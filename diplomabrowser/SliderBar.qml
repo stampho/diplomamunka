@@ -5,7 +5,7 @@ Rectangle {
 
     default property alias contents: content.data
     property int handleHeight: 15
-    property int paddingTop: 8
+    property int paddingTop: 5
 
     function open() {
         if (Math.round(root.y) == 0)

@@ -18,8 +18,7 @@ ApplicationWindow {
                 shortcut: "Ctrl+l"
                 onTriggered: {
                     urlBar.open()
-                    urlField.forceActiveFocus()
-                    urlField.selectAll()
+                    addressBar.forceActiveFocus()
                 }
             }
             MenuItem {
@@ -33,7 +32,7 @@ ApplicationWindow {
     SliderBar {
         id: urlBar
         width: parent.width - 4
-        height: 60
+        height: 50
         anchors.horizontalCenter: parent.horizontalCenter
 
         RowLayout {
@@ -42,7 +41,7 @@ ApplicationWindow {
 
             BrowserButton {
                 width: height
-                height: parent.height
+                height: parent.height - 4
                 enabled: webEngineView && webEngineView.canGoBack
                 text: "<"
 
@@ -52,7 +51,7 @@ ApplicationWindow {
 
             BrowserButton {
                 width: height
-                height: parent.height
+                height: parent.height - 4
                 enabled: webEngineView && webEngineView.canGoForward
                 text: ">"
 
@@ -60,28 +59,20 @@ ApplicationWindow {
                 onClicked: webEngineView.goForward()
             }
 
-            TextField {
-                id: urlField
-
+            AddressBar {
+                id: addressBar
                 Layout.fillWidth: true
-                Layout.fillHeight: true
-                text: webEngineView && webEngineView.url
-                onAccepted: webEngineView.url = utils.fromUserInput(text)
 
-                style: TextFieldStyle {
-                    textColor: "black"
-                    background: Rectangle {
-                        radius: 6
-                        border.color: Qt.darker(urlBar.color, 1.2)
-                        border.width: 1
-                    }
+                progress: webEngineView && webEngineView.loadProgress
+                iconUrl: webEngineView && webEngineView.icon
+                pageUrl: webEngineView && webEngineView.url
 
-                }
+                onAccepted: webEngineView.url = addressUrl
             }
 
             BrowserButton {
                 width: height
-                height: parent.height
+                height: parent.height - 4
                 text: webEngineView && webEngineView.loading ? "X" : "R"
 
                 shortcut: "Ctrl+r"

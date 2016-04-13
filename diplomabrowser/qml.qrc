@@ -3,5 +3,6 @@
         <file>main.qml</file>
         <file>SliderBar.qml</file>
         <file>BrowserButton.qml</file>
+        <file>AddressBar.qml</file>
     </qresource>
 </RCC>
