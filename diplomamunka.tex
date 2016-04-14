@@ -1865,74 +1865,25 @@ az első Favicon Manager-t érintő patch jelentős részét teszi ki.
     \begin{reviewbox}
         \begin{itemize}
             \renewcommand{\labelitemi}{\textcolor{qtgreen}{$\blacktriangleright$}}
-            \item \gerrit{150668}
-        \end{itemize}
-    \end{reviewbox}
-\end{center}
-
-A Favicon Manager megvalósítása során az is javítva lett, hogy a Widget és a Quick API-ban
-az \texttt{iconChanged()} signal ne legyen kétszer kiküldve, olyan oldal betöltése esetén,
-amikor az oldalhoz tartozó ikon nem változott.
-
-\begin{center}
-    \begin{reviewbox}
-        \begin{itemize}
-            \renewcommand{\labelitemi}{\textcolor{qtgreen}{$\blacktriangleright$}}
             \item \gerrit{150667}
-        \end{itemize}
-    \end{reviewbox}
-\end{center}
-
-A Favicon Manager Core modul-beli megvalósításával együtt review-ra lettek bocsájtva publikus
-Favicon Manager API megvalósítások Widget-hez és QML-hez is. Mérlegelés után arra döntésre
-jutottunk, hogy a publikus API nem kerül be az 5.7-es verzióba. Mivel a Core modulban
-lévő Favicon Manager megvalósítás tartalmaz olyan kódot és funkciókat, amelyek a publikus
-API-t készítették elő, ezért azok eltávolításra kerültek. Az alábbi javasolt API
-funkcionalitások az 5.8-as verzióban kerülnek újra felülvizsgálatra:
-\begin{itemize}
-    \item A látható oldalhoz tartozó ikonok listája lekérése
-    \item Ikon explicit letöltése és nyilvántartása a Favicon Manager-ben
-    \item A Favicon Manager cache ürítése
-\end{itemize}
-Az alábbi funkciók pedig végleg eltávolításra kerültek:
-\begin{itemize}
-    \item Ikon törlése a Favicon Manager cache-ből URL alapján (az ikon újra letöltésének
-        kikényszerítéséhez szükséges)
-    \item Opció régi API működésére: a legjobb minőségű ikon helyett a Favicon Manager
-        az első favicon-t tölti le
-\end{itemize}
-
-TODO: A kiválasztott ikon URL-jének tárolása a \texttt{NavigationEntry}-ben \dots
-
-\begin{center}
-    \begin{reviewbox}
-        \begin{itemize}
-            \renewcommand{\labelitemi}{\textcolor{qtgreen}{$\blacktriangleright$}}
+            \item \gerrit{150668}
             \item \gerrit{153438}
         \end{itemize}
     \end{reviewbox}
 \end{center}
 
-\begin{itemize}
-    \item bestFavicon teszt workaround
-    \item Probléma: 49-es Chromium óta az \texttt{iconChanged} signal majdnem mindig a \\
-        \texttt{loadFinished} után érkezik.
-    \item Két eset lehetséges:
-        \begin{itemize}
-            \item 1 \texttt{iconChanged} signal érkezik: az \texttt{iconChanged} a
-                \texttt{loadFinished} előtt küldődik
-            \item 2 \texttt{iconChanged} signal érkezik: a \texttt{loadFinished} reseteli az
-                ikont, majd a második \texttt{iconChanged} tartalmazza az oldal ikonját
-        \end{itemize}
-    \item A második \texttt{iconChanged} signal küldése sokszor ``késik''
-    \item Ha késik az elrontja a következő teszt eredményét is
-    \item Workaround: ha az \texttt{iconChanged} signal-ban kapott URL üres, akkor vár
-        a második signal-ra
-\end{itemize}
+A publikus Favicon Manager publikus API-jának fejlesztése során több változat is született.
+Végül úgy döntöttünk, hogy az 5.7-es verzióban nem lesz a Favicon Manager-nek publikus
+API-ja, hanem a már meglévő ikon API-k lesznek tovább fejlesztve. Habár a tervezett
+funkcionalitások még bevezetésre kerülhetnek a Qt 5.8-as verziójában, karbantarthatóság
+miatt az ezt támogató WebEngine Core-ban implementált funkciók eltávolításra kerültek.
+A Favicon Manager implementációjának karbantartása mellett a fejlesztés közben felfedezett
+hibák is javításra kerültek.
 
 \begin{center}
     \begin{reviewbox}
         \begin{itemize}
+            \renewcommand{\labelitemi}{\textcolor{qtgreen}{$\blacktriangleright$}}
             \item \gerrit{151057}
         \end{itemize}
     \end{reviewbox}
@@ -1954,6 +1905,7 @@ TODO: A kiválasztott ikon URL-jének tárolása a \texttt{NavigationEntry}-ben 
 \begin{center}
     \begin{reviewbox}
         \begin{itemize}
+            \renewcommand{\labelitemi}{\textcolor{qtgreen}{$\blacktriangleright$}}
             \item \gerrit{151314}
             \item \gerrit{151315}
         \end{itemize}
@@ -1977,6 +1929,7 @@ TODO: A kiválasztott ikon URL-jének tárolása a \texttt{NavigationEntry}-ben 
 \begin{center}
     \begin{reviewbox}
         \begin{itemize}
+            \renewcommand{\labelitemi}{\textcolor{qtgreen}{$\blacktriangleright$}}
             \item \gerrit{154018}
         \end{itemize}
     \end{reviewbox}
