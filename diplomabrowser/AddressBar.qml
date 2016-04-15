@@ -23,13 +23,21 @@ Item {
     }
 
     Rectangle {
-        width: addressField.width / 100 * root.progress
+        width: addressField.width
         height: addressField.height
 
-        visible: root.progress < 100
-
-        color: "#b6dca6"
+        color: "white"
         radius: 4
+
+        Rectangle {
+            width: addressField.width / 100 * root.progress
+            height: addressField.height
+
+            visible: root.progress < 100
+
+            color: "#b6dca6"
+            radius: 4
+        }
     }
 
     TextField {
@@ -59,7 +67,7 @@ Item {
             padding.left: 30
 
             background: Rectangle {
-                color: root.progress < 100 ? "transparent" : Qt.lighter(palette.window)
+                color: "transparent"
                 border.color: Qt.darker(palette.window, 2.0)
                 border.width: 1
                 radius: 4

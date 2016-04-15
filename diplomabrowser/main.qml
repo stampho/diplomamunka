@@ -24,7 +24,7 @@ ApplicationWindow {
                 text: qsTr("&Open")
                 shortcut: "Ctrl+l"
                 onTriggered: {
-                    urlBar.open()
+                    urlBar.state = "opened"
                     addressBar.forceActiveFocus()
                 }
             }
@@ -47,6 +47,7 @@ ApplicationWindow {
 
     SliderBar {
         id: urlBar
+        pos: parent.y
         width: parent.width - 4
         height: 50
         anchors.horizontalCenter: parent.horizontalCenter
@@ -109,10 +110,10 @@ ApplicationWindow {
 
         onLoadingChanged: {
             if (!urlBar.lock && loadRequest.status == WebEngineView.LoadSucceededStatus)
-                urlBar.close()
+                urlBar.state = "closed"
 
             if (!urlBar.lock && loadRequest.status == WebEngineView.LoadStartedStatus)
-                urlBar.open()
+                urlBar.state = "opened"
         }
     }
 }

@@ -3,30 +3,31 @@ import QtQuick 2.6
 Rectangle {
     id: root
 
-    default property alias contents: content.data
-    property int handleHeight: 15
-    property int paddingTop: 5
-
-    function open() {
-        if (Math.round(root.y) == 0)
-            return
-
-        y = 0;
-        handleArrow.rotation += 180
-    }
-
-    function close() {
-        if (Math.round(root.y) != 0)
-            return
-        y = parent.y - height + handleHeight
-        handleArrow.rotation += 180
-    }
-
-    y: parent.y - height + handleHeight
-
     SystemPalette {
         id: palette
     }
+
+    default property alias contents: content.data
+    property int pos: 0
+    property int handleHeight: 15
+    property int paddingTop: 5
+
+    color: palette.window
+    state: "closed"
+
+    states: [
+        State {
+            name: "opened"
+            PropertyChanges { target: root; y: pos }
+            PropertyChanges { target: handleArrow; rotation: 0 }
+        },
+        State {
+            name: "closed"
+            PropertyChanges { target: root; y: pos - height + handleHeight }
+            PropertyChanges { target: handleArrow; rotation: 180 }
+        }
+    ]
+
 
     Behavior on y {
         NumberAnimation {
@@ -42,7 +43,7 @@ Rectangle {
 
         anchors.top: root.top
 
-        color: palette.window
+        color: root.color
     }
 
     Rectangle {
@@ -52,7 +53,7 @@ Rectangle {
 
         anchors.top: padding.bottom
 
-        color: palette.window
+        color: root.color
     }
 
     Rectangle {
@@ -61,17 +62,14 @@ Rectangle {
 
         anchors.bottom: root.bottom
 
-        color: palette.window
+        color: root.color
         clip: true
 
         MouseArea {
             anchors.fill: parent
             onClicked: {
                 var ypos = Math.round(root.y)
-                if (ypos < 0)
-                    root.open()
-                else
-                    root.close()
+                root.state = (ypos < 0) ? "opened" : "closed"
             }
         }
 
@@ -94,8 +92,8 @@ Rectangle {
             onPaint: {
                 var ctx = getContext("2d")
 
-                ctx.strokeStyle = Qt.darker(palette.window)
-                ctx.fillStyle = Qt.darker(palette.window)
+                ctx.strokeStyle = Qt.darker(root.color)
+                ctx.fillStyle = Qt.darker(root.color)
                 ctx.lineWidth = 1
                 ctx.lineJoin = "round"
 
