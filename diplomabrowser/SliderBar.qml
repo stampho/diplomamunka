@@ -28,13 +28,23 @@ Rectangle {
         }
     ]
 
+    transitions: [
+        Transition {
+            ParallelAnimation {
+                PropertyAnimation {
+                    target: root; property: "y"
+                    easing.type: "InBack"
+                    duration: 300
+                }
 
-    Behavior on y {
-        NumberAnimation {
-            easing.type: "InBack"
-            duration: 300
+                PropertyAnimation {
+                    target: handleArrow; property: "rotation"
+                    easing.type: "InCubic"
+                    duration: 300
+                }
+            }
         }
-    }
+    ]
 
     Rectangle {
         id: padding
@@ -81,13 +91,6 @@ Rectangle {
 
             width: 14
             height: parent.height - 6
-
-            Behavior on rotation {
-                NumberAnimation {
-                    easing.type: "InCubic"
-                    duration: 300
-                }
-            }
 
             onPaint: {
                 var ctx = getContext("2d")
