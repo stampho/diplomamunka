@@ -10,8 +10,9 @@ Item {
     default property alias contents: content.data
     property int pos: 0
     property int handleSize: 15
-    property int paddingSize: 5
+    property int marginSize: 5
     property int orientation: Qt.Horizontal
+    property int minSize: 0
     property color color: palette.window
 
     function isHorizontal() {
@@ -40,11 +41,15 @@ Item {
             name: "opened"
             PropertyChanges { target: root; p: pos }
             PropertyChanges { target: handleArrow; rotation: 180 }
+            PropertyChanges { target: content; size: root.size - root.marginSize - root.handleSize }
+            PropertyChanges { target: content; marginSize: 0 }
         },
         State {
             name: "closed"
-            PropertyChanges { target: root; p: pos - size + handleSize }
+            PropertyChanges { target: root; p: pos - size + minSize + handleSize }
             PropertyChanges { target: handleArrow; rotation: 0 }
+            PropertyChanges { target: content; size: root.minSize - root.marginSize }
+            PropertyChanges { target: content; marginSize: root.minSize ? root.size - root.minSize - root.handleSize : 0 }
         }
     ]
 
@@ -62,28 +67,35 @@ Item {
                     easing.type: "InCubic"
                     duration: 300
                 }
+
+                PropertyAnimation {
+                    target: content; property: "size"
+                    easing.type: "InBack"
+                    duration: 300
+                }
+
+                PropertyAnimation {
+                    target: content; property: "marginSize"
+                    easing.type: "InBack"
+                    duration: 300
+                }
             }
         }
     ]
 
     Rectangle {
-        id: padding
-        width: root.isHorizontal() ? root.width : root.paddingSize
-        height: root.isHorizontal() ? root.paddingSize : root.height
+        id: content
+
+        property real size: root.size - root.marginSize - root.handleSize
+        property int marginSize: 0
+
+        width: root.isHorizontal() ? root.width : content.size
+        height: root.isHorizontal() ? content.size : root.height
 
         anchors.top: root.top
+        anchors.topMargin: root.isHorizontal() ? root.marginSize + content.marginSize : 0
         anchors.left: root.left
-
-        color: root.color
-    }
-
-    Rectangle {
-        id: content
-        width: root.isHorizontal() ? root.width : root.width - root.handleSize - root.paddingSize
-        height: root.isHorizontal() ? root.height - root.handleSize - root.paddingSize : root.height
-
-        anchors.top: root.isHorizontal() ? padding.bottom : root.top
-        anchors.left: root.isHorizontal() ? root.left : padding.right
+        anchors.leftMargin: root.isHorizontal() ? 0 : root.marginSize + content.marginSize
 
         color: root.color
     }

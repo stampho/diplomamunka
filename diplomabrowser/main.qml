@@ -106,11 +106,64 @@ ApplicationWindow {
         id: tabBar
 
         pos: parent.x
-        width: 100
+        width: 250
+        minSize: 80
         anchors.top: urlBar.bottom
         anchors.bottom: parent.bottom
 
         orientation: Qt.Vertical
+
+        Rectangle {
+            anchors.fill: parent
+            anchors.bottomMargin: 5
+
+            color: "white"
+            radius: 8
+
+            Image {
+                anchors.top: parent.top
+                anchors.topMargin: 5
+                anchors.horizontalCenter: parent.horizontalCenter;
+                width: 48; height: 48
+                sourceSize: Qt.size(width, height)
+                source: webEngineView && webEngineView.icon
+                visible: tabBar.state == "closed"
+            }
+
+            Rectangle {
+                anchors.left: parent.left
+                anchors.leftMargin: 5
+                anchors.right: parent.right
+                anchors.rightMargin: 5
+                anchors.top: parent.top
+                anchors.topMargin: 5
+
+                height: 30
+                border.width: 1
+                radius: 4
+
+                visible: tabBar.state == "opened"
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.verticalCenter:  parent.verticalCenter
+                    anchors.leftMargin: 5
+
+                    Image {
+                        width: 24; height: 24;
+                        sourceSize: Qt.size(width, height)
+                        source: webEngineView && webEngineView.icon
+                    }
+
+                    Text {
+                        Layout.fillWidth: true
+                        text: webEngineView && webEngineView.title
+                        font.pixelSize: 16
+                        clip: true
+                    }
+                }
+            }
+        }
     }
 
     WebEngineView {
