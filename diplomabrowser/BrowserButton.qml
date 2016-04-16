@@ -93,7 +93,7 @@ Rectangle {
         enabled: root.enabled
         onActivated: {
             pressAnim.start()
-            clicked()
+            root.clicked()
         }
     }
 

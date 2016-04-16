@@ -175,7 +175,11 @@ ApplicationWindow {
 
         ListView {
             id: tabView
-            anchors.fill: parent
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.top: parent.top
+            anchors.bottom: tabControl.top
+
             spacing: 5
 
             model: viewModel
@@ -229,7 +233,6 @@ ApplicationWindow {
                     }
                 }
             }
-
             property Component wideDelegate : Component {
                 Rectangle {
                     anchors.left: parent.left
@@ -268,6 +271,39 @@ ApplicationWindow {
                             currentWebEngineView = selectWebEngineView(index)
                         }
                     }
+                }
+            }
+        }
+
+        Rectangle {
+            id: tabControl
+
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+
+            height: 50
+            color: "transparent"
+
+            BrowserSwitch {
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.left: parent.left
+                anchors.leftMargin: 10
+                anchors.right: parent.right
+                anchors.rightMargin: 10
+
+                height: 20
+
+                leftText: width > 60 ? "Tabs" : "T"
+                rightText: width > 60 ? "History" : "H"
+
+                state: "left"
+
+                onClicked: {
+                    if (state == "left")
+                        console.log("tabs")
+                    else
+                        console.log("navigation")
                 }
             }
         }

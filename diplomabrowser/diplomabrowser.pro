@@ -12,6 +12,7 @@ OTHER_FILES += \
     main.qml \
     AddressBar.qml \
     BrowserButton.qml \
+    BrowserSwitch.qml \
     SliderBar.qml
 
 HEADERS += \
