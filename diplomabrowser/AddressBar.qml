@@ -2,7 +2,7 @@ import QtQuick 2.5
 import QtQuick.Controls 1.4
 import QtQuick.Controls.Styles 1.4
 
-Item {
+Rectangle {
     id: root
 
     property int progress: 0
@@ -16,6 +16,8 @@ Item {
     }
 
     height: addressField.height
+    color: "white"
+    radius: 4
 
     onActiveFocusChanged: {
         if (activeFocus == true)
@@ -23,21 +25,13 @@ Item {
     }
 
     Rectangle {
-        width: addressField.width
-        height: addressField.height
+        width: addressField.width / 100 * root.progress
+        height: root.height
 
-        color: "white"
-        radius: 4
+        visible: root.progress < 100
 
-        Rectangle {
-            width: addressField.width / 100 * root.progress
-            height: addressField.height
-
-            visible: root.progress < 100
-
-            color: "#b6dca6"
-            radius: 4
-        }
+        color: "#b6dca6"
+        radius: root.radius
     }
 
     TextField {
@@ -70,7 +64,7 @@ Item {
                 color: "transparent"
                 border.color: Qt.darker(palette.window, 2.0)
                 border.width: 1
-                radius: 4
+                radius: root.radius
             }
         }
 
