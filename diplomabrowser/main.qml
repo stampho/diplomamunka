@@ -179,6 +179,7 @@ ApplicationWindow {
             spacing: 5
 
             model: viewModel
+            clip: true
 
             highlightFollowsCurrentItem: true
             highlight: Rectangle {
@@ -248,7 +249,7 @@ ApplicationWindow {
                         anchors.leftMargin: 5
 
                         Image {
-                            width: 24; height: 24;
+                            width: 16; height: 16;
                             sourceSize: Qt.size(width, height)
                             source: webEngineView ? webEngineView.icon : ""
                         }
@@ -282,6 +283,7 @@ ApplicationWindow {
     }
 
     Component.onCompleted: {
+        WebEngine.settings.touchIconsEnabled = true
         createWebEngineView()
         currentWebEngineView = selectWebEngineView(viewModel.count - 1)
         currentWebEngineView.url = Qt.resolvedUrl("http://www.google.com")
