@@ -52,6 +52,8 @@ ApplicationWindow {
         height: 50
         anchors.horizontalCenter: parent.horizontalCenter
 
+        orientation: Qt.Horizontal
+
         property bool lock: appSettings.lockUrlBar
 
         RowLayout {
@@ -100,11 +102,23 @@ ApplicationWindow {
         }
     }
 
+    SliderBar {
+        id: tabBar
+
+        pos: parent.x
+        width: 100
+        anchors.top: urlBar.bottom
+        anchors.bottom: parent.bottom
+
+        orientation: Qt.Vertical
+    }
+
     WebEngineView {
         id: webEngineView
         anchors.top: urlBar.bottom
         anchors.bottom: parent.bottom
-        width: parent.width
+        anchors.left: tabBar.right
+        anchors.right: parent.right
 
         url: utils.fromUserInput("http://www.google.com")
 

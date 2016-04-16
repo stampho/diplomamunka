@@ -1,6 +1,6 @@
 import QtQuick 2.6
 
-Rectangle {
+Item {
     id: root
 
     SystemPalette {
@@ -9,22 +9,42 @@ Rectangle {
 
     default property alias contents: content.data
     property int pos: 0
-    property int handleHeight: 15
-    property int paddingTop: 5
+    property int handleSize: 15
+    property int paddingSize: 5
+    property int orientation: Qt.Horizontal
+    property color color: palette.window
 
-    color: palette.window
+    function isHorizontal() {
+        return root.orientation == Qt.Horizontal
+    }
+
+    property real p: isHorizontal() ? y : x
+    property real size: isHorizontal() ? height : width
+
+    Binding {
+        target: root
+        property: isHorizontal() ? "y" : "x"
+        value: p
+    }
+
+    Binding {
+        target: root
+        property: isHorizontal() ? "height" : "width"
+        value: size
+    }
+
     state: "closed"
 
     states: [
         State {
             name: "opened"
-            PropertyChanges { target: root; y: pos }
-            PropertyChanges { target: handleArrow; rotation: 0 }
+            PropertyChanges { target: root; p: pos }
+            PropertyChanges { target: handleArrow; rotation: 180 }
         },
         State {
             name: "closed"
-            PropertyChanges { target: root; y: pos - height + handleHeight }
-            PropertyChanges { target: handleArrow; rotation: 180 }
+            PropertyChanges { target: root; p: pos - size + handleSize }
+            PropertyChanges { target: handleArrow; rotation: 0 }
         }
     ]
 
@@ -32,7 +52,7 @@ Rectangle {
         Transition {
             ParallelAnimation {
                 PropertyAnimation {
-                    target: root; property: "y"
+                    target: root; property: "p"
                     easing.type: "InBack"
                     duration: 300
                 }
@@ -48,29 +68,33 @@ Rectangle {
 
     Rectangle {
         id: padding
-        width: root.width
-        height: root.paddingTop
+        width: root.isHorizontal() ? root.width : root.paddingSize
+        height: root.isHorizontal() ? root.paddingSize : root.height
 
         anchors.top: root.top
+        anchors.left: root.left
 
         color: root.color
     }
 
     Rectangle {
         id: content
-        width: root.width
-        height: root.height - root.handleHeight - root.paddingTop
+        width: root.isHorizontal() ? root.width : root.width - root.handleSize - root.paddingSize
+        height: root.isHorizontal() ? root.height - root.handleSize - root.paddingSize : root.height
 
-        anchors.top: padding.bottom
+        anchors.top: root.isHorizontal() ? padding.bottom : root.top
+        anchors.left: root.isHorizontal() ? root.left : padding.right
 
         color: root.color
     }
 
     Rectangle {
-        width: root.width
-        height: root.handleHeight
+        id: handle
+        width: root.isHorizontal() ? root.width : root.handleSize
+        height: root.isHorizontal() ? root.handleSize : root.height
 
         anchors.bottom: root.bottom
+        anchors.right: root.right
 
         color: root.color
         clip: true
@@ -78,8 +102,7 @@ Rectangle {
         MouseArea {
             anchors.fill: parent
             onClicked: {
-                var ypos = Math.round(root.y)
-                root.state = (ypos < 0) ? "opened" : "closed"
+                root.state = (Math.round(root.p) < 0)  ? "opened" : "closed"
             }
         }
 
@@ -89,8 +112,8 @@ Rectangle {
             antialiasing:  true
             anchors.centerIn: parent
 
-            width: 14
-            height: parent.height - 6
+            width: root.isHorizontal() ? 14 : parent.width - 6
+            height: root.isHorizontal() ? parent.height - 6 : 14
 
             onPaint: {
                 var ctx = getContext("2d")
@@ -100,11 +123,17 @@ Rectangle {
                 ctx.lineWidth = 1
                 ctx.lineJoin = "round"
 
-                ctx.moveTo(width / 2, height )
-                ctx.lineTo(0, 0)
-                ctx.lineTo(width, 0)
-                ctx.closePath()
+                if (root.isHorizontal()) {
+                    ctx.moveTo(width / 2, height)
+                    ctx.lineTo(0, 0)
+                    ctx.lineTo(width, 0)
+                } else {
+                    ctx.moveTo(width, height / 2)
+                    ctx.lineTo(0, 0)
+                    ctx.lineTo(0, height)
+                }
 
+                ctx.closePath()
                 ctx.fill()
             }
         }
