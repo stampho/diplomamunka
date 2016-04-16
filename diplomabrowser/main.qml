@@ -2,7 +2,7 @@ import QtQuick 2.6
 import QtQuick.Controls 1.5
 import QtQuick.Controls.Styles 1.4
 import QtQuick.Layouts 1.1
-import QtWebEngine 1.2
+import QtWebEngine 1.3
 import Qt.labs.settings 1.0
 
 ApplicationWindow {
@@ -10,6 +10,28 @@ ApplicationWindow {
     width: 640
     height: 480
     title: qsTr("Diploma Browser")
+
+    property WebEngineView currentWebEngineView: null
+
+    function createWebEngineView() {
+        var webEngineView = Qt.createQmlObject("
+                import QtQuick 2.5\n
+                import QtWebEngine 1.3\n
+                WebEngineView {\n
+                    anchors.fill: parent
+                }\n
+            ", webFlickable.contentItem)
+
+        webEngineView.loadingChanged.connect(function(loadRequest){
+                if (!urlBar.lock && loadRequest.status == WebEngineView.LoadSucceededStatus)
+                    urlBar.state = "closed"
+
+                if (!urlBar.lock && loadRequest.status == WebEngineView.LoadStartedStatus)
+                    urlBar.state = "opened"
+            })
+
+        return webEngineView
+    }
 
     Settings {
         id: appSettings
@@ -63,41 +85,46 @@ ApplicationWindow {
             BrowserButton {
                 width: height
                 height: parent.height - 4
-                enabled: webEngineView && webEngineView.canGoBack
+                enabled: currentWebEngineView && currentWebEngineView.canGoBack
                 text: "<"
 
                 shortcut: "Ctrl+["
-                onClicked: webEngineView.goBack()
+                onClicked: currentWebEngineView.goBack()
             }
 
             BrowserButton {
                 width: height
                 height: parent.height - 4
-                enabled: webEngineView && webEngineView.canGoForward
+                enabled: currentWebEngineView && currentWebEngineView.canGoForward
                 text: ">"
 
                 shortcut: "Ctrl+]"
-                onClicked: webEngineView.goForward()
+                onClicked: currentWebEngineView.goForward()
             }
 
             AddressBar {
                 id: addressBar
                 Layout.fillWidth: true
 
-                progress: webEngineView && webEngineView.loadProgress
-                iconUrl: webEngineView && webEngineView.icon
-                pageUrl: webEngineView && webEngineView.url
+                progress: currentWebEngineView ? currentWebEngineView.loadProgress : -1
+                iconUrl: currentWebEngineView ? currentWebEngineView.icon : ""
+                pageUrl: currentWebEngineView ? currentWebEngineView.url : ""
 
-                onAccepted: webEngineView.url = addressUrl
+                onAccepted: {
+                    if (!currentWebEngineView)
+                        currentWebEngineView = createWebEngineView()
+                    currentWebEngineView.url = addressUrl
+                }
             }
 
             BrowserButton {
                 width: height
                 height: parent.height - 4
-                text: webEngineView && webEngineView.loading ? "X" : "R"
+                text: currentWebEngineView && currentWebEngineView.loading ? "X" : "R"
+                enabled: currentWebEngineView
 
                 shortcut: "Ctrl+r"
-                onClicked: webEngineView && webEngineView.loading ? webEngineView.stop() : webEngineView.reload()
+                onClicked: currentWebEngineView && currentWebEngineView.loading ? currentWebEngineView.stop() : currentWebEngineView.reload()
             }
         }
     }
@@ -126,7 +153,7 @@ ApplicationWindow {
                 anchors.horizontalCenter: parent.horizontalCenter;
                 width: 48; height: 48
                 sourceSize: Qt.size(width, height)
-                source: webEngineView && webEngineView.icon
+                source: currentWebEngineView ? currentWebEngineView.icon : ""
                 visible: tabBar.state == "closed"
             }
 
@@ -152,12 +179,12 @@ ApplicationWindow {
                     Image {
                         width: 24; height: 24;
                         sourceSize: Qt.size(width, height)
-                        source: webEngineView && webEngineView.icon
+                        source: currentWebEngineView ? currentWebEngineView.icon : ""
                     }
 
                     Text {
                         Layout.fillWidth: true
-                        text: webEngineView && webEngineView.title
+                        text: currentWebEngineView ? currentWebEngineView.title : ""
                         font.pixelSize: 16
                         clip: true
                     }
@@ -166,21 +193,17 @@ ApplicationWindow {
         }
     }
 
-    WebEngineView {
-        id: webEngineView
+    Flickable {
+        id: webFlickable
+
         anchors.top: urlBar.bottom
         anchors.bottom: parent.bottom
         anchors.left: tabBar.right
         anchors.right: parent.right
+    }
 
-        url: utils.fromUserInput("http://www.google.com")
-
-        onLoadingChanged: {
-            if (!urlBar.lock && loadRequest.status == WebEngineView.LoadSucceededStatus)
-                urlBar.state = "closed"
-
-            if (!urlBar.lock && loadRequest.status == WebEngineView.LoadStartedStatus)
-                urlBar.state = "opened"
-        }
+    Component.onCompleted: {
+        currentWebEngineView = createWebEngineView()
+        currentWebEngineView.url = Qt.resolvedUrl("http://www.google.com")
     }
 }

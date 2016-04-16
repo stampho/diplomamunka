@@ -48,7 +48,7 @@ Rectangle {
         }
 
         Text {
-            text: root.progress + "%"
+            text: root.progress < 0 ? "" : root.progress + "%"
             x: 5; z: parent.z + 1
             font.bold: true
             anchors.verticalCenter: parent.verticalCenter
