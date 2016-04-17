@@ -13,46 +13,40 @@ ApplicationWindow {
 
     property WebEngineView currentWebEngineView: null
 
-    function createWebEngineView() {
-        var webEngineView = Qt.createQmlObject("
-                import QtQuick 2.5\n
-                import QtWebEngine 1.3\n
-                WebEngineView {\n
-                    anchors.fill: parent\n
-                    visible: false\n
-                }\n
-            ", webFlickable.contentItem)
-
-        webEngineView.loadingChanged.connect(function(loadRequest){
-                if (!urlBar.lock && loadRequest.status == WebEngineView.LoadSucceededStatus)
-                    urlBar.state = "closed"
-
-                if (!urlBar.lock && loadRequest.status == WebEngineView.LoadStartedStatus)
-                    urlBar.state = "opened"
-            })
-
-        tabView.model.append({ "webEngineView": webEngineView })
-
-        return webEngineView
-    }
-
-    function selectWebEngineView(index) {
-        if (tabView.currentIndex >= 0) {
-            var oldWebEngineView = tabView.model.get(tabView.currentIndex).webEngineView
-            oldWebEngineView.visible = false
-        }
-
-        var newWebEngineView = tabView.model.get(index).webEngineView
-        newWebEngineView.visible = true
-        tabView.currentIndex = index
-
-        return newWebEngineView
-    }
-
     Settings {
         id: appSettings
 
         property alias lockUrlBar: lockUrlBar.checked
+    }
+
+    WebEngineViewListModel {
+        id: viewListModel
+
+        function createWebEngineView() {
+            var webEngineView = newWebEngineView(webFlickable.contentItem)
+
+            webEngineView.loadingChanged.connect(function(loadRequest){
+                    if (!urlBar.lock && loadRequest.status == WebEngineView.LoadSucceededStatus)
+                        urlBar.state = "closed"
+
+                    if (!urlBar.lock && loadRequest.status == WebEngineView.LoadStartedStatus)
+                        urlBar.state = "opened"
+
+                    if (loadRequest.status != WebEngineView.LoadStartedStatus)
+                        historyListView.currentIndex = currentWebEngineView.navigationHistory.backItems.rowCount()
+                })
+        }
+
+        function selectWebEngineView(index) {
+            if (tabListView.currentIndex >= 0) {
+                var oldWebEngineView = get(tabListView.currentIndex).webEngineView
+                oldWebEngineView.visible = false
+            }
+
+            currentWebEngineView = get(index).webEngineView
+            currentWebEngineView.visible = true
+            tabListView.currentIndex = index
+        }
     }
 
     menuBar: MenuBar {
@@ -70,8 +64,8 @@ ApplicationWindow {
                 text: qsTr("New &Tab")
                 shortcut: StandardKey.AddTab
                 onTriggered: {
-                    createWebEngineView();
-                    currentWebEngineView = selectWebEngineView(tabView.model.count - 1)
+                    viewListModel.createWebEngineView()
+                    viewListModel.selectWebEngineView(viewListModel.count - 1)
                     urlBar.state = "opened"
                     addressBar.forceActiveFocus()
                 }
@@ -116,7 +110,10 @@ ApplicationWindow {
                 text: "<"
 
                 shortcut: "Ctrl+["
-                onClicked: currentWebEngineView.goBack()
+                onClicked: {
+                    historyListView.currentIndex -= 1
+                    currentWebEngineView.goBack()
+                }
             }
 
             BrowserButton {
@@ -126,7 +123,10 @@ ApplicationWindow {
                 text: ">"
 
                 shortcut: "Ctrl+]"
-                onClicked: currentWebEngineView.goForward()
+                onClicked: {
+                    historyListView.currentIndex += 1
+                    currentWebEngineView.goForward()
+                }
             }
 
             AddressBar {
@@ -139,8 +139,8 @@ ApplicationWindow {
 
                 onAccepted: {
                     if (!currentWebEngineView) {
-                        createWebEngineView()
-                        currentWebEngineView = selectWebEngineView(tabView.model.count - 1)
+                        viewListModel.createWebEngineView()
+                        viewListModel.selectWebEngineView(viewListModel.count - 1)
                     }
                     currentWebEngineView.url = addressUrl
                 }
@@ -177,196 +177,26 @@ ApplicationWindow {
             anchors.top: parent.top
             anchors.bottom: tabControl.top
 
-            initialItem: tabView
+            initialItem: (tabSwitch.state == "left") ? tabListView : historyListView
 
-            ListView {
-                id: tabView
+            TabListView {
+                id: tabListView
+                visible: tabSwitch.state == "left"
 
-                spacing: 5
+                model: viewListModel
+                state: (tabBar.state == "closed") ? "compact" : "wide"
 
-                model: ListModel { }
-                clip: true
-                x: 0
-
-                highlightFollowsCurrentItem: true
-                highlight: Rectangle {
-                    anchors.left: parent.left
-                    anchors.leftMargin: 5
-                    anchors.right: parent.right
-                    anchors.rightMargin: 5
-
-                    color: "transparent"
-                    z: parent.z + 2
-
-                    height: 50
-                    width: 50
-
-                    border.width: 1
-                    border.color: "black"
-                    radius: 8
-                }
-
-                delegate: tabBar.state == "closed" ? compactDelegate : wideDelegate
-
-                property Component compactDelegate: Component {
-                    Rectangle {
-                        anchors.left: parent.left
-                        anchors.leftMargin: 5
-                        anchors.right: parent.right
-                        anchors.rightMargin: 5
-
-                        z: parent.z + 1
-                        radius: 8
-
-                        height: 50
-                        color: "white"
-
-                        Image {
-                            anchors.centerIn: parent
-                            width: 48; height: 48
-                            sourceSize: Qt.size(width, height)
-                            source: webEngineView ? webEngineView.icon : ""
-                        }
-                        MouseArea {
-                            anchors.fill: parent
-                            onClicked: currentWebEngineView = selectWebEngineView(index)
-                        }
-                    }
-                }
-                property Component wideDelegate : Component {
-                    Rectangle {
-                        anchors.left: parent.left
-                        anchors.leftMargin: 5
-                        anchors.right: parent.right
-                        anchors.rightMargin: 5
-
-                        z: parent.z + 1
-                        radius: 8
-
-                        height: 30
-                        color: "white"
-
-                        RowLayout {
-                            anchors.fill: parent
-                            anchors.verticalCenter:  parent.verticalCenter
-                            anchors.leftMargin: 5
-
-                            Image {
-                                width: 16; height: 16;
-                                sourceSize: Qt.size(width, height)
-                                source: webEngineView ? webEngineView.icon : ""
-                            }
-                            Text {
-                                Layout.fillWidth: true
-                                text: webEngineView ? webEngineView.title : ""
-                                font.pixelSize: 16
-                                clip: true
-                            }
-                        }
-                        MouseArea {
-                            anchors.fill: parent
-                            onClicked: currentWebEngineView = selectWebEngineView(index)
-                        }
-                    }
-                }
+                onSelected: viewListModel.selectWebEngineView(index)
             }
-            ListView {
-                id: historyView
 
-                spacing: 5
+            HistoryListView {
+                id: historyListView
+                visible: tabSwitch.state == "right"
 
                 model: currentWebEngineView.navigationHistory.items
-                clip: true
-                x: width
+                state: (tabBar.state == "closed") ? "compact" : "wide"
 
-                highlightFollowsCurrentItem: true
-                highlight: Rectangle {
-                    anchors.left: parent.left
-                    anchors.leftMargin: 5
-                    anchors.right: parent.right
-                    anchors.rightMargin: 5
-
-                    color: "transparent"
-                    z: parent.z + 2
-
-                    height: 50
-                    width: 50
-
-                    border.width: 1
-                    border.color: "black"
-                    radius: 8
-                }
-
-                delegate: tabBar.state == "closed" ? compactDelegate : wideDelegate
-
-                property Component compactDelegate: Component {
-                    Rectangle {
-                        id: tegla
-                        anchors.left: parent.left
-                        anchors.leftMargin: 5
-                        anchors.right: parent.right
-                        anchors.rightMargin: 5
-
-                        z: parent.z + 1
-                        radius: 8
-
-                        height: 50
-                        color: "white"
-
-                        Image {
-                            anchors.centerIn: parent
-                            width: 48; height: 48
-                            sourceSize: Qt.size(width, height)
-                            source: icon
-                        }
-                        MouseArea {
-                            anchors.fill: parent
-                            onClicked: {
-                                historyView.currentIndex = index
-                                currentWebEngineView.goBackOrForward(offset)
-                            }
-                        }
-                    }
-                }
-                property Component wideDelegate : Component {
-                    Rectangle {
-                        anchors.left: parent.left
-                        anchors.leftMargin: 5
-                        anchors.right: parent.right
-                        anchors.rightMargin: 5
-
-                        z: parent.z + 1
-                        radius: 8
-
-                        height: 30
-                        color: "white"
-
-                        RowLayout {
-                            anchors.fill: parent
-                            anchors.verticalCenter:  parent.verticalCenter
-                            anchors.leftMargin: 5
-
-                            Image {
-                                width: 16; height: 16;
-                                sourceSize: Qt.size(width, height)
-                                source: icon
-                            }
-                            Text {
-                                Layout.fillWidth: true
-                                text: title
-                                font.pixelSize: 16
-                                clip: true
-                            }
-                        }
-                        MouseArea {
-                            anchors.fill: parent
-                            onClicked: {
-                                historyView.currentIndex = index
-                                currentWebEngineView.goBackOrForward(offset)
-                            }
-                        }
-                    }
-                }
+                onSelected: currentWebEngineView.goBackOrForward(offset)
             }
 
             delegate: StackViewDelegate {
@@ -374,7 +204,7 @@ ApplicationWindow {
                     PropertyAnimation {
                         target: enterItem
                         property: "x"
-                        from: enterItem.x
+                        from: (enterItem.model == viewListModel) ? -enterItem.width : enterItem.width
                         to: 0
                         duration: 300
                     }
@@ -382,7 +212,7 @@ ApplicationWindow {
                         target: exitItem
                         property: "x"
                         from: 0
-                        to: (enterItem.x < 0) ? exitItem.width : -exitItem.width
+                        to: (exitItem.model == viewListModel) ? -exitItem.width : exitItem.width
                         duration: 300
                     }
                 }
@@ -400,6 +230,8 @@ ApplicationWindow {
             color: "transparent"
 
             BrowserSwitch {
+                id: tabSwitch
+
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.left: parent.left
                 anchors.leftMargin: 10
@@ -413,9 +245,7 @@ ApplicationWindow {
 
                 state: "left"
 
-                onClicked: {
-                    tabBarStack.push({item: (state == "left") ? tabView : historyView, replace: true})
-                }
+                onClicked: tabBarStack.push({item: (state == "left") ? tabListView : historyListView, replace: true})
             }
         }
     }
@@ -431,8 +261,8 @@ ApplicationWindow {
 
     Component.onCompleted: {
         WebEngine.settings.touchIconsEnabled = true
-        createWebEngineView()
-        currentWebEngineView = selectWebEngineView(tabView.model.count - 1)
+        viewListModel.createWebEngineView()
+        viewListModel.selectWebEngineView(viewListModel.count - 1)
         currentWebEngineView.url = Qt.resolvedUrl("http://www.google.com")
     }
 }

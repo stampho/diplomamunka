@@ -5,5 +5,11 @@
         <file>BrowserButton.qml</file>
         <file>AddressBar.qml</file>
         <file>BrowserSwitch.qml</file>
+        <file>HistoryListView.qml</file>
+        <file>TabListView.qml</file>
+        <file>WebEngineViewListModel.qml</file>
+        <file>HighlightItem.qml</file>
+        <file>CompactEntry.qml</file>
+        <file>WideEntry.qml</file>
     </qresource>
 </RCC>
