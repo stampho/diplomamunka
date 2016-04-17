@@ -31,7 +31,7 @@ ApplicationWindow {
                     urlBar.state = "opened"
             })
 
-        viewModel.append({ "webEngineView": webEngineView })
+        tabView.model.append({ "webEngineView": webEngineView })
 
         return webEngineView
     }
@@ -47,10 +47,6 @@ ApplicationWindow {
         tabView.currentIndex = index
 
         return newWebEngineView
-    }
-
-    ListModel {
-        id: viewModel
     }
 
     Settings {
@@ -75,7 +71,7 @@ ApplicationWindow {
                 shortcut: StandardKey.AddTab
                 onTriggered: {
                     createWebEngineView();
-                    currentWebEngineView = selectWebEngineView(viewModel.count - 1)
+                    currentWebEngineView = selectWebEngineView(tabView.model.count - 1)
                     urlBar.state = "opened"
                     addressBar.forceActiveFocus()
                 }
@@ -144,7 +140,7 @@ ApplicationWindow {
                 onAccepted: {
                     if (!currentWebEngineView) {
                         createWebEngineView()
-                        currentWebEngineView = selectWebEngineView(viewModel.count - 1)
+                        currentWebEngineView = selectWebEngineView(tabView.model.count - 1)
                     }
                     currentWebEngineView.url = addressUrl
                 }
@@ -173,103 +169,221 @@ ApplicationWindow {
 
         orientation: Qt.Vertical
 
-        ListView {
-            id: tabView
+        StackView {
+            id: tabBarStack
+
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.top: parent.top
             anchors.bottom: tabControl.top
 
-            spacing: 5
+            initialItem: tabView
 
-            model: viewModel
-            clip: true
+            ListView {
+                id: tabView
 
-            highlightFollowsCurrentItem: true
-            highlight: Rectangle {
-                anchors.left: parent.left
-                anchors.leftMargin: 5
-                anchors.right: parent.right
-                anchors.rightMargin: 5
+                spacing: 5
 
-                color: "transparent"
-                z: parent.z + 2
+                model: ListModel { }
+                clip: true
+                x: 0
 
-                height: 50
-                width: 50
-
-                border.width: 1
-                border.color: "black"
-                radius: 8
-            }
-
-            delegate: tabBar.state == "closed" ? compactDelegate : wideDelegate
-
-            property Component compactDelegate: Component {
-                Rectangle {
+                highlightFollowsCurrentItem: true
+                highlight: Rectangle {
                     anchors.left: parent.left
                     anchors.leftMargin: 5
                     anchors.right: parent.right
                     anchors.rightMargin: 5
 
-                    z: parent.z + 1
-                    radius: 8
+                    color: "transparent"
+                    z: parent.z + 2
 
                     height: 50
-                    color: "white"
+                    width: 50
 
-                    Image {
-                        anchors.centerIn: parent
-                        width: 48; height: 48
-                        sourceSize: Qt.size(width, height)
-                        source: webEngineView ? webEngineView.icon : ""
+                    border.width: 1
+                    border.color: "black"
+                    radius: 8
+                }
+
+                delegate: tabBar.state == "closed" ? compactDelegate : wideDelegate
+
+                property Component compactDelegate: Component {
+                    Rectangle {
+                        anchors.left: parent.left
+                        anchors.leftMargin: 5
+                        anchors.right: parent.right
+                        anchors.rightMargin: 5
+
+                        z: parent.z + 1
+                        radius: 8
+
+                        height: 50
+                        color: "white"
+
+                        Image {
+                            anchors.centerIn: parent
+                            width: 48; height: 48
+                            sourceSize: Qt.size(width, height)
+                            source: webEngineView ? webEngineView.icon : ""
+                        }
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: currentWebEngineView = selectWebEngineView(index)
+                        }
                     }
+                }
+                property Component wideDelegate : Component {
+                    Rectangle {
+                        anchors.left: parent.left
+                        anchors.leftMargin: 5
+                        anchors.right: parent.right
+                        anchors.rightMargin: 5
 
-                    MouseArea {
-                        anchors.fill: parent
-                        onClicked: {
-                            currentWebEngineView = selectWebEngineView(index)
+                        z: parent.z + 1
+                        radius: 8
+
+                        height: 30
+                        color: "white"
+
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.verticalCenter:  parent.verticalCenter
+                            anchors.leftMargin: 5
+
+                            Image {
+                                width: 16; height: 16;
+                                sourceSize: Qt.size(width, height)
+                                source: webEngineView ? webEngineView.icon : ""
+                            }
+                            Text {
+                                Layout.fillWidth: true
+                                text: webEngineView ? webEngineView.title : ""
+                                font.pixelSize: 16
+                                clip: true
+                            }
+                        }
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: currentWebEngineView = selectWebEngineView(index)
                         }
                     }
                 }
             }
-            property Component wideDelegate : Component {
-                Rectangle {
+            ListView {
+                id: historyView
+
+                spacing: 5
+
+                model: currentWebEngineView.navigationHistory.items
+                clip: true
+                x: width
+
+                highlightFollowsCurrentItem: true
+                highlight: Rectangle {
                     anchors.left: parent.left
                     anchors.leftMargin: 5
                     anchors.right: parent.right
                     anchors.rightMargin: 5
 
-                    z: parent.z + 1
+                    color: "transparent"
+                    z: parent.z + 2
+
+                    height: 50
+                    width: 50
+
+                    border.width: 1
+                    border.color: "black"
                     radius: 8
+                }
 
-                    height: 30
-                    color: "white"
+                delegate: tabBar.state == "closed" ? compactDelegate : wideDelegate
 
-                    RowLayout {
-                        anchors.fill: parent
-                        anchors.verticalCenter:  parent.verticalCenter
+                property Component compactDelegate: Component {
+                    Rectangle {
+                        id: tegla
+                        anchors.left: parent.left
                         anchors.leftMargin: 5
+                        anchors.right: parent.right
+                        anchors.rightMargin: 5
+
+                        z: parent.z + 1
+                        radius: 8
+
+                        height: 50
+                        color: "white"
 
                         Image {
-                            width: 16; height: 16;
+                            anchors.centerIn: parent
+                            width: 48; height: 48
                             sourceSize: Qt.size(width, height)
-                            source: webEngineView ? webEngineView.icon : ""
+                            source: icon
                         }
-
-                        Text {
-                            Layout.fillWidth: true
-                            text: webEngineView ? webEngineView.title : ""
-                            font.pixelSize: 16
-                            clip: true
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: {
+                                historyView.currentIndex = index
+                                currentWebEngineView.goBackOrForward(offset)
+                            }
                         }
                     }
+                }
+                property Component wideDelegate : Component {
+                    Rectangle {
+                        anchors.left: parent.left
+                        anchors.leftMargin: 5
+                        anchors.right: parent.right
+                        anchors.rightMargin: 5
 
-                    MouseArea {
-                        anchors.fill: parent
-                        onClicked: {
-                            currentWebEngineView = selectWebEngineView(index)
+                        z: parent.z + 1
+                        radius: 8
+
+                        height: 30
+                        color: "white"
+
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.verticalCenter:  parent.verticalCenter
+                            anchors.leftMargin: 5
+
+                            Image {
+                                width: 16; height: 16;
+                                sourceSize: Qt.size(width, height)
+                                source: icon
+                            }
+                            Text {
+                                Layout.fillWidth: true
+                                text: title
+                                font.pixelSize: 16
+                                clip: true
+                            }
                         }
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: {
+                                historyView.currentIndex = index
+                                currentWebEngineView.goBackOrForward(offset)
+                            }
+                        }
+                    }
+                }
+            }
+
+            delegate: StackViewDelegate {
+                replaceTransition: StackViewTransition {
+                    PropertyAnimation {
+                        target: enterItem
+                        property: "x"
+                        from: enterItem.x
+                        to: 0
+                        duration: 300
+                    }
+                    PropertyAnimation {
+                        target: exitItem
+                        property: "x"
+                        from: 0
+                        to: (enterItem.x < 0) ? exitItem.width : -exitItem.width
+                        duration: 300
                     }
                 }
             }
@@ -300,10 +414,7 @@ ApplicationWindow {
                 state: "left"
 
                 onClicked: {
-                    if (state == "left")
-                        console.log("tabs")
-                    else
-                        console.log("navigation")
+                    tabBarStack.push({item: (state == "left") ? tabView : historyView, replace: true})
                 }
             }
         }
@@ -321,7 +432,7 @@ ApplicationWindow {
     Component.onCompleted: {
         WebEngine.settings.touchIconsEnabled = true
         createWebEngineView()
-        currentWebEngineView = selectWebEngineView(viewModel.count - 1)
+        currentWebEngineView = selectWebEngineView(tabView.model.count - 1)
         currentWebEngineView.url = Qt.resolvedUrl("http://www.google.com")
     }
 }
