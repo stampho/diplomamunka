@@ -41,6 +41,7 @@ ApplicationWindow {
             currentWebEngineView = get(index).webEngineView
             webView.push({ item: currentWebEngineView, replace: true })
             tabListView.currentIndex = index
+            historyListView.currentIndex = currentWebEngineView.navigationHistory.backItems.rowCount()
         }
     }
 
