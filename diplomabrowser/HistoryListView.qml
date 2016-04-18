@@ -75,6 +75,8 @@ ListView {
             size: ListView.isCurrentItem ? root.size : 30
 
             onClicked: {
+                if (currentIndex == index)
+                    return
                 root.currentIndex = index
                 root.selected(offset)
             }
@@ -90,6 +92,8 @@ ListView {
             pageTitle: title ? title : ""
 
             onClicked: {
+                if (currentIndex == index)
+                    return
                 root.currentIndex = index
                 root.selected(offset)
             }

@@ -109,6 +109,7 @@ ApplicationWindow {
                 onClicked: {
                     historyListView.currentIndex -= 1
                     currentWebEngineView.goBack()
+                    navigationAnimation.start()
                 }
             }
 
@@ -122,6 +123,7 @@ ApplicationWindow {
                 onClicked: {
                     historyListView.currentIndex += 1
                     currentWebEngineView.goForward()
+                    navigationAnimation.start()
                 }
             }
 
@@ -192,7 +194,10 @@ ApplicationWindow {
                 model: currentWebEngineView.navigationHistory.items
                 state: (tabBar.state == "closed") ? "compact" : "wide"
 
-                onSelected: currentWebEngineView.goBackOrForward(offset)
+                onSelected: {
+                    navigationAnimation.start()
+                    currentWebEngineView.goBackOrForward(offset)
+                }
             }
 
             delegate: StackViewDelegate {
@@ -272,6 +277,47 @@ ApplicationWindow {
                     to: (enterItem.index < exitItem.index) ? exitItem.height : -exitItem.height
                     duration: 300
                 }
+            }
+        }
+    }
+
+    SequentialAnimation {
+        id: navigationAnimation
+        property int d: 600
+
+        ParallelAnimation {
+            PropertyAnimation {
+                target: currentWebEngineView
+                property: "rotation"
+                from: 0
+                to: 360
+                duration: navigationAnimation.d
+            }
+
+            PropertyAnimation {
+                target: currentWebEngineView
+                property: "scale"
+                from: 1.0
+                to: 0.0
+                duration: navigationAnimation.d
+            }
+        }
+
+        ParallelAnimation {
+            PropertyAnimation {
+                target: currentWebEngineView
+                property: "rotation"
+                from: 0
+                to: 360
+                duration: navigationAnimation.d
+            }
+
+            PropertyAnimation {
+                target: currentWebEngineView
+                property: "scale"
+                from: 0.0
+                to: 1.0
+                duration: navigationAnimation.d
             }
         }
     }
