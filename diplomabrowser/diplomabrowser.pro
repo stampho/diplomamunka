@@ -14,7 +14,6 @@ OTHER_FILES += \
     BrowserButton.qml \
     BrowserSwitch.qml \
     CompactEntry.qml \
-    HighlightItem.qml \
     HistoryListView.qml \
     TabListView.qml \
     WebEngineViewListModel.qml \

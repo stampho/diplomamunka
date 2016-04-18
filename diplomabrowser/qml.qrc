@@ -8,7 +8,6 @@
         <file>HistoryListView.qml</file>
         <file>TabListView.qml</file>
         <file>WebEngineViewListModel.qml</file>
-        <file>HighlightItem.qml</file>
         <file>CompactEntry.qml</file>
         <file>WideEntry.qml</file>
     </qresource>

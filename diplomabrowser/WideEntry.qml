@@ -8,11 +8,7 @@ Rectangle {
     property string pageTitle: ""
     signal clicked()
 
-    anchors.left: parent ? parent.left : undefined
-    anchors.leftMargin: 5
-    anchors.right: parent ? parent.right : undefined
-    anchors.rightMargin: 5
-
+    width: parent.width - 10
     height: 30
     color: "white"
     radius: 8

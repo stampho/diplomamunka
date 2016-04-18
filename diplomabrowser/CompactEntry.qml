@@ -4,20 +4,17 @@ Rectangle {
     id: root
 
     property url iconUrl: ""
+    property real size: 50
     signal clicked()
 
-    anchors.left: parent ? parent.left : undefined
-    anchors.leftMargin: 5
-    anchors.right: parent ? parent.right : undefined
-    anchors.rightMargin: 5
-
-    height: 50
+    width: size
+    height: size
     color: "white"
     radius: 8
 
     Image {
         anchors.centerIn: parent
-        width: 48; height: 48
+        width: size - 2; height: size - 2
         sourceSize: Qt.size(width, height)
         source: iconUrl
     }
