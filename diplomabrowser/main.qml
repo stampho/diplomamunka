@@ -23,7 +23,7 @@ ApplicationWindow {
         id: viewListModel
 
         function createWebEngineView() {
-            var webEngineView = newWebEngineView(webFlickable.contentItem)
+            var webEngineView = newWebEngineView(webView)
 
             webEngineView.loadingChanged.connect(function(loadRequest){
                     if (!urlBar.lock && loadRequest.status == WebEngineView.LoadSucceededStatus)
@@ -38,13 +38,8 @@ ApplicationWindow {
         }
 
         function selectWebEngineView(index) {
-            if (tabListView.currentIndex >= 0) {
-                var oldWebEngineView = get(tabListView.currentIndex).webEngineView
-                oldWebEngineView.visible = false
-            }
-
             currentWebEngineView = get(index).webEngineView
-            currentWebEngineView.visible = true
+            webView.push({ item: currentWebEngineView, replace: true })
             tabListView.currentIndex = index
         }
     }
@@ -250,13 +245,34 @@ ApplicationWindow {
         }
     }
 
-    Flickable {
-        id: webFlickable
+    StackView {
+        id: webView
 
         anchors.top: urlBar.bottom
         anchors.bottom: parent.bottom
         anchors.left: tabBar.right
         anchors.right: parent.right
+
+        clip: true
+
+        delegate: StackViewDelegate {
+            replaceTransition: StackViewTransition {
+                PropertyAnimation {
+                    target: enterItem
+                    property: "y"
+                    from: (enterItem.index < exitItem.index) ? -enterItem.height : enterItem.height
+                    to: 0
+                    duration: 300
+                }
+                PropertyAnimation {
+                    target: exitItem
+                    property: "y"
+                    from: 0
+                    to: (enterItem.index < exitItem.index) ? exitItem.height : -exitItem.height
+                    duration: 300
+                }
+            }
+        }
     }
 
     Component.onCompleted: {
