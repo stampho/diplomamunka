@@ -8,9 +8,9 @@ Rectangle {
     property string pageTitle: ""
     signal clicked()
 
-    anchors.left: parent.left
+    anchors.left: parent ? parent.left : undefined
     anchors.leftMargin: 5
-    anchors.right: parent.right
+    anchors.right: parent ? parent.right : undefined
     anchors.rightMargin: 5
 
     height: 30

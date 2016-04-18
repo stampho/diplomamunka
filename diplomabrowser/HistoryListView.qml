@@ -27,7 +27,7 @@ ListView {
         CompactEntry {
             z: root.z + 1
 
-            iconUrl: icon
+            iconUrl: icon ? icon : ""
 
             onClicked: {
                 root.currentIndex = index
@@ -40,8 +40,8 @@ ListView {
         WideEntry {
             z: root.z + 1
 
-            iconUrl: icon
-            pageTitle: title
+            iconUrl: icon ? icon : ""
+            pageTitle: title ? title : ""
 
             onClicked: {
                 root.currentIndex = index
