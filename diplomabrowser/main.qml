@@ -285,6 +285,23 @@ ApplicationWindow {
         id: navigationAnimation
         property int d: 600
 
+        PropertyAnimation {
+            target: currentWebEngineView
+            property: "opacity"
+            from: 1.0
+            to: 0.1
+            duration: navigationAnimation.d
+        }
+
+        PropertyAnimation {
+            target: currentWebEngineView
+            property: "opacity"
+            from: 0.1
+            to: 1.0
+            duration: navigationAnimation.d
+        }
+
+        /*
         ParallelAnimation {
             PropertyAnimation {
                 target: currentWebEngineView
@@ -320,6 +337,7 @@ ApplicationWindow {
                 duration: navigationAnimation.d
             }
         }
+        */
     }
 
     Component.onCompleted: {
