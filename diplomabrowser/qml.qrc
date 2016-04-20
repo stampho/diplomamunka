@@ -10,5 +10,6 @@
         <file>WebEngineViewListModel.qml</file>
         <file>CompactEntry.qml</file>
         <file>WideEntry.qml</file>
+        <file>FindBar.qml</file>
     </qresource>
 </RCC>

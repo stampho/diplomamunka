@@ -66,11 +66,18 @@ ApplicationWindow {
                     addressBar.forceActiveFocus()
                 }
             }
-
             MenuItem {
                 text: qsTr("&Quit")
                 shortcut: "Ctrl+q"
                 onTriggered: Qt.quit();
+            }
+        }
+        Menu {
+            title: qsTr("Edit")
+            MenuItem {
+                text: qsTr("&Find")
+                shortcut: "Ctrl+f"
+                onTriggered: findBar.show()
             }
         }
         Menu {
@@ -90,6 +97,7 @@ ApplicationWindow {
         width: parent.width - 4
         height: 50
         anchors.horizontalCenter: parent.horizontalCenter
+        z: parent.z + 1
 
         orientation: Qt.Horizontal
 
@@ -280,6 +288,23 @@ ApplicationWindow {
             }
         }
     }
+
+    SystemPalette { id: palette }
+
+    FindBar {
+        id: findBar
+        anchors.right: parent.right
+        anchors.rightMargin: 30
+        anchors.top: urlBar.bottom
+        anchors.topMargin: -10
+
+        width: 180
+        height: 45
+
+        color: palette.window
+    }
+
+
 
     SequentialAnimation {
         id: navigationAnimation
