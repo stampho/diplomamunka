@@ -6,17 +6,70 @@ import QtQuick.Layouts 1.1
 Rectangle {
     id: root
 
+    signal findNext(string text)
+    signal findPrev(string text)
+
     visible: false
     radius: 8
 
+    state: "hidden"
+    states: [
+        State {
+            name: "shown"
+            PropertyChanges { target: root; anchors.topMargin: -10 }
+            PropertyChanges { target: root; visible: true }
+        },
+        State {
+            name: "hidden"
+            PropertyChanges { target: root; anchors.topMargin: -10 - root.height }
+            PropertyChanges { target: root; visible: false }
+        }
+    ]
+
+    transitions: [
+        Transition {
+            from: "shown"
+            to: "hidden"
+
+            SequentialAnimation {
+                NumberAnimation {
+                    target: root
+                    property: "anchors.topMargin"
+                    duration: 300
+                }
+                NumberAnimation {
+                    target: root
+                    property: "visible"
+                    duration: 0
+                }
+            }
+        },
+        Transition {
+            from: "hidden"
+            to: "shown"
+
+            SequentialAnimation {
+                NumberAnimation {
+                    target: root
+                    property: "visible"
+                    duration: 0
+                }
+                NumberAnimation {
+                    target: root
+                    property: "anchors.topMargin"
+                    duration: 300
+                }
+            }
+        }
+    ]
+
     function show() {
-        visible = true;
+        root.state = "shown";
         findField.forceActiveFocus();
     }
 
     function hide() {
-        visible = false;
-        currentWebEngineView.forceActiveFocus();
+        root.state = "hidden";
     }
 
     RowLayout {
@@ -33,7 +86,7 @@ Rectangle {
             height: findField.height
             text: "<"
 
-            onClicked: console.log("back")
+            onClicked: root.findNext(findField.text)
         }
 
         Rectangle {
@@ -54,7 +107,7 @@ Rectangle {
                         color: "transparent"
                         border.color: Qt.darker(palette.window, 2.0)
                         border.width: 1
-                        radius: 4 // radius
+                        radius: 4
                     }
                 }
 
@@ -85,7 +138,7 @@ Rectangle {
                 }
 
                 onActiveFocusChanged: activeFocus ? selectAll() : deselect()
-                onAccepted: console.log("find: " + text)
+                onAccepted: findNext(findField.text)
 
                 Keys.onPressed: {
                     if (event.key == Qt.Key_Escape && root.visible)
@@ -99,7 +152,7 @@ Rectangle {
             height: findField.height
             text: ">"
 
-            onClicked: console.log("forward")
+            onClicked: root.findPrev(findField.text)
         }
     }
 }

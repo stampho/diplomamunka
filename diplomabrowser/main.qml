@@ -302,9 +302,17 @@ ApplicationWindow {
         height: 45
 
         color: palette.window
+
+        onFindNext: currentWebEngineView.findText(text)
+        onFindPrev: currentWebEngineView.findText(text, WebEngineView.FindBackward)
+
+        onStateChanged: {
+            if (state == "hidden" && currentWebEngineView) {
+                currentWebEngineView.findText("");
+                currentWebEngineView.forceActiveFocus();
+            }
+        }
     }
-
-
 
     SequentialAnimation {
         id: navigationAnimation
