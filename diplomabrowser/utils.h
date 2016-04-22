@@ -51,12 +51,14 @@
 #define UTILS_H
 
 #include <QtCore/QFileInfo>
+#include <QtCore/QLocale>
 #include <QtCore/QUrl>
 
 class Utils : public QObject {
     Q_OBJECT
 public:
     Q_INVOKABLE static QUrl fromUserInput(const QString& userInput);
+    Q_INVOKABLE static void setLocale(const QString &locale);
 };
 
 inline QUrl Utils::fromUserInput(const QString& userInput)
@@ -65,6 +67,11 @@ inline QUrl Utils::fromUserInput(const QString& userInput)
     if (fileInfo.exists())
         return QUrl::fromLocalFile(fileInfo.absoluteFilePath());
     return QUrl::fromUserInput(userInput);
+}
+
+inline void Utils::setLocale(const QString &locale)
+{
+    QLocale::setDefault(QLocale(locale));
 }
 
 #endif // UTILS_H

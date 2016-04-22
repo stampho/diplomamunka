@@ -374,6 +374,7 @@ ApplicationWindow {
     }
 
     Component.onCompleted: {
+        utils.setLocale("hu")
         WebEngine.settings.touchIconsEnabled = true
         viewListModel.createWebEngineView()
         viewListModel.selectWebEngineView(viewListModel.count - 1)
