@@ -23,6 +23,8 @@ ApplicationWindow {
         property alias touchIconsEnabled: touchIconsEnabled.checked
         property alias autoLoadImages: autoLoadImages.checked
         property alias javaScriptEnabled: javaScriptEnabled.checked
+
+        property alias homeUrl: homeUrlField.text
     }
 
     WebEngineViewListModel {
@@ -35,6 +37,8 @@ ApplicationWindow {
             webEngineView.settings.touchIconsEnabled = Qt.binding(function() { return appSettings.touchIconsEnabled; });
             webEngineView.settings.autoLoadImages = Qt.binding(function() { return appSettings.autoLoadImages; });
             webEngineView.settings.javaScriptEnabled = Qt.binding(function() { return appSettings.javaScriptEnabled; });
+
+            webEngineView.url = appSettings.homeUrl
 
             webEngineView.loadingChanged.connect(function(loadRequest){
                     if (!urlBar.lock && loadRequest.status == WebEngineView.LoadSucceededStatus)
@@ -192,7 +196,7 @@ ApplicationWindow {
                 }
                 TextField {
                     id: homeUrlField
-                    text: "http://www.google.com"
+                    text: appSettings.homeUrl
 
                     style: settingsPanel.textFieldStyle
                     width: 200
@@ -485,6 +489,5 @@ ApplicationWindow {
         utils.setLocale("hu");
         viewListModel.createWebEngineView();
         viewListModel.selectWebEngineView(viewListModel.count - 1);
-        currentWebEngineView.url = Qt.resolvedUrl("http://www.google.com");
     }
 }
