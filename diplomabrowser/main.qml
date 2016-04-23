@@ -218,6 +218,10 @@ ApplicationWindow {
 
                     width: 200
                     anchors.verticalCenter: parent.verticalCenter
+
+                    onActivated: {
+                        settingsPanel.isLanguageChanged = true;
+                    }
                 }
             }
             CheckBox {

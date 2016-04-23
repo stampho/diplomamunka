@@ -1,4 +1,5 @@
 import QtQuick 2.6
+import QtQuick.Controls 1.4
 import QtQuick.Controls.Styles 1.4
 import QtQuick.Layouts 1.1
 
@@ -6,6 +7,7 @@ Rectangle {
     id: root
 
     default property alias contents: contentLayout.data
+    property bool isLanguageChanged: false
 
     property Component checkBoxStyle: CheckBoxStyle {
         indicator: Rectangle {
@@ -118,58 +120,123 @@ Rectangle {
 
         onPressed: { parent.anchors.centerIn = undefined }
 
-        FlatButton {
-            id: closeButton
+        StackView {
+            id: stackView
 
-            anchors.top: parent.top
-            anchors.topMargin: 5
-            anchors.right: parent.right
-            anchors.rightMargin: 5
-
-            width: 20; height: 20
-            text: "X"
-            shortcut: "Esc"
-
-            onClicked: root.state = "hidden"
-        }
-
-        FlatButton {
-            id: okButton
-
-            anchors.horizontalCenter: parent.horizontalCenter
-            anchors.bottom: parent.bottom
-            anchors.bottomMargin: 10
-
-            width: 60; height: 30
-            text: "Ok"
-            shortcut: "Return"
-
-            onClicked: root.state = "hidden"
-        }
-
-        Rectangle {
             anchors.fill: parent
-            border.width: 1
-            border.color: Qt.rgba(0.3, 0.3, 0.3, 1.0)
-            radius: 8
-            color: "transparent"
+            initialItem: mainView
+            clip: true
 
-            anchors.leftMargin: 30
-            anchors.rightMargin: 30
-            anchors.topMargin: 25
-            anchors.bottomMargin: 45
+            Item {
+                id: mainView
 
-            Flickable {
-                id: content
+                FlatButton {
+                    id: closeButton
 
-                anchors.fill: parent
-                anchors.margins: 10
+                    anchors.top: parent.top
+                    anchors.topMargin: 5
+                    anchors.right: parent.right
+                    anchors.rightMargin: 5
 
-                contentHeight: contentLayout.height
-                clip: true
+                    width: 20; height: 20
+                    text: "X"
+                    shortcut: "Esc"
 
-                ColumnLayout { id: contentLayout }
+                    onClicked: root.state = "hidden"
+                }
+
+                FlatButton {
+                    id: okButton
+
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.bottom: parent.bottom
+                    anchors.bottomMargin: 10
+
+                    width: 60; height: 30
+                    text: "Ok"
+                    shortcut: "Return"
+
+                    onClicked: {
+                        if (isLanguageChanged)
+                            stackView.push({ item: confirmView, replace: true });
+                        else
+                            root.state = "hidden";
+                    }
+                }
+
+                Rectangle {
+                    anchors.fill: parent
+                    border.width: 1
+                    border.color: Qt.rgba(0.3, 0.3, 0.3, 1.0)
+                    radius: 8
+                    color: "transparent"
+
+                    anchors.leftMargin: 30
+                    anchors.rightMargin: 30
+                    anchors.topMargin: 25
+                    anchors.bottomMargin: 45
+
+                    Flickable {
+                        id: content
+
+                        anchors.fill: parent
+                        anchors.margins: 10
+
+                        contentHeight: contentLayout.height
+                        clip: true
+
+                        ColumnLayout { id: contentLayout }
+                    }
+                }
             }
+
+            Item {
+                id: confirmView
+                visible: false
+
+                ColumnLayout {
+                    anchors.centerIn: parent
+                    anchors.leftMargin: 30
+                    anchors.rightMargin: 30
+                    spacing: 20
+
+                    Text {
+                        Layout.alignment: Qt.AlignHCenter
+                        horizontalAlignment: Text.AlignHCenter
+                        Layout.preferredWidth: 500
+                        wrapMode: Text.WordWrap
+
+                        text: qsTr("Would you like to apply new language settings for existing tabs and clear history?")
+                        color: "white"
+                        font.pixelSize: 18
+                    }
+
+                    RowLayout {
+                        Layout.alignment: Qt.AlignHCenter
+                        spacing: 80
+
+                        FlatButton {
+                           width: 60; height: 30
+                           text: "Yes"
+
+                           onClicked: root.state = "hidden";
+                        }
+                        FlatButton {
+                           width: 60; height: 30
+                           text: "No"
+
+                           onClicked: root.state = "hidden";
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    onVisibleChanged: {
+        if (isLanguageChanged && visible == false) {
+            stackView.push({ item: mainView, replace: true, immediate: true });
+            isLanguageChanged = false;
         }
     }
 }
