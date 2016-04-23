@@ -140,7 +140,8 @@ Rectangle {
 
                     width: 20; height: 20
                     text: "X"
-                    //shortcut: "Esc"
+                    enabled: root.visible
+                    shortcut: "Esc"
 
                     onClicked: root.state = "hidden"
                 }
@@ -154,7 +155,8 @@ Rectangle {
 
                     width: 60; height: 30
                     text: "Ok"
-                    //shortcut: "Return"
+                    enabled: root.visible
+                    shortcut: "Return"
 
                     onClicked: {
                         if (isLanguageChanged)

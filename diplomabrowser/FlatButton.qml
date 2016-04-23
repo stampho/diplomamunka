@@ -7,6 +7,7 @@ Rectangle {
     property color bgColor: "white"
     property color fgColor: Qt.rgba(0.8, 0.8, 0.8, 1.0)
     property string shortcut: ""
+    property bool enabled: true
 
     signal clicked()
 
@@ -81,6 +82,7 @@ Rectangle {
 
     Shortcut {
         sequence: shortcut
+        enabled: root.enabled
         onActivated: {
             pressAnim.start();
             root.clicked();
