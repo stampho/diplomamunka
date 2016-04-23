@@ -5,7 +5,7 @@ Rectangle {
 
     property string text: ""
     property color bgColor: "white"
-    property color fgColor: Qt.rgba(0.4, 0.4, 0.4, 1.0)
+    property color fgColor: Qt.rgba(0.8, 0.8, 0.8, 1.0)
     property string shortcut: ""
 
     signal clicked()
@@ -21,7 +21,7 @@ Rectangle {
         State {
             name: "released"
             PropertyChanges { target: root; bgColor: "transparent" }
-            PropertyChanges { target: root; fgColor: Qt.rgba(0.4, 0.4, 0.4, 1.0) }
+            PropertyChanges { target: root; fgColor: Qt.rgba(0.8, 0.8, 0.8, 1.0) }
         },
         State {
             name: "pressed"
@@ -67,7 +67,7 @@ Rectangle {
                 target: root
                 property: "fgColor"
                 from: Qt.rgba(0.1, 0.1, 0.1, 1.0)
-                to: Qt.rgba(0.4, 0.4, 0.4, 1.0)
+                to: Qt.rgba(0.8, 0.8, 0.8, 1.0)
                 duration: 200
             }
         }

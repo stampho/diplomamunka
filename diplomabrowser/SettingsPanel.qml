@@ -1,9 +1,48 @@
 import QtQuick 2.6
+import QtQuick.Controls.Styles 1.4
+import QtQuick.Layouts 1.1
 
 Rectangle {
     id: root
 
-    default property alias contents: content.data
+    default property alias contents: contentLayout.data
+
+    property Component checkBoxStyle: CheckBoxStyle {
+        indicator: Rectangle {
+            implicitWidth: 16
+            implicitHeight: 16
+            radius: 4
+            border.color: control.enabled ? "white" : Qt.rgba(0.3, 0.3, 0.3, 1.0)
+            border.width: 1
+            color: "transparent"
+
+            Rectangle {
+                visible: control.checked
+                color: control.enabled ? "white" : Qt.rgba(0.3, 0.3, 0.3, 1.0)
+                radius: 2
+                anchors.fill: parent
+                anchors.margins: 4
+            }
+        }
+
+        label: Text {
+            color: control.enabled ? "white" : Qt.rgba(0.3, 0.3, 0.3, 1.0)
+            font.pixelSize: 16
+            text: control.text
+        }
+    }
+
+    property Component textFieldStyle: TextFieldStyle {
+        background: Rectangle {
+            color: "transparent"
+            border.color: Qt.rgba(0.8, 0.8, 0.8, 1.0)
+            border.width: 1
+            radius: 4
+        }
+
+        textColor: "white"
+    }
+
 
     border.width: 1
     radius: 4
@@ -99,7 +138,7 @@ Rectangle {
 
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.bottom: parent.bottom
-            anchors.bottomMargin: 5
+            anchors.bottomMargin: 10
 
             width: 60; height: 30
             text: "Ok"
@@ -108,14 +147,29 @@ Rectangle {
             onClicked: root.state = "hidden"
         }
 
-        Item {
-            id: content
-
+        Rectangle {
             anchors.fill: parent
+            border.width: 1
+            border.color: Qt.rgba(0.3, 0.3, 0.3, 1.0)
+            radius: 8
+            color: "transparent"
+
             anchors.leftMargin: 30
             anchors.rightMargin: 30
-            anchors.topMargin: 40
-            anchors.bottomMargin: 40
+            anchors.topMargin: 25
+            anchors.bottomMargin: 45
+
+            Flickable {
+                id: content
+
+                anchors.fill: parent
+                anchors.margins: 10
+
+                contentHeight: contentLayout.height
+                clip: true
+
+                ColumnLayout { id: contentLayout }
+            }
         }
     }
 }

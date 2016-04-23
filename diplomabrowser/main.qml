@@ -110,20 +110,123 @@ ApplicationWindow {
 
         onStateChanged: (state == "hidden" && currentWebEngineView) ? currentWebEngineView.forceActiveFocus() : forceActiveFocus()
 
+        /* Appearance HEADER */
+        Text {
+            text: qsTr("Appearance")
+            color: "white"
+            font.bold: true
+            font.pixelSize: 18
+        }
         Rectangle {
-            anchors.fill: parent
+            Layout.fillWidth: true
+            height: 2
             border.width: 1
             border.color: "white"
-            color: "transparent"
+        }
+        Rectangle { height: 5 }
 
-            Text {
-                anchors.centerIn: parent
-                text: "Test Settings Panel"
-                color: "white"
+        /* Appearance CONTENT */
+        ColumnLayout {
+            Layout.fillWidth: true
+            anchors.left: parent.left
+            anchors.leftMargin: 10
 
-                font.pixelSize: 18
+            CheckBox {
+                id: enableIconsCB
+                text: qsTr("Enable Icons")
+                checked: true
+                style: settingsPanel.checkBoxStyle
+            }
+            CheckBox {
+                text: qsTr("Enable Touch Icons")
+                checked: true
+                style: settingsPanel.checkBoxStyle
+                enabled: enableIconsCB.checked
+            }
+            CheckBox {
+                text: qsTr("Enable Images")
+                checked: true
+                style: settingsPanel.checkBoxStyle
+            }
+            CheckBox {
+                text: qsTr("Lock URL Bar")
+                checked: true
+                style: settingsPanel.checkBoxStyle
             }
         }
+        Rectangle { height: 15 }
+
+        /* General HEADER */
+        Text {
+            text: qsTr("General")
+            color: "white"
+            font.bold: true
+            font.pixelSize: 18
+        }
+        Rectangle {
+            Layout.fillWidth: true
+            height: 2
+            border.width: 1
+            border.color: "white"
+        }
+        Rectangle { height: 5 }
+
+        /* General CONTENT */
+        ColumnLayout {
+            Layout.fillWidth: true
+            anchors.left: parent.left
+            anchors.leftMargin: 10
+
+            Row {
+                spacing: 10
+
+                Text {
+                    text: "Home:"
+                    color: "white"
+                    font.pixelSize: 16
+
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+                TextField {
+                    id: homeUrlField
+                    text: "http://www.google.com"
+
+                    style: settingsPanel.textFieldStyle
+                    width: 200
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+                FlatButton {
+                    text: "Set Current URL"
+                    onClicked: homeUrlField.text = currentWebEngineView.url
+
+                    width: 120; height: homeUrlField.height
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+            }
+            Row {
+                spacing: 10
+
+                Text {
+                    text: "Language:"
+                    color: "white"
+                    font.pixelSize: 16
+
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+                ComboBox {
+                    model: [ "English", "Hungarian" ]
+
+                    width: 200
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+            }
+            CheckBox {
+                text: qsTr("Enable Javascript")
+                checked: true
+                style: settingsPanel.checkBoxStyle
+            }
+        }
+        Rectangle { height: 15 }
     }
 
     SliderBar {
