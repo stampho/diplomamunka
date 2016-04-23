@@ -11,5 +11,7 @@
         <file>CompactEntry.qml</file>
         <file>WideEntry.qml</file>
         <file>FindBar.qml</file>
+        <file>SettingsPanel.qml</file>
+        <file>FlatButton.qml</file>
     </qresource>
 </RCC>

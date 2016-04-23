@@ -1,5 +1,6 @@
 import QtQuick 2.6
 
+// TODO(pvarga): Rename this: SliderBar -> SliderPanel
 Item {
     id: root
 
@@ -51,6 +52,7 @@ Item {
         }
     ]
 
+    // TODO(pvarga): rework animation: in and out. See SettingsPanel.qml
     transitions: [
         Transition {
             ParallelAnimation {

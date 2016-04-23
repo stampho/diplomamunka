@@ -14,10 +14,12 @@ OTHER_FILES += \
     BrowserButton.qml \
     BrowserSwitch.qml \
     CompactEntry.qml \
+    FindBar.qml \
     HistoryListView.qml \
     TabListView.qml \
     WebEngineViewListModel.qml \
     WideEntry.qml \
+    SettingsPanel.qml \
     SliderBar.qml
 
 HEADERS += \

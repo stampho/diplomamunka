@@ -6,6 +6,8 @@ import QtWebEngine 1.3
 import Qt.labs.settings 1.0
 
 ApplicationWindow {
+    id: root
+
     visible: true
     width: 1300
     height: 800
@@ -87,6 +89,39 @@ ApplicationWindow {
                 text: qsTr("&Lock URL Bar")
                 checkable: true
                 checked: urlBar.lock
+            }
+            MenuItem {
+                text: qsTr("&Settings")
+                shortcut: "Ctrl+,"
+                onTriggered: settingsPanel.state = "shown"
+            }
+        }
+    }
+
+    SettingsPanel {
+        id: settingsPanel
+
+        anchors.centerIn: parent
+        width: 600
+        height: 400
+
+        color: Qt.rgba(0.1, 0.1, 0.1, 0.95)
+        border.color: "black"
+
+        onStateChanged: (state == "hidden" && currentWebEngineView) ? currentWebEngineView.forceActiveFocus() : forceActiveFocus()
+
+        Rectangle {
+            anchors.fill: parent
+            border.width: 1
+            border.color: "white"
+            color: "transparent"
+
+            Text {
+                anchors.centerIn: parent
+                text: "Test Settings Panel"
+                color: "white"
+
+                font.pixelSize: 18
             }
         }
     }
