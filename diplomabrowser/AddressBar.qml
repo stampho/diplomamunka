@@ -1,4 +1,4 @@
-import QtQuick 2.5
+import QtQuick 2.6
 import QtQuick.Controls 1.4
 import QtQuick.Controls.Styles 1.4
 
@@ -11,17 +11,15 @@ Rectangle {
 
     signal accepted(url addressUrl)
 
-    SystemPalette {
-        id: palette
-    }
+    SystemPalette { id: palette }
 
     height: addressField.height
     color: "white"
     radius: 4
 
     onActiveFocusChanged: {
-        if (activeFocus == true)
-            addressField.forceActiveFocus()
+        if (activeFocus)
+            addressField.forceActiveFocus();
     }
 
     Rectangle {
@@ -37,9 +35,10 @@ Rectangle {
     TextField {
         id: addressField
         anchors.fill: parent
+        text: root.pageUrl
 
         Image {
-            anchors.verticalCenter: addressField.verticalCenter;
+            anchors.verticalCenter: addressField.verticalCenter
             x: 5; z: parent.z + 1
             width: 16; height: 16
             sourceSize: Qt.size(width, height)
@@ -68,14 +67,7 @@ Rectangle {
             }
         }
 
-        onActiveFocusChanged: {
-            if (activeFocus)
-                selectAll()
-            else
-                deselect()
-        }
-
-        text: root.pageUrl
+        onActiveFocusChanged: activeFocus ? selectAll() : deselect()
         onAccepted: root.accepted(utils.fromUserInput(text))
     }
 }

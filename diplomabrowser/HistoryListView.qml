@@ -76,9 +76,9 @@ ListView {
 
             onClicked: {
                 if (currentIndex == index)
-                    return
-                root.currentIndex = index
-                root.selected(offset)
+                    return;
+                root.currentIndex = index;
+                root.selected(offset);
             }
         }
     }
@@ -93,9 +93,9 @@ ListView {
 
             onClicked: {
                 if (currentIndex == index)
-                    return
-                root.currentIndex = index
-                root.selected(offset)
+                    return;
+                root.currentIndex = index;
+                root.selected(offset);
             }
         }
     }

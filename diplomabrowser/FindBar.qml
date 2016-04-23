@@ -1,4 +1,4 @@
-import QtQuick 2.5
+import QtQuick 2.6
 import QtQuick.Controls 1.4
 import QtQuick.Controls.Styles 1.4
 import QtQuick.Layouts 1.1
@@ -8,6 +8,8 @@ Rectangle {
 
     signal findNext(string text)
     signal findPrev(string text)
+
+    SystemPalette { id: palette }
 
     visible: false
     radius: 8

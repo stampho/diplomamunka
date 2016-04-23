@@ -18,7 +18,7 @@ Rectangle {
     states: [
         State {
             name: "left"
-            PropertyChanges { target: left; color: root.border.color }
+            PropertyChanges { target: left; color: border.color }
             PropertyChanges { target: root; leftTextColor: "white" }
             PropertyChanges { target: right; color: "lightgray" }
             PropertyChanges { target: root; rightTextColor: "black" }
@@ -27,7 +27,7 @@ Rectangle {
             name: "right"
             PropertyChanges { target: left; color: "lightgray" }
             PropertyChanges { target: root; leftTextColor: "black" }
-            PropertyChanges { target: right; color: root.border.color }
+            PropertyChanges { target: right; color: border.color }
             PropertyChanges { target: root; rightTextColor: "white" }
         }
     ]
@@ -68,8 +68,8 @@ Rectangle {
         MouseArea {
             anchors.fill: parent
             onClicked: {
-                root.state = "left"
-                root.clicked()
+                root.state = "left";
+                root.clicked();
             }
         }
     }
@@ -110,8 +110,8 @@ Rectangle {
         MouseArea {
             anchors.fill: parent
             onClicked: {
-                root.state = "right"
-                root.clicked()
+                root.state = "right";
+                root.clicked();
             }
         }
     }

@@ -6,15 +6,13 @@ Rectangle {
     property string text: ""
     property bool enabled: true
     property string shortcut: ""
-    signal clicked()
-
-    SystemPalette {
-        id: palette
-    }
-
     property color bgColor: palette.window
     property color fgColor: "#111111"
     property color borderColor: Qt.darker(bgColor, 2.0)
+
+    signal clicked()
+
+    SystemPalette { id: palette }
 
     color: bgColor
     border.color: borderColor
@@ -92,8 +90,8 @@ Rectangle {
         sequence: shortcut
         enabled: root.enabled
         onActivated: {
-            pressAnim.start()
-            root.clicked()
+            pressAnim.start();
+            root.clicked();
         }
     }
 
@@ -105,8 +103,8 @@ Rectangle {
         onPressed: root.state = "pressed"
 
         onReleased: {
-            root.state = "released"
-            root.clicked()
+            root.state = "released";
+            root.clicked();
         }
 
         onEntered: root.state = "hovered"

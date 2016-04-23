@@ -1,5 +1,5 @@
 import QtQuick 2.6
-import QtQuick.Controls 1.5
+import QtQuick.Controls 1.4
 import QtQuick.Controls.Styles 1.4
 import QtQuick.Layouts 1.1
 import QtWebEngine 1.3
@@ -7,8 +7,8 @@ import Qt.labs.settings 1.0
 
 ApplicationWindow {
     visible: true
-    width: 640
-    height: 480
+    width: 1300
+    height: 800
     title: qsTr("Diploma Browser")
 
     property WebEngineView currentWebEngineView: null
@@ -27,21 +27,21 @@ ApplicationWindow {
 
             webEngineView.loadingChanged.connect(function(loadRequest){
                     if (!urlBar.lock && loadRequest.status == WebEngineView.LoadSucceededStatus)
-                        urlBar.state = "closed"
+                        urlBar.state = "closed";
 
                     if (!urlBar.lock && loadRequest.status == WebEngineView.LoadStartedStatus)
-                        urlBar.state = "opened"
+                        urlBar.state = "opened";
 
                     if (loadRequest.status != WebEngineView.LoadStartedStatus)
-                        historyListView.currentIndex = currentWebEngineView.navigationHistory.backItems.rowCount()
+                        historyListView.currentIndex = currentWebEngineView.navigationHistory.backItems.rowCount();
                 })
         }
 
         function selectWebEngineView(index) {
-            currentWebEngineView = get(index).webEngineView
-            webView.push({ item: currentWebEngineView, replace: true })
-            tabListView.currentIndex = index
-            historyListView.currentIndex = currentWebEngineView.navigationHistory.backItems.rowCount()
+            currentWebEngineView = get(index).webEngineView;
+            webView.push({ item: currentWebEngineView, replace: true });
+            tabListView.currentIndex = index;
+            historyListView.currentIndex = currentWebEngineView.navigationHistory.backItems.rowCount();
         }
     }
 
@@ -52,24 +52,24 @@ ApplicationWindow {
                 text: qsTr("&Open")
                 shortcut: "Ctrl+l"
                 onTriggered: {
-                    urlBar.state = "opened"
-                    addressBar.forceActiveFocus()
+                    urlBar.state = "opened";
+                    addressBar.forceActiveFocus();
                 }
             }
             MenuItem {
                 text: qsTr("New &Tab")
                 shortcut: StandardKey.AddTab
                 onTriggered: {
-                    viewListModel.createWebEngineView()
-                    viewListModel.selectWebEngineView(viewListModel.count - 1)
-                    urlBar.state = "opened"
-                    addressBar.forceActiveFocus()
+                    viewListModel.createWebEngineView();
+                    viewListModel.selectWebEngineView(viewListModel.count - 1);
+                    urlBar.state = "opened";
+                    addressBar.forceActiveFocus();
                 }
             }
             MenuItem {
                 text: qsTr("&Quit")
                 shortcut: "Ctrl+q"
-                onTriggered: Qt.quit();
+                onTriggered: Qt.quit()
             }
         }
         Menu {
@@ -115,9 +115,9 @@ ApplicationWindow {
 
                 shortcut: "Ctrl+["
                 onClicked: {
-                    historyListView.currentIndex -= 1
-                    currentWebEngineView.goBack()
-                    navigationAnimation.start()
+                    historyListView.currentIndex -= 1;
+                    currentWebEngineView.goBack();
+                    navigationAnimation.start();
                 }
             }
 
@@ -129,9 +129,9 @@ ApplicationWindow {
 
                 shortcut: "Ctrl+]"
                 onClicked: {
-                    historyListView.currentIndex += 1
-                    currentWebEngineView.goForward()
-                    navigationAnimation.start()
+                    historyListView.currentIndex += 1;
+                    currentWebEngineView.goForward();
+                    navigationAnimation.start();
                 }
             }
 
@@ -145,10 +145,10 @@ ApplicationWindow {
 
                 onAccepted: {
                     if (!currentWebEngineView) {
-                        viewListModel.createWebEngineView()
-                        viewListModel.selectWebEngineView(viewListModel.count - 1)
+                        viewListModel.createWebEngineView();
+                        viewListModel.selectWebEngineView(viewListModel.count - 1);
                     }
-                    currentWebEngineView.url = addressUrl
+                    currentWebEngineView.url = addressUrl;
                 }
             }
 
@@ -203,8 +203,8 @@ ApplicationWindow {
                 state: (tabBar.state == "closed") ? "compact" : "wide"
 
                 onSelected: {
-                    navigationAnimation.start()
-                    currentWebEngineView.goBackOrForward(offset)
+                    navigationAnimation.start();
+                    currentWebEngineView.goBackOrForward(offset);
                 }
             }
 
@@ -333,51 +333,13 @@ ApplicationWindow {
             to: 1.0
             duration: navigationAnimation.d
         }
-
-        /*
-        ParallelAnimation {
-            PropertyAnimation {
-                target: currentWebEngineView
-                property: "rotation"
-                from: 0
-                to: 360
-                duration: navigationAnimation.d
-            }
-
-            PropertyAnimation {
-                target: currentWebEngineView
-                property: "scale"
-                from: 1.0
-                to: 0.0
-                duration: navigationAnimation.d
-            }
-        }
-
-        ParallelAnimation {
-            PropertyAnimation {
-                target: currentWebEngineView
-                property: "rotation"
-                from: 0
-                to: 360
-                duration: navigationAnimation.d
-            }
-
-            PropertyAnimation {
-                target: currentWebEngineView
-                property: "scale"
-                from: 0.0
-                to: 1.0
-                duration: navigationAnimation.d
-            }
-        }
-        */
     }
 
     Component.onCompleted: {
-        utils.setLocale("hu")
-        WebEngine.settings.touchIconsEnabled = true
-        viewListModel.createWebEngineView()
-        viewListModel.selectWebEngineView(viewListModel.count - 1)
-        currentWebEngineView.url = Qt.resolvedUrl("http://www.google.com")
+        utils.setLocale("hu");
+        WebEngine.settings.touchIconsEnabled = true;
+        viewListModel.createWebEngineView();
+        viewListModel.selectWebEngineView(viewListModel.count - 1);
+        currentWebEngineView.url = Qt.resolvedUrl("http://www.google.com");
     }
 }

@@ -3,9 +3,7 @@ import QtQuick 2.6
 Item {
     id: root
 
-    SystemPalette {
-        id: palette
-    }
+    SystemPalette { id: palette }
 
     default property alias contents: content.data
     property int pos: 0
@@ -16,7 +14,7 @@ Item {
     property color color: palette.window
 
     function isHorizontal() {
-        return root.orientation == Qt.Horizontal
+        return root.orientation == Qt.Horizontal;
     }
 
     property real p: isHorizontal() ? y : x
@@ -113,9 +111,7 @@ Item {
 
         MouseArea {
             anchors.fill: parent
-            onClicked: {
-                root.state = (Math.round(root.p) < 0)  ? "opened" : "closed"
-            }
+            onClicked: root.state = (Math.round(root.p) < 0)  ? "opened" : "closed"
         }
 
         Canvas {
@@ -128,25 +124,25 @@ Item {
             height: root.isHorizontal() ? parent.height - 6 : 14
 
             onPaint: {
-                var ctx = getContext("2d")
+                var ctx = getContext("2d");
 
-                ctx.strokeStyle = Qt.darker(root.color)
-                ctx.fillStyle = Qt.darker(root.color)
-                ctx.lineWidth = 1
-                ctx.lineJoin = "round"
+                ctx.strokeStyle = Qt.darker(root.color);
+                ctx.fillStyle = Qt.darker(root.color);
+                ctx.lineWidth = 1;
+                ctx.lineJoin = "round";
 
                 if (root.isHorizontal()) {
-                    ctx.moveTo(width / 2, height)
-                    ctx.lineTo(0, 0)
-                    ctx.lineTo(width, 0)
+                    ctx.moveTo(width / 2, height);
+                    ctx.lineTo(0, 0);
+                    ctx.lineTo(width, 0);
                 } else {
-                    ctx.moveTo(width, height / 2)
-                    ctx.lineTo(0, 0)
-                    ctx.lineTo(0, height)
+                    ctx.moveTo(width, height / 2);
+                    ctx.lineTo(0, 0);
+                    ctx.lineTo(0, height);
                 }
 
-                ctx.closePath()
-                ctx.fill()
+                ctx.closePath();
+                ctx.fill();
             }
         }
     }
