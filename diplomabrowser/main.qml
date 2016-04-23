@@ -19,13 +19,22 @@ ApplicationWindow {
         id: appSettings
 
         property alias lockUrlBar: lockUrlBar.checked
+        property alias autoLoadIconsForPage: autoLoadIconsForPage.checked
+        property alias touchIconsEnabled: touchIconsEnabled.checked
+        property alias autoLoadImages: autoLoadImages.checked
+        property alias javaScriptEnabled: javaScriptEnabled.checked
     }
 
     WebEngineViewListModel {
         id: viewListModel
 
         function createWebEngineView() {
-            var webEngineView = newWebEngineView(webView)
+            var webEngineView = newWebEngineView(webView);
+
+            webEngineView.settings.autoLoadIconsForPage = Qt.binding(function() { return appSettings.autoLoadIconsForPage; });
+            webEngineView.settings.touchIconsEnabled = Qt.binding(function() { return appSettings.touchIconsEnabled; });
+            webEngineView.settings.autoLoadImages = Qt.binding(function() { return appSettings.autoLoadImages; });
+            webEngineView.settings.javaScriptEnabled = Qt.binding(function() { return appSettings.javaScriptEnabled; });
 
             webEngineView.loadingChanged.connect(function(loadRequest){
                     if (!urlBar.lock && loadRequest.status == WebEngineView.LoadSucceededStatus)
@@ -81,15 +90,6 @@ ApplicationWindow {
                 shortcut: "Ctrl+f"
                 onTriggered: findBar.show()
             }
-        }
-        Menu {
-            title: qsTr("View")
-            MenuItem {
-                id: lockUrlBar
-                text: qsTr("&Lock URL Bar")
-                checkable: true
-                checked: urlBar.lock
-            }
             MenuItem {
                 text: qsTr("&Settings")
                 shortcut: "Ctrl+,"
@@ -132,25 +132,28 @@ ApplicationWindow {
             anchors.leftMargin: 10
 
             CheckBox {
-                id: enableIconsCB
+                id: autoLoadIconsForPage
                 text: qsTr("Enable Icons")
-                checked: true
+                checked: WebEngine.settings.autoLoadIconsForPage
                 style: settingsPanel.checkBoxStyle
             }
             CheckBox {
+                id: touchIconsEnabled
                 text: qsTr("Enable Touch Icons")
-                checked: true
+                checked: WebEngine.settings.touchIconsEnabled
                 style: settingsPanel.checkBoxStyle
-                enabled: enableIconsCB.checked
+                enabled: autoLoadIconsForPage.checked
             }
             CheckBox {
+                id: autoLoadImages
                 text: qsTr("Enable Images")
-                checked: true
+                checked: WebEngine.settings.autoLoadImages
                 style: settingsPanel.checkBoxStyle
             }
             CheckBox {
+                id: lockUrlBar
                 text: qsTr("Lock URL Bar")
-                checked: true
+                checked: urlBar.lock
                 style: settingsPanel.checkBoxStyle
             }
         }
@@ -225,8 +228,9 @@ ApplicationWindow {
                 }
             }
             CheckBox {
-                text: qsTr("Enable Javascript")
-                checked: true
+                id: javaScriptEnabled
+                text: qsTr("Enable JavaScript")
+                checked: WebEngine.settings.javascriptEnabled
                 style: settingsPanel.checkBoxStyle
             }
         }
@@ -479,7 +483,6 @@ ApplicationWindow {
 
     Component.onCompleted: {
         utils.setLocale("hu");
-        WebEngine.settings.touchIconsEnabled = true;
         viewListModel.createWebEngineView();
         viewListModel.selectWebEngineView(viewListModel.count - 1);
         currentWebEngineView.url = Qt.resolvedUrl("http://www.google.com");
