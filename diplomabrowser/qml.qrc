@@ -2,7 +2,6 @@
     <qresource prefix="/">
         <file>main.qml</file>
         <file>SliderBar.qml</file>
-        <file>BrowserButton.qml</file>
         <file>AddressBar.qml</file>
         <file>BrowserSwitch.qml</file>
         <file>HistoryListView.qml</file>
@@ -12,7 +11,10 @@
         <file>WideEntry.qml</file>
         <file>FindBar.qml</file>
         <file>SettingsPanel.qml</file>
-        <file>FlatButton.qml</file>
         <file>LocaleListModel.qml</file>
+        <file>controls/Button.qml</file>
+        <file>controls/BrowserButton.qml</file>
+        <file>controls/FlatButton.qml</file>
+        <file>controls/CloseButton.qml</file>
     </qresource>
 </RCC>

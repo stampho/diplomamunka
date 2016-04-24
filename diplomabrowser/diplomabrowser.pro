@@ -10,8 +10,10 @@ RESOURCES += qml.qrc
 
 OTHER_FILES += \
     main.qml \
+    controls/Button.qml \
+    controls/BrowserButton.qml \
+    controls/FlatButton.qml \
     AddressBar.qml \
-    BrowserButton.qml \
     BrowserSwitch.qml \
     CompactEntry.qml \
     FindBar.qml \

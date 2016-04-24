@@ -5,6 +5,8 @@ import QtQuick.Layouts 1.1
 import QtWebEngine 1.3
 import Qt.labs.settings 1.0
 
+import "controls"
+
 ApplicationWindow {
     visible: true
     width: 1300

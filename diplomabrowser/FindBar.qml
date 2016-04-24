@@ -2,6 +2,7 @@ import QtQuick 2.6
 import QtQuick.Controls 1.4
 import QtQuick.Controls.Styles 1.4
 import QtQuick.Layouts 1.1
+import "controls"
 
 Rectangle {
     id: root
@@ -113,39 +114,33 @@ Rectangle {
                     }
                 }
 
-                Rectangle {
-                    anchors.verticalCenter: parent.verticalCenter
-                    anchors.right: parent.right
-                    anchors.rightMargin: 2
+                MouseArea {
+                    anchors.fill: parent
 
-                    width: height
-                    height: parent.height - 10
+                    hoverEnabled: root.visible
+                    onEntered: closeButton.visible = true
+                    onExited: closeButton.visible = false
 
-                    opacity: 0.2
+                    CloseButton {
+                        id: closeButton
 
-                    Text {
-                        anchors.fill: parent
-                        text: "X"
-                        font.bold: true
-                    }
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.right: parent.right
+                        anchors.rightMargin: 2
 
-                    MouseArea {
-                        anchors.fill: parent
-                        hoverEnabled: true
+                        width: height
+                        height: parent.height - 10
 
-                        onPressed: root.hide()
-                        onEntered: parent.opacity = 1.0
-                        onExited: parent.opacity = 0.2
+                        visible: false
+                        enabled: root.visible
+
+                        shortcut: "Esc"
+                        onClicked: root.hide();
                     }
                 }
 
                 onActiveFocusChanged: activeFocus ? selectAll() : deselect()
                 onAccepted: findNext(findField.text)
-
-                Keys.onPressed: {
-                    if (event.key == Qt.Key_Escape && root.visible)
-                        root.hide();
-                }
             }
         }
 

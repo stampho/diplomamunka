@@ -1,4 +1,5 @@
 import QtQuick 2.6
+import "controls"
 
 Rectangle {
     id: root
@@ -30,7 +31,7 @@ Rectangle {
         onEntered: closeButton.visible = enableClose
         onExited: closeButton.visible = false
 
-        FlatButton {
+        CloseButton {
             id: closeButton
 
             anchors.right: parent.right
@@ -40,18 +41,8 @@ Rectangle {
 
             width: 12
             height: 12
-            radius: 4
-
-            releasedBgColor: Qt.rgba(1.0, 1.0, 1.0, 0.6)
-            releasedFgColor: Qt.rgba(0.0, 0.0, 0.0, 0.6)
-            hoveredBgColor: Qt.rgba(1.0, 1.0, 1.0, 0.6)
-            hoveredFgColor: "black"
-            pressedBgColor: Qt.rgba(0.0, 0.0, 0.0, 0.8)
-            pressedFgColor: "white"
 
             visible: false
-            text: "X"
-
             onClicked: root.closed()
         }
     }

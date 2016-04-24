@@ -3,17 +3,15 @@ import QtQuick 2.6
 Rectangle {
     id: root
 
-    SystemPalette { id: palette }
-
-    property color releasedBgColor: palette.window
-    property color releasedFgColor: Qt.rgba(0.1, 0.1, 0.1, 1.0)
-    property color releasedBrColor: "transparent"
-    property color pressedBgColor: Qt.darker(releasedBgColor, 1.5)
-    property color pressedFgColor: Qt.rgba(0.1, 0.1, 0.1, 1.0)
-    property color pressedBrColor: Qt.rgba(0.1, 0.1, 0.1, 1.0)
-    property color hoveredBgColor: palette.window
-    property color hoveredFgColor: Qt.rgba(0.1, 0.1, 0.1, 1.0)
-    property color hoveredBrColor: Qt.rgba(0.1, 0.1, 0.1, 1.0)
+    property color releasedBgColor: "white"
+    property color releasedFgColor: "black"
+    property color releasedBrColor: releasedFgColor
+    property color pressedBgColor: "black"
+    property color pressedFgColor: "white"
+    property color pressedBrColor: pressedFgColor
+    property color hoveredBgColor: "white"
+    property color hoveredFgColor: "black"
+    property color hoveredBrColor: hoveredFgColor
 
     property string text: ""
     property string shortcut: ""
@@ -29,7 +27,7 @@ Rectangle {
     border.color: brColor
 
     border.width: 1
-    radius: 5
+    radius: 4
 
     state: "released"
     states: [
