@@ -9,6 +9,7 @@ Rectangle {
     default property alias contents: contentLayout.data
     signal accepted()
     signal cancelled()
+    signal restartRequest()
 
     property Component checkBoxStyle: CheckBoxStyle {
         indicator: Rectangle {
@@ -241,7 +242,10 @@ Rectangle {
                            width: 60; height: 30
                            text: "Yes"
 
-                           onClicked: root.state = "hidden";
+                           onClicked: {
+                               root.restartRequest();
+                               root.state = "hidden";
+                           }
                         }
                         FlatButton {
                            width: 60; height: 30

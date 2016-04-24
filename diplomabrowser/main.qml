@@ -37,7 +37,8 @@ ApplicationWindow {
             webEngineView.settings.autoLoadImages = Qt.binding(function() { return appSettings.autoLoadImages; });
             webEngineView.settings.javaScriptEnabled = Qt.binding(function() { return appSettings.javaScriptEnabled; });
 
-            webEngineView.url = appSettings.homeUrl
+            if (webEngineView.url == "")
+                webEngineView.url = appSettings.homeUrl;
 
             webEngineView.loadingChanged.connect(function(loadRequest){
                     if (!urlBar.lock && loadRequest.status == WebEngineView.LoadSucceededStatus)
@@ -134,6 +135,11 @@ ApplicationWindow {
             localeCombo.locale = appSettings.locale;
             localeCombo.currentIndex = localeCombo.model.findLocale(locale);
             settingsPanel.state = "hidden";
+        }
+
+        onRestartRequest: {
+            for (var i = 0; i < viewListModel.count; ++i)
+                viewListModel.restart(i);
         }
 
         /* Appearance HEADER */

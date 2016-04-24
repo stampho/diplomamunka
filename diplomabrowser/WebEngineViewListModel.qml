@@ -10,7 +10,7 @@ ListModel {
     signal selected(int index)
     signal created(WebEngineView webEngineView)
 
-    function create(index) {
+    function create(index, url) {
         if (index == undefined)
             index = root.count;
 
@@ -21,6 +21,9 @@ ListModel {
 
         webEngineView.visible = false;
         webEngineView.index = index;
+
+        if (url != undefined)
+            webEngineView.url = url;
 
         if (index == root.count) {
             root.append({ "webEngineView": webEngineView });
@@ -65,5 +68,19 @@ ListModel {
 
         select(currentIndex);
         //webEngineView.destroy(1000);
+    }
+
+    function restart(index) {
+        var currentIndex = wrapper.currentItem.index;
+        var webEngineView = get(index).webEngineView;
+        var url = webEngineView.url;
+
+        close(index);
+        create(index, url);
+
+        if (index == currentIndex)
+            select(index);
+
+        webEngineView.destroy(1000);
     }
 }
