@@ -10,16 +10,26 @@ ListModel {
     signal selected(int index)
     signal created(WebEngineView webEngineView)
 
-    function create() {
+    function create(index) {
+        if (index == undefined)
+            index = root.count;
+
         var webEngineView = Qt.createQmlObject("
                 import QtWebEngine 1.3\n
                 WebEngineView { property int index: -1 }\n
             ", wrapper);
 
         webEngineView.visible = false;
-        webEngineView.index = root.count;
+        webEngineView.index = index;
 
-        root.append({ "webEngineView": webEngineView });
+        if (index == root.count) {
+            root.append({ "webEngineView": webEngineView });
+        } else {
+            root.insert(index, { "webEngineView": webEngineView});
+            for (var i = index + 1; i < count; ++i)
+                get(i).webEngineView.index = i;
+        }
+
         created(webEngineView);
     }
 

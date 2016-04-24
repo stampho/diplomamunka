@@ -72,8 +72,8 @@ ApplicationWindow {
                 text: qsTr("New &Tab")
                 shortcut: StandardKey.AddTab
                 onTriggered: {
-                    viewListModel.create();
-                    viewListModel.select(viewListModel.count - 1);
+                    viewListModel.create(tabListView.currentIndex + 1);
+                    viewListModel.select(tabListView.currentIndex + 1);
                     urlBar.state = "opened";
                     addressBar.forceActiveFocus();
                 }
