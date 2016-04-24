@@ -6,6 +6,8 @@ import QtWebEngine 1.3
 import Qt.labs.settings 1.0
 
 import "controls"
+import "models"
+import "views"
 
 ApplicationWindow {
     visible: true
@@ -18,7 +20,7 @@ ApplicationWindow {
     Settings {
         id: appSettings
 
-        property alias lockUrlBar: lockUrlBar.checked
+        property alias lockNavigationPanel: lockNavigationPanel.checked
         property alias autoLoadIconsForPage: autoLoadIconsForPage.checked
         property alias touchIconsEnabled: touchIconsEnabled.checked
         property alias autoLoadImages: autoLoadImages.checked
@@ -43,11 +45,11 @@ ApplicationWindow {
                 webEngineView.url = appSettings.homeUrl;
 
             webEngineView.loadingChanged.connect(function(loadRequest){
-                    if (!urlBar.lock && loadRequest.status == WebEngineView.LoadSucceededStatus)
-                        urlBar.state = "closed";
+                    if (!navigationPanel.lock && loadRequest.status == WebEngineView.LoadSucceededStatus)
+                        navigationPanel.state = "closed";
 
-                    if (!urlBar.lock && loadRequest.status == WebEngineView.LoadStartedStatus)
-                        urlBar.state = "opened";
+                    if (!navigationPanel.lock && loadRequest.status == WebEngineView.LoadStartedStatus)
+                        navigationPanel.state = "opened";
 
                     if (loadRequest.status != WebEngineView.LoadStartedStatus)
                         historyListView.currentIndex = currentWebEngineView ? currentWebEngineView.navigationHistory.backItems.rowCount() : -1;
@@ -67,7 +69,7 @@ ApplicationWindow {
                 text: qsTr("&Open")
                 shortcut: "Ctrl+l"
                 onTriggered: {
-                    urlBar.state = "opened";
+                    navigationPanel.state = "opened";
                     addressBar.forceActiveFocus();
                 }
             }
@@ -77,7 +79,7 @@ ApplicationWindow {
                 onTriggered: {
                     viewListModel.create(tabListView.currentIndex + 1);
                     viewListModel.select(tabListView.currentIndex + 1);
-                    urlBar.state = "opened";
+                    navigationPanel.state = "opened";
                     addressBar.forceActiveFocus();
                 }
             }
@@ -185,9 +187,9 @@ ApplicationWindow {
                 style: settingsPanel.checkBoxStyle
             }
             CheckBox {
-                id: lockUrlBar
-                text: qsTr("Lock URL Bar")
-                checked: urlBar.lock
+                id: lockNavigationPanel
+                text: qsTr("Lock Navigation Panel")
+                checked: navigationPanel.lock
                 style: settingsPanel.checkBoxStyle
             }
         }
@@ -275,8 +277,8 @@ ApplicationWindow {
         Rectangle { height: 15 }
     }
 
-    SliderBar {
-        id: urlBar
+    SliderPanel {
+        id: navigationPanel
         pos: parent.y
         width: parent.width - 4
         height: 50
@@ -285,7 +287,7 @@ ApplicationWindow {
 
         orientation: Qt.Horizontal
 
-        property bool lock: appSettings.lockUrlBar
+        property bool lock: appSettings.lockNavigationPanel
 
         RowLayout {
             anchors.fill: parent
@@ -348,13 +350,13 @@ ApplicationWindow {
         }
     }
 
-    SliderBar {
-        id: tabBar
+    SliderPanel {
+        id: tabPanel
 
         pos: parent.x
         width: 250
         minSize: 80
-        anchors.top: urlBar.bottom
+        anchors.top: navigationPanel.bottom
         anchors.bottom: parent.bottom
 
         orientation: Qt.Vertical
@@ -375,7 +377,7 @@ ApplicationWindow {
                 visible: tabSwitch.state == "left"
 
                 model: viewListModel
-                state: (tabBar.state == "closed") ? "compact" : "wide"
+                state: (tabPanel.state == "closed") ? "compact" : "wide"
 
                 onSelected: viewListModel.select(index)
                 onClosed: viewListModel.close(index)
@@ -386,7 +388,7 @@ ApplicationWindow {
                 visible: tabSwitch.state == "right"
 
                 model: currentWebEngineView ? currentWebEngineView.navigationHistory.items : undefined
-                state: (tabBar.state == "closed") ? "compact" : "wide"
+                state: (tabPanel.state == "closed") ? "compact" : "wide"
 
                 onSelected: {
                     navigationAnimation.start();
@@ -448,9 +450,9 @@ ApplicationWindow {
     StackView {
         id: webView
 
-        anchors.top: urlBar.bottom
+        anchors.top: navigationPanel.bottom
         anchors.bottom: parent.bottom
-        anchors.left: tabBar.right
+        anchors.left: tabPanel.right
         anchors.right: parent.right
 
         clip: true
@@ -481,7 +483,7 @@ ApplicationWindow {
         id: findBar
         anchors.right: parent.right
         anchors.rightMargin: 30
-        anchors.top: urlBar.bottom
+        anchors.top: navigationPanel.bottom
         anchors.topMargin: -10
 
         width: 180

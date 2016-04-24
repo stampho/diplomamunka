@@ -1,6 +1,5 @@
 import QtQuick 2.6
 import QtQuick.Layouts 1.1
-import "controls"
 
 Rectangle {
     id: root

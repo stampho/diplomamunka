@@ -105,7 +105,6 @@ Rectangle {
                 anchors.fill: parent
 
                 style: TextFieldStyle {
-                    padding.right: 20
                     background: Rectangle {
                         color: "transparent"
                         border.color: Qt.darker(palette.window, 2.0)

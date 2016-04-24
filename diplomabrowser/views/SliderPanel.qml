@@ -1,6 +1,5 @@
 import QtQuick 2.6
 
-// TODO(pvarga): Rename this: SliderBar -> SliderPanel
 Item {
     id: root
 

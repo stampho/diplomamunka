@@ -10,20 +10,20 @@ RESOURCES += qml.qrc
 
 OTHER_FILES += \
     main.qml \
-    controls/Button.qml \
-    controls/BrowserButton.qml \
-    controls/FlatButton.qml \
     AddressBar.qml \
-    BrowserSwitch.qml \
-    CompactEntry.qml \
     FindBar.qml \
-    HistoryListView.qml \
-    LocaleListModel.qml \
-    TabListView.qml \
-    WebEngineViewListModel.qml \
-    WideEntry.qml \
-    SettingsPanel.qml \
-    SliderBar.qml
+    controls/BrowserButton.qml \
+    controls/BrowserSwitch.qml \
+    controls/Button.qml \
+    controls/CompactEntry.qml \
+    controls/FlatButton.qml \
+    controls/WideEntry.qml \
+    models/LocaleListModel.qml \
+    models/WebEngineViewListModel.qml \
+    views/HistoryListView.qml \
+    views/TabListView.qml \
+    views/SettingsPanel.qml \
+    views/SliderPanel.qml
 
 HEADERS += \
     utils.h
