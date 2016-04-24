@@ -22,8 +22,8 @@ ApplicationWindow {
         property alias autoLoadImages: autoLoadImages.checked
         property alias javaScriptEnabled: javaScriptEnabled.checked
 
-        property alias homeUrl: homeUrlField.text
-        property alias locale: localeCombo.locale
+        property alias homeUrl: settingsPanel.homeUrl
+        property alias locale: settingsPanel.locale
     }
 
     WebEngineViewListModel {
@@ -113,6 +113,26 @@ ApplicationWindow {
 
         onStateChanged: (state == "hidden" && currentWebEngineView) ? currentWebEngineView.forceActiveFocus() : forceActiveFocus()
 
+        property url homeUrl: appSettings.homeUrl
+        property string locale: appSettings.locale
+
+        onAccepted: {
+            homeUrl = utils.fromUserInput(homeUrlField.text);
+            if (locale != localeCombo.locale) {
+                locale = localeCombo.locale;
+                utils.setLocale(locale);
+                settingsPanel.state = "confirm";
+            } else
+                settingsPanel.state = "hidden";
+        }
+
+        onCancelled: {
+            homeUrlField.text = appSettings.homeUrl;
+            localeCombo.locale = appSettings.locale;
+            localeCombo.currentIndex = localeCombo.model.findLocale(locale);
+            settingsPanel.state = "hidden";
+        }
+
         /* Appearance HEADER */
         Text {
             text: qsTr("Appearance")
@@ -200,6 +220,8 @@ ApplicationWindow {
                     style: settingsPanel.textFieldStyle
                     width: 200
                     anchors.verticalCenter: parent.verticalCenter
+
+                    onActiveFocusChanged: activeFocus ? selectAll() : deselect()
                 }
                 FlatButton {
                     text: "Set Current URL"
@@ -228,7 +250,6 @@ ApplicationWindow {
                     textRole: "name"
 
                     property string locale: appSettings.locale
-                    onActivated: settingsPanel.isLanguageChanged = true
                     onCountChanged: currentIndex = model.findLocale(locale)
                     onCurrentIndexChanged: localeCombo.locale = model.get(currentIndex).locale
                 }

@@ -7,7 +7,8 @@ Rectangle {
     id: root
 
     default property alias contents: contentLayout.data
-    property bool isLanguageChanged: false
+    signal accepted()
+    signal cancelled()
 
     property Component checkBoxStyle: CheckBoxStyle {
         indicator: Rectangle {
@@ -56,9 +57,15 @@ Rectangle {
     states: [
         State {
             name: "shown"
+            StateChangeScript { script: stackView.push({ item: mainView, replace: true, immediate: true }) }
             PropertyChanges { target: root; visible: true }
             PropertyChanges { target: root; scale: 1.0 }
             StateChangeScript { script: root.forceActiveFocus() }
+        },
+        State {
+            name: "confirm"
+            PropertyChanges { target: root; visible: true }
+            StateChangeScript { script: stackView.push({ item: confirmView, replace: true }) }
         },
         State {
             name: "hidden"
@@ -70,6 +77,24 @@ Rectangle {
     transitions: [
         Transition {
             from: "shown"
+            to: "hidden"
+
+            SequentialAnimation {
+                NumberAnimation {
+                    target: root
+                    property: "scale"
+                    duration: 500
+                    easing.type: Easing.InBack
+                }
+                NumberAnimation {
+                    target: root
+                    property: "visible"
+                    duration: 0
+                }
+            }
+        },
+        Transition {
+            from: "confirm"
             to: "hidden"
 
             SequentialAnimation {
@@ -143,7 +168,7 @@ Rectangle {
                     enabled: root.visible
                     shortcut: "Esc"
 
-                    onClicked: root.state = "hidden"
+                    onClicked: root.cancelled();
                 }
 
                 FlatButton {
@@ -158,12 +183,7 @@ Rectangle {
                     enabled: root.visible
                     shortcut: "Return"
 
-                    onClicked: {
-                        if (isLanguageChanged)
-                            stackView.push({ item: confirmView, replace: true });
-                        else
-                            root.state = "hidden";
-                    }
+                    onClicked: root.accepted()
                 }
 
                 Rectangle {
@@ -232,13 +252,6 @@ Rectangle {
                     }
                 }
             }
-        }
-    }
-
-    onVisibleChanged: {
-        if (isLanguageChanged && visible == false) {
-            stackView.push({ item: mainView, replace: true, immediate: true });
-            isLanguageChanged = false;
         }
     }
 }
