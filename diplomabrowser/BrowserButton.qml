@@ -3,39 +3,53 @@ import QtQuick 2.6
 Rectangle {
     id: root
 
+    SystemPalette { id: palette }
+
+    property color releasedBgColor: palette.window
+    property color releasedFgColor: Qt.rgba(0.1, 0.1, 0.1, 1.0)
+    property color releasedBrColor: "transparent"
+    property color pressedBgColor: Qt.darker(releasedBgColor, 1.5)
+    property color pressedFgColor: Qt.rgba(0.1, 0.1, 0.1, 1.0)
+    property color pressedBrColor: Qt.rgba(0.1, 0.1, 0.1, 1.0)
+    property color hoveredBgColor: palette.window
+    property color hoveredFgColor: Qt.rgba(0.1, 0.1, 0.1, 1.0)
+    property color hoveredBrColor: Qt.rgba(0.1, 0.1, 0.1, 1.0)
+
     property string text: ""
-    property bool enabled: true
     property string shortcut: ""
-    property color bgColor: palette.window
-    property color fgColor: "#111111"
-    property color borderColor: Qt.darker(bgColor, 2.0)
+    property bool enabled: true
+
+    property color bgColor: releasedBgColor
+    property color fgColor: releasedFgColor
+    property color brColor: releasedBrColor
 
     signal clicked()
 
-    SystemPalette { id: palette }
-
     color: bgColor
-    border.color: borderColor
-    border.width: 0
+    border.color: brColor
+
+    border.width: 1
     radius: 5
 
     state: "released"
-
     states: [
         State {
             name: "released"
-            PropertyChanges { target: root; color: bgColor }
-            PropertyChanges { target: root; border.width: 0 }
+            PropertyChanges { target: root; bgColor: releasedBgColor }
+            PropertyChanges { target: root; fgColor: releasedFgColor }
+            PropertyChanges { target: root; brColor: releasedBrColor }
         },
         State {
             name: "pressed"
-            PropertyChanges { target: root; color: Qt.darker(bgColor, 1.5) }
-            PropertyChanges { target: root; border.width: 1 }
+            PropertyChanges { target: root; bgColor: pressedBgColor }
+            PropertyChanges { target: root; fgColor: pressedFgColor }
+            PropertyChanges { target: root; brColor: pressedBrColor }
         },
         State {
             name: "hovered"
-            PropertyChanges { target: root; color: bgColor }
-            PropertyChanges { target: root; border.width: 1 }
+            PropertyChanges { target: root; bgColor: hoveredBgColor }
+            PropertyChanges { target: root; fgColor: hoveredFgColor }
+            PropertyChanges { target: root; brColor: hoveredBrColor }
         }
     ]
 
@@ -45,17 +59,16 @@ Rectangle {
         ParallelAnimation {
             ColorAnimation {
                 target: root
-                property: "color"
-                from: bgColor
-                to: Qt.darker(bgColor, 1.5)
+                property: "bgColor"
+                from: root.releasedBgColor
+                to: root.pressedBgColor
                 duration: 200
             }
-
-            PropertyAnimation {
+            ColorAnimation {
                 target: root
-                property: "border.width"
-                from: 0
-                to: 1
+                property: "fgColor"
+                from: root.releasedFgColor
+                to: root.pressedFgColor
                 duration: 200
             }
         }
@@ -63,26 +76,25 @@ Rectangle {
         ParallelAnimation {
             ColorAnimation {
                 target: root
-                property: "color"
-                from: Qt.darker(bgColor, 1.5)
-                to: bgColor
+                property: "bgColor"
+                from: root.pressedBgColor
+                to: root.releasedBgColor
                 duration: 200
             }
-
-            PropertyAnimation {
+            ColorAnimation {
                 target: root
-                property: "border.width"
-                from: 1
-                to: 0
+                property: "fgColor"
+                from: root.pressedFgColor
+                to: root.releasedFgColor
                 duration: 200
             }
         }
     }
 
     Text {
-        anchors.centerIn: root
-        color: root.enabled ? fgColor : Qt.lighter(fgColor, 10)
+        anchors.centerIn: parent
         text: root.text
+        color: root.enabled ? fgColor : Qt.lighter(fgColor, 6.0)
         font.bold: true
     }
 
@@ -101,7 +113,6 @@ Rectangle {
         hoverEnabled: true
 
         onPressed: root.state = "pressed"
-
         onReleased: {
             root.state = "released";
             root.clicked();

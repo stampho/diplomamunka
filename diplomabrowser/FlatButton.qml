@@ -5,10 +5,13 @@ Rectangle {
 
     property color releasedBgColor: "transparent"
     property color releasedFgColor: Qt.rgba(0.8, 0.8, 0.8, 1.0)
+    property color releasedBrColor: releasedFgColor
     property color pressedBgColor: "white"
     property color pressedFgColor: Qt.rgba(0.1, 0.1, 0.1, 1.0)
+    property color pressedBrColor: pressedFgColor
     property color hoveredBgColor: "transparent"
     property color hoveredFgColor: "white"
+    property color hoveredBrColor: hoveredFgColor
 
     property string text: ""
     property string shortcut: ""
@@ -16,11 +19,12 @@ Rectangle {
 
     property color bgColor: releasedBgColor
     property color fgColor: releasedFgColor
+    property color brColor: releasedBrColor
 
     signal clicked()
 
     color: bgColor
-    border.color: fgColor
+    border.color: brColor
 
     border.width: 1
     radius: 5
@@ -31,16 +35,19 @@ Rectangle {
             name: "released"
             PropertyChanges { target: root; bgColor: releasedBgColor }
             PropertyChanges { target: root; fgColor: releasedFgColor }
+            PropertyChanges { target: root; brColor: releasedBrColor }
         },
         State {
             name: "pressed"
             PropertyChanges { target: root; bgColor: pressedBgColor }
             PropertyChanges { target: root; fgColor: pressedFgColor }
+            PropertyChanges { target: root; brColor: pressedBrColor }
         },
         State {
             name: "hovered"
             PropertyChanges { target: root; bgColor: hoveredBgColor }
             PropertyChanges { target: root; fgColor: hoveredFgColor }
+            PropertyChanges { target: root; brColor: hoveredBrColor }
         }
     ]
 
@@ -85,7 +92,8 @@ Rectangle {
     Text {
         anchors.centerIn: parent
         text: root.text
-        color: fgColor
+        color: root.enabled ? fgColor : Qt.lighter(fgColor, 6.0)
+        font.bold: true
     }
 
     Shortcut {
@@ -99,6 +107,7 @@ Rectangle {
 
     MouseArea {
         anchors.fill: parent
+        enabled: root.enabled
         hoverEnabled: true
 
         onPressed: root.state = "pressed"
