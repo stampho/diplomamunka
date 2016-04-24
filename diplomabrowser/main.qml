@@ -6,8 +6,6 @@ import QtWebEngine 1.3
 import Qt.labs.settings 1.0
 
 ApplicationWindow {
-    id: root
-
     visible: true
     width: 1300
     height: 800
@@ -25,6 +23,7 @@ ApplicationWindow {
         property alias javaScriptEnabled: javaScriptEnabled.checked
 
         property alias homeUrl: homeUrlField.text
+        property alias locale: localeCombo.locale
     }
 
     WebEngineViewListModel {
@@ -221,14 +220,17 @@ ApplicationWindow {
                     anchors.verticalCenter: parent.verticalCenter
                 }
                 ComboBox {
-                    model: [ "English", "Hungarian" ]
-
-                    width: 200
+                    id: localeCombo
                     anchors.verticalCenter: parent.verticalCenter
+                    width: 200
 
-                    onActivated: {
-                        settingsPanel.isLanguageChanged = true;
-                    }
+                    model: LocaleListModel { }
+                    textRole: "name"
+
+                    property string locale: appSettings.locale
+                    onActivated: settingsPanel.isLanguageChanged = true
+                    onCountChanged: currentIndex = model.findLocale(locale)
+                    onCurrentIndexChanged: localeCombo.locale = model.get(currentIndex).locale
                 }
             }
             CheckBox {
@@ -486,7 +488,7 @@ ApplicationWindow {
     }
 
     Component.onCompleted: {
-        utils.setLocale("hu");
+        utils.setLocale(appSettings.locale);
         viewListModel.createWebEngineView();
         viewListModel.selectWebEngineView(viewListModel.count - 1);
     }

@@ -13,5 +13,6 @@
         <file>FindBar.qml</file>
         <file>SettingsPanel.qml</file>
         <file>FlatButton.qml</file>
+        <file>LocaleListModel.qml</file>
     </qresource>
 </RCC>

@@ -16,6 +16,7 @@ OTHER_FILES += \
     CompactEntry.qml \
     FindBar.qml \
     HistoryListView.qml \
+    LocaleListModel.qml \
     TabListView.qml \
     WebEngineViewListModel.qml \
     WideEntry.qml \
