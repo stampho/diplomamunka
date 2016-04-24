@@ -7,6 +7,7 @@ Rectangle {
     property real size: 50
     property bool enableClose: true
     signal clicked()
+    signal closed()
 
     width: size
     height: size
@@ -50,6 +51,8 @@ Rectangle {
 
             visible: false
             text: "X"
+
+            onClicked: root.closed()
         }
     }
 }

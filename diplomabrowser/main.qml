@@ -11,7 +11,7 @@ ApplicationWindow {
     height: 800
     title: qsTr("Diploma Browser")
 
-    property WebEngineView currentWebEngineView: null
+    property alias currentWebEngineView: viewListModel.currentWebEngineView
 
     Settings {
         id: appSettings
@@ -29,9 +29,9 @@ ApplicationWindow {
     WebEngineViewListModel {
         id: viewListModel
 
-        function createWebEngineView() {
-            var webEngineView = newWebEngineView(webView);
+        wrapper: webView
 
+        onCreated: {
             webEngineView.settings.autoLoadIconsForPage = Qt.binding(function() { return appSettings.autoLoadIconsForPage; });
             webEngineView.settings.touchIconsEnabled = Qt.binding(function() { return appSettings.touchIconsEnabled; });
             webEngineView.settings.autoLoadImages = Qt.binding(function() { return appSettings.autoLoadImages; });
@@ -47,15 +47,13 @@ ApplicationWindow {
                         urlBar.state = "opened";
 
                     if (loadRequest.status != WebEngineView.LoadStartedStatus)
-                        historyListView.currentIndex = currentWebEngineView.navigationHistory.backItems.rowCount();
+                        historyListView.currentIndex = currentWebEngineView ? currentWebEngineView.navigationHistory.backItems.rowCount() : -1;
                 })
         }
 
-        function selectWebEngineView(index) {
-            currentWebEngineView = get(index).webEngineView;
-            webView.push({ item: currentWebEngineView, replace: true });
+        onSelected: {
             tabListView.currentIndex = index;
-            historyListView.currentIndex = currentWebEngineView.navigationHistory.backItems.rowCount();
+            historyListView.currentIndex = currentWebEngineView ? currentWebEngineView.navigationHistory.backItems.rowCount() : -1;
         }
     }
 
@@ -74,8 +72,8 @@ ApplicationWindow {
                 text: qsTr("New &Tab")
                 shortcut: StandardKey.AddTab
                 onTriggered: {
-                    viewListModel.createWebEngineView();
-                    viewListModel.selectWebEngineView(viewListModel.count - 1);
+                    viewListModel.create();
+                    viewListModel.select(viewListModel.count - 1);
                     urlBar.state = "opened";
                     addressBar.forceActiveFocus();
                 }
@@ -318,8 +316,8 @@ ApplicationWindow {
 
                 onAccepted: {
                     if (!currentWebEngineView) {
-                        viewListModel.createWebEngineView();
-                        viewListModel.selectWebEngineView(viewListModel.count - 1);
+                        viewListModel.create();
+                        viewListModel.select(viewListModel.count - 1);
                     }
                     currentWebEngineView.url = addressUrl;
                 }
@@ -356,6 +354,7 @@ ApplicationWindow {
             anchors.top: parent.top
             anchors.bottom: tabControl.top
 
+            clip: true
             initialItem: (tabSwitch.state == "left") ? tabListView : historyListView
 
             TabListView {
@@ -365,14 +364,15 @@ ApplicationWindow {
                 model: viewListModel
                 state: (tabBar.state == "closed") ? "compact" : "wide"
 
-                onSelected: viewListModel.selectWebEngineView(index)
+                onSelected: viewListModel.select(index)
+                onClosed: viewListModel.close(index)
             }
 
             HistoryListView {
                 id: historyListView
                 visible: tabSwitch.state == "right"
 
-                model: currentWebEngineView.navigationHistory.items
+                model: currentWebEngineView ? currentWebEngineView.navigationHistory.items : undefined
                 state: (tabBar.state == "closed") ? "compact" : "wide"
 
                 onSelected: {
@@ -510,7 +510,7 @@ ApplicationWindow {
 
     Component.onCompleted: {
         utils.setLocale(appSettings.locale);
-        viewListModel.createWebEngineView();
-        viewListModel.selectWebEngineView(viewListModel.count - 1);
+        viewListModel.create();
+        viewListModel.select(viewListModel.count - 1);
     }
 }

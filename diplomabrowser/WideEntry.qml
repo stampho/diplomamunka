@@ -8,6 +8,7 @@ Rectangle {
     property string pageTitle: ""
     property bool enableClose: true
     signal clicked()
+    signal closed()
 
     width: parent ? parent.width - 10 : 0
     height: 30
@@ -61,6 +62,8 @@ Rectangle {
 
             visible: false
             text: "X"
+
+            onClicked: root.closed()
         }
     }
 }

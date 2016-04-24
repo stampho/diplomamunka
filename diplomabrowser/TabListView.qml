@@ -5,6 +5,7 @@ ListView {
     id: root
 
     signal selected(int index)
+    signal closed(int index)
 
     spacing: 5
     clip: true
@@ -42,6 +43,7 @@ ListView {
             iconUrl: webEngineView ? webEngineView.icon : ""
 
             onClicked: root.selected(index)
+            onClosed: root.closed(index)
         }
     }
 
@@ -57,6 +59,7 @@ ListView {
             pageTitle: webEngineView ? webEngineView.title : ""
 
             onClicked: root.selected(index)
+            onClosed: root.closed(index)
         }
     }
 }
