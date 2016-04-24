@@ -79,6 +79,11 @@ ApplicationWindow {
                 }
             }
             MenuItem {
+                text: qsTr("&Close Tab")
+                shortcut: StandardKey.Close
+                onTriggered: viewListModel.close(tabListView.currentIndex);
+            }
+            MenuItem {
                 text: qsTr("&Quit")
                 shortcut: "Ctrl+q"
                 onTriggered: Qt.quit()
