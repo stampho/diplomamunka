@@ -3,11 +3,19 @@ import QtQuick 2.6
 Rectangle {
     id: root
 
+    property color releasedBgColor: "transparent"
+    property color releasedFgColor: Qt.rgba(0.8, 0.8, 0.8, 1.0)
+    property color pressedBgColor: "white"
+    property color pressedFgColor: Qt.rgba(0.1, 0.1, 0.1, 1.0)
+    property color hoveredBgColor: "transparent"
+    property color hoveredFgColor: "white"
+
     property string text: ""
-    property color bgColor: "white"
-    property color fgColor: Qt.rgba(0.8, 0.8, 0.8, 1.0)
     property string shortcut: ""
     property bool enabled: true
+
+    property color bgColor: releasedBgColor
+    property color fgColor: releasedFgColor
 
     signal clicked()
 
@@ -21,18 +29,18 @@ Rectangle {
     states: [
         State {
             name: "released"
-            PropertyChanges { target: root; bgColor: "transparent" }
-            PropertyChanges { target: root; fgColor: Qt.rgba(0.8, 0.8, 0.8, 1.0) }
+            PropertyChanges { target: root; bgColor: releasedBgColor }
+            PropertyChanges { target: root; fgColor: releasedFgColor }
         },
         State {
             name: "pressed"
-            PropertyChanges { target: root; bgColor: "white" }
-            PropertyChanges { target: root; fgColor: Qt.rgba(0.1, 0.1, 0.1, 1.0) }
+            PropertyChanges { target: root; bgColor: pressedBgColor }
+            PropertyChanges { target: root; fgColor: pressedFgColor }
         },
         State {
             name: "hovered"
-            PropertyChanges { target: root; bgColor: "transparent" }
-            PropertyChanges { target: root; fgColor: "white" }
+            PropertyChanges { target: root; bgColor: hoveredBgColor }
+            PropertyChanges { target: root; fgColor: hoveredFgColor }
         }
     ]
 
@@ -43,15 +51,15 @@ Rectangle {
             ColorAnimation {
                 target: root
                 property: "bgColor"
-                from: root.color
-                to: "white"
+                from: root.releasedBgColor
+                to: root.pressedBgColor
                 duration: 200
             }
             ColorAnimation {
                 target: root
                 property: "fgColor"
-                from: root.border.color
-                to: Qt.rgba(0.1, 0.1, 0.1, 1.0)
+                from: root.releasedFgColor
+                to: root.pressedFgColor
                 duration: 200
             }
         }
@@ -60,15 +68,15 @@ Rectangle {
             ColorAnimation {
                 target: root
                 property: "bgColor"
-                from: "white"
-                to: "transparent"
+                from: root.pressedBgColor
+                to: root.releasedBgColor
                 duration: 200
             }
             ColorAnimation {
                 target: root
                 property: "fgColor"
-                from: Qt.rgba(0.1, 0.1, 0.1, 1.0)
-                to: Qt.rgba(0.8, 0.8, 0.8, 1.0)
+                from: root.pressedFgColor
+                to: root.releasedFgColor
                 duration: 200
             }
         }

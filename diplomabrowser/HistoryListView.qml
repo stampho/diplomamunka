@@ -70,6 +70,7 @@ ListView {
         CompactEntry {
             anchors.horizontalCenter: parent ? parent.horizontalCenter : undefined
             z: root.z + 1
+            enableClose: false
 
             iconUrl: icon ? icon : ""
             size: ListView.isCurrentItem ? root.size : 30
@@ -87,6 +88,7 @@ ListView {
         WideEntry {
             anchors.horizontalCenter: parent ? parent.horizontalCenter : undefined
             z: root.z + 1
+            enableClose: false
 
             iconUrl: icon ? icon : ""
             pageTitle: title ? title : ""
