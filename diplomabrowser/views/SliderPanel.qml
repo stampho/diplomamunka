@@ -51,32 +51,26 @@ Item {
         }
     ]
 
-    // TODO(pvarga): rework animation: in and out. See SettingsPanel.qml
     transitions: [
         Transition {
             ParallelAnimation {
                 PropertyAnimation {
-                    target: root; property: "p"
-                    easing.type: "InBack"
-                    duration: 300
+                    target: root
+                    property: "p"
+                    duration: 500
+                    easing.type: Easing.InOutBack
                 }
-
                 PropertyAnimation {
-                    target: handleArrow; property: "rotation"
-                    easing.type: "InCubic"
-                    duration: 300
+                    target: handleArrow
+                    property: "rotation"
+                    duration: 500
+                    easing.type: Easing.InOutBack
                 }
-
                 PropertyAnimation {
-                    target: content; property: "size"
-                    easing.type: "InBack"
-                    duration: 300
-                }
-
-                PropertyAnimation {
-                    target: content; property: "marginSize"
-                    easing.type: "InBack"
-                    duration: 300
+                    target: content
+                    properties: "size, marginSize"
+                    duration: 500
+                    easing.type: Easing.InOutBack
                 }
             }
         }
