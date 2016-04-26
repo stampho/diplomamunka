@@ -22,6 +22,45 @@ ListView {
         }
     ]
 
+    add: Transition {
+        PropertyAnimation {
+            properties: "opacity, scale"
+            from: 0.0
+            to: 1.0
+            duration: 400
+        }
+        PropertyAnimation {
+            target: highlightItem
+            properties: "opacity, scale"
+            from: 0.0
+            to: 1.0
+            duration: 400
+        }
+    }
+
+    addDisplaced: Transition {
+        PropertyAnimation {
+            property: "y"
+            duration: 400
+        }
+    }
+
+    remove: Transition {
+        PropertyAnimation {
+            properties: "opacity, scale"
+            from: 1.0
+            to: 0.0
+            duration: 400
+        }
+    }
+
+    removeDisplaced: Transition {
+        PropertyAnimation {
+            property: "y"
+            duration: 400
+        }
+    }
+
     highlightFollowsCurrentItem: true
     highlight: Rectangle {
         anchors.horizontalCenter: parent ? parent.horizontalCenter : undefined
