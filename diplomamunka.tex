@@ -36,6 +36,7 @@
 
 % Colors
 \definecolor{qtgreen}{HTML}{44A51C}
+\definecolor{qtred}{HTML}{A5441C}
 
 % URL style
 \hypersetup{
@@ -66,7 +67,7 @@
 }
 
 \newcommand{\qtbug}[1]{%
-    \textcolor{red}{\origurl{https://bugreports.qt.io/browse/QTBUG-#1}}
+    \textcolor{qtred}{\origurl{https://bugreports.qt.io/browse/QTBUG-#1}}
 }
 
 \setdescription{
@@ -87,6 +88,18 @@
    fonttitle=\bfseries,
    coltitle=white,
    colframe=qtgreen,
+   colback=white,
+   #1
+}
+
+\newtcolorbox{issuebox}[1][]
+  {title=Jira Issue,
+   width=12.5cm,
+   left=0pt,
+   right=0pt,
+   fonttitle=\bfseries,
+   coltitle=white,
+   colframe=qtred,
    colback=white,
    #1
 }
@@ -1630,7 +1643,12 @@ QLocale::setDefault(QLocale("en"));
 \end{verbatim}
 Ez a megoldás azonban nem működött és erről hiba jelentés (bug report) is készült:
 \begin{center}
-    \qtbug{45715}
+    \begin{issuebox}
+        \begin{itemize}
+            \renewcommand{\labelitemi}{\textcolor{qtred}{$\blacktriangleright$}}
+            \item \qtbug{45715}
+        \end{itemize}
+    \end{issuebox}
 \end{center}
 
 A hiba oka a Chromium-ban volt, ezért a javítást a \textit{qtwebengine-chromium} Chromium
@@ -1820,7 +1838,12 @@ A \textbf{Favicon Manager} ezeket az ikonokat tölti le a Chromium Content API-n
 Mivel a Favicon Manager megvalósítása sok részfeladatot foglal magába, ezért funkcióhoz
 tartozó módosításokhoz issue is készült:
 \begin{center}
-    \qtbug{51179}
+    \begin{issuebox}
+        \begin{itemize}
+            \renewcommand{\labelitemi}{\textcolor{qtred}{$\blacktriangleright$}}
+            \item \qtbug{51179}
+        \end{itemize}
+    \end{issuebox}
 \end{center}
 Az alább bemutatott patch-ek a részfeladatokat valósítják meg.
 
