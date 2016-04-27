@@ -2079,61 +2079,124 @@ módban is hozzáférhetőek. A tervről issue is készült:
 
 
 \chapter{Egy példa böngészőalkalmazás megvalósítása}
-\textbf{Szempontok:}
+Felvezető duma \dots
 \begin{itemize}
-    \item Screenshot-ok legyenek a browser-ről
-    \item Csak a lényeget részletezni (funkciók megjelenése), a ``körítés'', design-t csak
-        megemlíteni
-    \item QML példakód a funkciókra
+    \item erőforrás igény, memória, de azért megy embedded-en
+    \item cross-platform
+    \item biztosan van gyorsabb, kisebb
+    \item nagyon könnyű használni
+    \item implementáció QML nyelven, deklaratív
+    \item a példaalkalmazás desktop-ra fókuszál -> elrendezés -> a monitorok szélesek
+    \item cél: minél nagyobb hely a WebEngineView-nak
+    \item kódnév: \textbf{diplomabrowser}
+    \item próbáltam a 2. fejezetben leírt funkcionalitásokat bemutatni
 \end{itemize}
 
-\noindent
-\textbf{Gondolatok:}
+
+\section{Felhasználói felület (UI)}
+
 \begin{itemize}
-    \item Gyors billentyűre felugró pop-up, amibe az URL-t lehet írni. Animált (halványodik),
-        félig áttetsző
-    \item Az URL pop-up-nak legyen saját history-ja a memóriában (csak addig él amíg a
-        program fut). Indításkor a navigation history-ból legyen inicializálva.
-        Automatikus URL kiegészítés.
-    \item Legyenek az oldalakról screenshot-ok tárolva. Az URL pop-up a felajánlott oldalakkal
-        együtt mutatja a screenshot-ot.
-    \item A tabok bal oldali sávon legyenek, vertikális listában. Indok: desktop browser,
-        a monitorok szélesek
-    \item A tab bar-hoz nem használható a Quick TabView
-    \item Tab bar-nak 3 állapota megjelenés szerint:
-        \begin{description}
-            \item[hidden] Rejtett mód
-            \item[compact] ``Keskeny'' mód. Csak ikon, vagy ikon és alatta a title.
-            \item[full] A tab teljes szélességében
-        \end{description}
-    \item Módok között a váltás animált
-    \item Jobb oldalt Bookmark Bar hasonló módokkal mint a Tab Bar
-    \item A Bookmark Bar-on a legfelső ikon/bejegyzés a menü
-    \item Menü dialog-ok animálva jelennek meg, amely mögött a \texttt{WebEngineView}
-        megváltozik. Például, összemegy, elhalványul, mindkettő, stb.
-    \item Tab váltáskor az aktuális WebEngineView animálva kiúszik a képernyőről és az
-        új beúszik (slide?)
-    \item A tabok rendezhetőek lehessenek a Tab bar-on.
-    \item A tabok csoportokba rendezhetőek legyenek.
-    \item A tab felett pár másodpercig tartott egérkurzor preview-t jelenít meg a \\
-        \texttt{WebEngineView}-ról
-    \item Egyedi dialog ablakok, ha addig elkészül a custom UI delegate
+    \item próbáltam egyedire csinálni
+    \item animációk -> fluid UI
+    \item több saját QML típus amiből a böngészőalkalmazás felépül
+    \item minden elemről screenshot (grabImage)
 \end{itemize}
 
-\noindent
-\textbf{Funkciók megjelenése a példa browserben:}
-\begin{description}
-    \item[Navigation History] Legyen külön ``navigator'' ablak. Listában lépkedek az
-        elemeken, kicsinyített nézetben látszik az oldal (esetleg screenshot?). Klikk-re
-        kilép a navigátorból és megnyitja az oldalt.
-    \item[Find Text] Ctrl+f shortcut -> animált pop-up. Regexet be lehetne-e adni?
-    \item[Log Level] Példa browser indításakor \texttt{-{}-log-level} kapcsolóval
-    \item[Test Support API] --
-    \item[Form Validation] Screenshot a buborékról
-    \item[Localization] Példa browser indításakor \texttt{-{}-lang} kapcsolóval
-    \item[Authentication Dialog] Felül definiálni Custom UI delegate-el ha meg lesz
-    \item[Favicon Manager] Nagy méretű ikonok: tab, bookmark (kompakt mód), URL pop-up
-\end{description}
+
+\subsection{Vezérlők (controls)}
+\begin{itemize}
+    \item Nem a Qt QuickControls által nyújtottat használom
+    \item saját \texttt{controls} library
+\end{itemize}
+
+\subsubsection{Gombok}
+\begin{itemize}
+    \item különféle gombok:
+        \begin{itemize}
+            \item \texttt{BrowserButton}
+            \item \texttt{FlatButton}
+            \item \texttt{CloseButton}
+        \end{itemize}
+    \item közös ős:
+        \begin{itemize}
+            \item \texttt{Button}
+        \end{itemize}
+\end{itemize}
+
+\subsubsection{Kapcsoló}
+\begin{itemize}
+    \item \texttt{BrowserSwitch}
+    \item Csak egy helyen használva, ezért nem általános
+    \item Tabs <-> History
+\end{itemize}
+
+\subsubsection{Lista elemek}
+\begin{itemize}
+    \item Olyan QML komponensek, amelyek a QML \texttt{ListView} által lesznek példányosítva
+
+    \item \texttt{CompactEntry}, \texttt{WideEntry}
+\end{itemize}
+
+
+\subsection{Nézetek (views)}
+\dots
+
+\subsubsection{Lista nézetek}
+\begin{itemize}
+    \item \texttt{TabListView}
+    \item \texttt{HistoryListView}
+\end{itemize}
+
+\subsubsection{Panelek}
+\begin{itemize}
+    \item \texttt{SliderPanel}
+    \item \texttt{SettingsPanel}
+\end{itemize}
+
+\subsection{Modellek (models)}
+\begin{itemize}
+    \item Valójában nem a UI részei, mert nem megjelenést definiálnak
+    \item \texttt{LocaleListModel}, \texttt{WebEngineViewListModel}
+\end{itemize}
+
+\subsection{Összetett QML típusok}
+\dots
+\begin{itemize}
+    \item nem általánosan felhasználható
+    \item WebEngine specifikus
+\end{itemize}
+
+\subsubsection{AddressBar}
+\dots
+
+\subsubsection{FindBar}
+\dots
+
+
+\subsection{Összkép}
+\begin{itemize}
+    \item main.qml
+\end{itemize}
+
+
+\section{Új Qt WebEngine funkciók használata}
+\begin{itemize}
+    \item QML kód a használtról
+    \item screenshot
+\end{itemize}
+
+\subsection{Favicon Manager}
+\dots
+
+\subsection{Navigation History}
+\dots
+
+\subsection{Find Text}
+\dots
+
+\subsection{Form Validation és Localization}
+\dots
+
 
 \addtocontents{toc}{\ }
 \chapter*{Eredmények}
