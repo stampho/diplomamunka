@@ -1981,8 +1981,7 @@ API-k dokumentációit bővítettem és naprakésszé tettem.
 \end{center}
 
 \begin{itemize}
-    \item Még nem végleges, valószínűleg 2 patch-be lesz szétszedve
-    \item Quick API-hoz icon image provider
+    \item Quick API-hoz icon image provider: QQuickWebEngineFaviconProvider
     \item problémák: hogyan kössük be a manager-t? Hol kössük be a provider-t az engine-be?
     \item tesztelés:
         \begin{itemize}
@@ -1994,8 +1993,39 @@ API-k dokumentációit bővítettem és naprakésszé tettem.
         \end{itemize}
 \end{itemize}
 
-\noindent
-\dots
+\begin{center}
+    \begin{reviewbox}
+        \begin{itemize}
+            \renewcommand{\labelitemi}{\textcolor{qtgreen}{$\blacktriangleright$}}
+            \item \gerrit{155559}
+            \item \gerrit{156213}
+        \end{itemize}
+    \end{reviewbox}
+\end{center}
+
+\begin{itemize}
+    \item Az oldalhoz tartozó ikonok elérése egy ikonban
+    \item Átméretezéskor, a mérethez legjobban illeszkedő ikon betöltése
+        \begin{itemize}
+            \item Widget: QIcon API-n keresztül
+            \item Quick: QQuickWebEngineFaviconProvider-en keresztül
+        \end{itemize}
+    \item Quick tesztelés ugyanúgy mint a multi-sized ikon teszt esetében
+    \item Tesztelés során felfedezett bug javítása a Qt Declarative komponensben
+\end{itemize}
+
+\begin{center}
+    \begin{reviewbox}
+        \begin{itemize}
+            \renewcommand{\labelitemi}{\textcolor{qtgreen}{$\blacktriangleright$}}
+            \item \gerrit{156064}
+        \end{itemize}
+    \end{reviewbox}
+\end{center}
+
+\begin{itemize}
+    \item A history bejegyzésekhez tartozó ikonok támogatása Quick-ben
+\end{itemize}
 
 \begin{itemize}
     \item 5.7-ben jelent meg
