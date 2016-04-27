@@ -1,4 +1,5 @@
 import QtQuick 2.6
+import QtGraphicalEffects 1.0
 
 Rectangle {
     id: root
@@ -14,11 +15,29 @@ Rectangle {
     color: "white"
     radius: 8
 
+    Rectangle {
+        id: mask
+        anchors.fill: parent
+        anchors.margins: 1
+        radius: parent.radius
+        clip: true
+        visible: false
+    }
+
     Image {
+        id: icon
         anchors.centerIn: parent
         width: size - 2; height: size - 2
         sourceSize: Qt.size(width, height)
         source: iconUrl
+        visible: false
+    }
+
+    OpacityMask {
+        anchors.fill: mask
+        source: icon
+        maskSource: mask
+        visible: icon.source != ""
     }
 
     MouseArea {
