@@ -1818,25 +1818,26 @@ favicon-t web oldal HTML kódjában kell megadni az alábbi módon:
     </head>
 </html>
 \end{verbatim}
-A böngésző alkalmazás ezt az ikont tetszőleges célokra használhatja fel, jellemzően az URL
+A böngészőalkalmazás ezt az ikont tetszőleges célokra használhatja fel, jellemzően az URL
 bar-on vagy a tab-on jelenítik meg.
-Az oldalhoz rendelt ikon lehet \textit{touch icon} is. A touch icon jellemzően nagyobb
-felbontású, mint a favicon és főleg érintőképernyős készülékeken használják az előzmények
-és/vagy könyvjelzők megjelenítésére. Egy oldalhoz több favicon és/vagy touch icon is
-tartozhat, jellemzően a böngésző alkalmazás választ közülük.
+Az oldalhoz rendelt ikon lehet \textit{touch icon} is. A touch icon többnyire nagyobb
+felbontású, mint a favicon és elsősorban érintőképernyős készülékeken használják az
+előzmények és/vagy könyvjelzők megjelenítésére. Egy oldalhoz több favicon és/vagy touch icon
+is tartozhat, böngészőalkalmazás feladata választani közülük.
 
-A \textbf{Favicon Manager} ezeket az ikonokat tölti le a Chromium Content API-n keresztül,
-és nyújt lehetőséget az elérésükre. Megvalósítását több cél is motiválta:
+A Qt WebEngine-ben megvalósított \textbf{Favicon Manager} ezeket az ikonokat tölti le a
+Chromium Content API-n keresztül, tárolja azokat és implementál belső API-t az elérésükre.
+Megvalósítását több cél is motiválta:
 \begin{itemize}
     \item Az jelszóval védett oldalak betöltése esetén ne legyen szükség workaround-ra a
-        böngésző alkalmazás kódjában ahhoz, hogy le lehessen tölteni a favicon-t
+        böngészőalkalmazás kódjában ahhoz, hogy le lehessen tölteni egy ikont
     \item A Qt WebEngine korábbi verziói nem támogatták a touch icon-ok használatát
     \item A Qt WebEngine korábbi verziói nem támogatták az ikonok közötti választást
     \item Bizonyos esetekben a touch icon-ok közül is a legnagyobb felbontásúra van szükség
 \end{itemize}
 
-Mivel a Favicon Manager megvalósítása sok részfeladatot foglal magába, ezért funkcióhoz
-tartozó módosításokhoz issue is készült:
+Mivel a Favicon Manager megvalósítása sok részfeladatot foglal magában, ezért ezek
+rendszerezésére egy gyűjtő issue-t készítettem:
 \begin{center}
     \begin{issuebox}
         \begin{itemize}
@@ -1845,7 +1846,8 @@ tartozó módosításokhoz issue is készült:
         \end{itemize}
     \end{issuebox}
 \end{center}
-Az alább bemutatott patch-ek a részfeladatokat valósítják meg.
+Ebben a fejezetben felsorolt patch-ek egy-egy részfeladatot valósítanak meg. Egy részük
+új funkciót vezetnek meg, míg mások hiba javításokat vagy teszteket tartalmaznak.
 
 \begin{center}
     \begin{reviewbox}
@@ -1858,31 +1860,35 @@ Az alább bemutatott patch-ek a részfeladatokat valósítják meg.
 \end{center}
 
 Az új funkció alapját a WebEngine Core modulban implementált \texttt{FaviconManager} osztály
-jelenti. Ez az osztály fogja letölteni a megjelenített oldalhoz tartozó ikonokat, fogja
-kiválasztani közülük a megfelelőt, jelez az API-nak ha az ikon megváltozott, teszi azt
-elérhetővé és nyújt belső API-t az ikonok manipulálására egy jövőbeni publikus API számára.
-A megvalósításban már a C++11 szabvány \textit{range-based for} nyelvi eleme van felhasználva
-az optimálisabb kód érdekében.
+valósítja meg. Ez az osztály tölti le a megjelenített oldalhoz tartozó ikonokat,
+választja ki közülük a megfelelőt, jelez a publikus API-nak ha a view-hoz rendelt ikon
+megváltozott, a publikus API ezen keresztül tudja lekérni az ikont.
+A kódban már a C++11 szabvány \textit{range-based for} nyelvi elemét használtam fel az
+iterációkhoz az optimális megvalósítás érdekében.
 
 Az ikonok letöltéséhez a Content API \texttt{WebContents::DownloadImage()} \\
-függvényét használja, kivéve, ha az ikon a QRC-ben (Qt Resource System) van tárolva,
-ugyanis ebben az esetben nincs szükség letöltésre.
-Alapvetően a Favicon Manager az összes web oldalhoz tartozó ikont megpróbálja letölteni és
-a letöltötteket egy \texttt{QMap}-ben tárolja, ahol a kulcs az ikon URL-je. Mielőtt a
-manager letöltené az ikont, ellenőrzi, hogy le van e már töltve a map-ben, így nem kell az
-ikonokat minden oldal betöltés után újra és újra a Chromium-tól elkérni.
+függvényét használom, ezáltal nincs szükség külön implementációra az autentikációhoz, azt a
+Content API elvégzi. Abban az esetben, ha az ikon QRC-ben (Qt Resource System)\footnote{A Qt
+    ezen funkciójával teszi azt lehetővé, hogy a Qt-s alkalmazáshoz tartozó fájlokat a
+    binárison belül tároljuk. A Chromium nem támogatja ezt a protokollt.}
+van tárolva, az ikon betöltése Qt API-n keresztül történik, nincs szükség letöltésre.
 
-Minden tab-nak (WebEngineView-nak) saját Favicon Manager-re van, ebből kifolyólag
-előfordulhat egy ikon többször is tárolva van a memóriában. Ennek a modellnek az az előnye,
-hogy gyorsabb lehet a szükséges ikon megkeresése (kevesebb bejegyzés) és az implementáció
-is jelentősen egyszerűbb. A WebEngineView API a \texttt{iconChanged()} signal-al jelzi,
-hogy ha megváltozott a view-hoz tartozó ikon. Ez az ikon az API-n keresztül lekérhető,
-az API pedig a Favicon Manager-től kéri el. A Favicon Manager a letöltött ikonok közül
-a legnagyobb felbontásút fogja felajánlani.
+A Favicon Manager a web oldalhoz tartozó összes ikont megpróbálja letölteni és azokat egy
+\texttt{QMap}-ben tárolja. A map-ből az ikont az URL-je alapján lehet elérni. A Favicon
+Manager letöltés előtt ellenőrzi, hogy a map-ben benne van e már az ikon, ha benne van,
+nem ismétli meg a letöltést, így gyorsítótárazva (cache) az ikonokat.
+
+Minden tabhoz (WebEngineView-hoz) saját Favicon Manager tartozik, ezért előfordulhat, egy
+bizonyos ikon többször van tárolva a memóriában. Ennek a modellnek az előnye a gyorsabb
+keresés és az egyszerűbb implementáció. A publikus WebEngineView API a
+\texttt{iconChanged()} signal-al jelzi, hogy ha megváltozott a view-hoz tartozó ikon.
+Ez az ikon a publikus API-n keresztül lekérhető (\texttt{icon} és \texttt{iconUrl}
+property-k), az API pedig a Favicon Manager-től kéri el.
+A Favicon Manager a letöltött ikonok közül a legnagyobb felbontásút fogja felajánlani.
 
 A publikus API-k közvetlenül nem változtak, viszont működésük némileg igen. Így indokolttá
 vált a Quick és Widget API-k favicon tesztjeinek kibővítése és lefedettségük növelése, ami
-az első Favicon Manager-t érintő patch jelentős részét teszi ki.
+az első Favicon Manager-t megvalósító patch jelentős részét teszi ki.
 
 \begin{center}
     \begin{reviewbox}
@@ -1899,9 +1905,9 @@ A publikus Favicon Manager publikus API-jának fejlesztése során több változ
 Végül úgy döntöttünk, hogy az 5.7-es verzióban nem lesz a Favicon Manager-nek publikus
 API-ja, hanem a már meglévő ikon API-k lesznek tovább fejlesztve. Habár a tervezett
 funkcionalitások még bevezetésre kerülhetnek a Qt 5.8-as verziójában, karbantarthatóság
-miatt az ezt támogató WebEngine Core-ban implementált funkciók eltávolításra kerültek.
-A Favicon Manager implementációjának karbantartása mellett a fejlesztés közben felfedezett
-hibák is javításra kerültek.
+miatt az ezt támogató WebEngine Core-ban implementált funkciókat eltávolítottam.
+A Favicon Manager implementációjának karbantartása mellett, a fejlesztés közben megtalált
+hibákat is javítottam.
 
 \begin{center}
     \begin{reviewbox}

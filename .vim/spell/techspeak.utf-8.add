@@ -143,3 +143,4 @@ ResourceDispatcherHostLoginDelegate
 authenticationRequired
 QAuthenticator
 ResourceDispatcherHostLoginDelegateQt
+FaviconManager
