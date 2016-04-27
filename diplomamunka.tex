@@ -1918,18 +1918,21 @@ hibákat is javítottam.
     \end{reviewbox}
 \end{center}
 
-\begin{itemize}
-    \item Konfigurálhatóság a WebEngineSettings-en keresztül (``Icon Download Modes'')
-    \item Letilthatóak lehessenek az ikonok (sávszélesség, sebesség, saját icon manager)
-    \item Desktop-on alapból nincsenek bekapcsolva a touch ikonok, de engedélyezni
-        lehessen őket
-    \item 2 beállítás:
-        \begin{itemize}
-            \item \texttt{AutoLoadIconsForPage}: automatikusan töltse le az ikont a \\
-                Qt WebEngine
-            \item \texttt{TouchIconsEnabled}: töltse le a touch ikonokat is
-        \end{itemize}
-    \end{itemize}
+Habár új publikus API-t nem vezettünk be a Favicon Manager-hez, mindenképpen szerettem volna,
+hogy ha a fejlesztőnek van kontrollja az ikonok letöltése felett. Ennek megvalósításához
+a \texttt{WebEngineSettings}-hez adtam hozzá új beállításokat:
+\begin{description}
+    \item[\texttt{AutoLoadIconsForPage}] Az ikonok automatikusan legyenek letöltve
+    \item[\texttt{TouchIconsEnabled}] Legyenek letiltva a touch ikonok is
+\end{description}
+
+A \texttt{AutoLoadIconsForPage} beállítás alapértelmezetten engedélyezve van, letiltásával
+a Qt WebEngine nem tölti le az ikonokat, ezáltal a böngészőalkalmazás gyorsabb lehet,
+spórolhat a sávszélességen, továbbá a fejlesztőnek van lehetősége saját ikon manager-t
+implementálni úgy, hogy ne kelljen törődnie a Qt WebEngine API ikon signal-jaival.
+
+A \texttt{TouchIconsEnabled} beállítás desktop környezetben alapértelmezetten le van tiltva.
+Egy klasszikus desktop böngészőalkalmazásnak nincs szüksége touch ikonokra.
 
 \begin{center}
     \begin{reviewbox}
@@ -1937,23 +1940,36 @@ hibákat is javítottam.
             \renewcommand{\labelitemi}{\textcolor{qtgreen}{$\blacktriangleright$}}
             \item \gerrit{151314}
             \item \gerrit{151315}
+            \item \gerrit{157142}
         \end{itemize}
     \end{reviewbox}
 \end{center}
 
-\begin{itemize}
-    \item Widget API ``feljavítása''
-        \begin{itemize}
-            \item \texttt{icon} property a \texttt{QIcon}-hoz,
-                ha változik \texttt{iconChanged}
-            \item \texttt{iconUrl} property a \texttt{QUrl}-hez,
-                ha változik \texttt{iconUrlChanged}
-        \end{itemize}
-    \item Nem csak az URL-t lehet lekérdezni, hanem magát az ikont is
-    \item A Widget demobrowser-ből el lett távolítva a workaround
-    \item Több ikont tartalmazó ikon (``multi-sized icon'') teszt
-    \item Dokumentáció frissítése
-\end{itemize}
+Önmagában a Favicon Manager megvalósítása a WebEngine Core modulban nem sok előnyt nyújt.
+Szükséges a publikus API-k módosítása is, hogy kihasználják a Favicon Manager által nyújtott
+lehetőségeket. Az API-k bővítését a Widget API-val kezdtem, mivel annak megvalósítása
+egyszerűbb és a WebEngine Widgets modulra épülő demobrowser-ben a Favicon Manager haszna
+jól demonstrálható.
+
+A WebEngineWidgets module két API-t is nyújt az ikonok elérésére. Az egyik a
+\texttt{QWebEnginePage}, a másik a \texttt{QWebEngineView}. A kettő lényegében ugyanaz:
+a \texttt{QWebEnginePage} \texttt{iconUrl} property-jén keresztül elérhető a page-hez
+tartozó ikon URL-je, amennyiben ez az URL megváltozik akkor egy \texttt{iconUrlChanged}
+signal-t küld. A \texttt{QWebEngineView} ugyanezt a property-t és a hozzátartozó signal-t
+valósítja meg, csak az éppen megjelenített page-hez tartozó URL-t adja vissza.
+
+Az API-k egy új \texttt{icon} property-vel és a hozzátartozó \texttt{iconChanged} signal-al
+lettek bővítve. Az új property a már meglévő \texttt{iconUrl} property-hez hasonlóan működik,
+azzal az eltéréssel, hogy nem az ikon URL-jét tartalmazza, hanem az URL-ről letöltött ikont
+egy \texttt{QIcon} példányban tárolva. Az új property-nek hála a böngészőalkalmazásnak nem
+kell megvalósítania a letöltést, így a demobrowser példa böngészőalkalmazásból is
+eltávolítottam a \texttt{QNetworkAccessManager} használatát és az autentikácóhoz szükséges
+workaround-ot is.
+
+Az bővített API-val most már a WebEngine Widgets modul támogatja az olyan ikonok használatát
+is, amelyek több különböző méretű ikont ágyaznak magukba. Ezekhez, és az új \texttt{icon}
+property-hez teszteket is készítettem, a \texttt{QWebEnginePage} és \texttt{QWebEngineView}
+API-k dokumentációit bővítettem és naprakésszé tettem.
 
 \begin{center}
     \begin{reviewbox}
