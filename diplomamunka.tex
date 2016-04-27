@@ -1963,56 +1963,90 @@ lettek bővítve. Az új property a már meglévő \texttt{iconUrl} property-hez
 azzal az eltéréssel, hogy nem az ikon URL-jét tartalmazza, hanem az URL-ről letöltött ikont
 egy \texttt{QIcon} példányban tárolva. Az új property-nek hála a böngészőalkalmazásnak nem
 kell megvalósítania a letöltést, így a demobrowser példa böngészőalkalmazásból is
-eltávolítottam a \texttt{QNetworkAccessManager} használatát és az autentikácóhoz szükséges
+eltávolítottam a \texttt{QNetworkAccessManager} használatát és az autentikációhoz szükséges
 workaround-ot is.
 
 Az bővített API-val most már a WebEngine Widgets modul támogatja az olyan ikonok használatát
-is, amelyek több különböző méretű ikont ágyaznak magukba. Ezekhez, és az új \texttt{icon}
-property-hez teszteket is készítettem, a \texttt{QWebEnginePage} és \texttt{QWebEngineView}
-API-k dokumentációit bővítettem és naprakésszé tettem.
+is, amelyek több különböző méretű ikont ágyaznak magukba (\textit{multi-size icon}).
+Ezekhez, és az új \texttt{icon} property-hez teszteket is készítettem,
+a \texttt{QWebEnginePage} és \texttt{QWebEngineView} API-k dokumentációit bővítettem és
+naprakésszé tettem.
 
 \begin{center}
     \begin{reviewbox}
         \begin{itemize}
             \renewcommand{\labelitemi}{\textcolor{qtgreen}{$\blacktriangleright$}}
             \item \gerrit{154018}
+            \item \gerrit{156213}
         \end{itemize}
     \end{reviewbox}
 \end{center}
 
-\begin{itemize}
-    \item Quick API-hoz icon image provider: QQuickWebEngineFaviconProvider
-    \item problémák: hogyan kössük be a manager-t? Hol kössük be a provider-t az engine-be?
-    \item tesztelés:
-        \begin{itemize}
-            \item Multi sized icon: minden ikon szürke színű és az árnyalat kódolja az
-                ikon méretét (pl.: 32x32 -> rgb(32, 32, 32)
-            \item Egy pixel kiolvasásával ellenőrizhető, hogy a favicon provider
-                a megfelelő méretű ikont töltötte e be
-            \item hogyan vegyünk ki egy QML item-ből egy pixelt?
-        \end{itemize}
-\end{itemize}
+A WebEngine QML API esetében a Widget-hez hasonló bővítés megvalósítás sokkal bonyolultabb
+volt, mivel sem a QML, sem a Quick nem nyújt ikon támogatást. Az ikon megjelenítésére az
+\texttt{Image} QML típus használható, viszont annak az API-ja csak URL alapján tud képet
+betölteni. A Favicon Manager a letöltött ikont a memóriában tárolja és nem érhető el URL-el.
+
+Erre a problémára megoldást a Quick API \texttt{QQuickImageProvider} interface-e nyújt
+megoldást. A QML context-ben beregisztrált image provider egy speciális URL-el rendelkezik,
+ha az \texttt{Image} QML típus egy ilyen URL-t kap forrásként, akkor a kérést a provider-hez
+irányítja, amely betölti az \texttt{Image}-be a megfelelő képet.
+
+Az új \texttt{QQuickWebEngineFaviconProvider} osztály ezt az osztályt valósítja meg.
+Amennyiben az \texttt{Image} forrás URL-je \texttt{image://favicon/url} alakú, akkor a
+kérést a \texttt{QQuickWebEngineFaviconProvider}-hez irányítja, amely elkéri a
+Favicon Manager-től a \texttt{url}-hez bejegyzett ikont. A \texttt{Image} rendelkezik
+egy \texttt{sourceSize} property-vel is, amelynek értékét a provider megkapja, így ezt a
+multi-size ikonok támogatására használtam fel. Amennyiben az URL-ben hivatkozott ikon
+multi-size és a \texttt{sourceSize} be van állítva, akkor a \texttt{sourceSize}-ban definiált
+mérethez legjobban illeszkedő ikont tölti be a \texttt{QQuickWebEngineFaviconProvider}.
+
+Az új provider használatához módosítani kellett a \texttt{WebEngineView} QML típus
+\texttt{icon} property-jét. Ez a property korábban az ikon eredeti URL-jét tárolta,
+az új módosítással a property-ben tárolt URL a \texttt{QQuickWebEngineFaviconProvider}
+speciális URL-je, amelyen keresztül elérhető a Favicon Manager-ben tárolt ikon.
+
+A \texttt{QQuickWebEngineFaviconProvider} tesztelése külön kihívást jelentett számomra.
+Mindenképpen azt szerettem volna tesztelni, hogy a provider a \texttt{sourceSize}-nak
+megfelelő ikont tölti-e be. A teszt stratégiám az volt, hogy minden tesztelni kívánt mérethez
+egy szürke árnyalatos ikont készítek, és ezekből egy multi-size ikont generálok. Az egyes
+szürke árnyalatos ikonok az RGB színcsatornáikban a saját méretüket kódolják. Például, a
+32x32-es méretű ikonnak minden pixelének RGB értéke (32, 32, 32). Teszt betöltött ikon
+egy pixelének, egyik színcsatornájának értékét vizsgálja meg, hogy megegyezik-e
+a \texttt{Image} QML típus \texttt{sourceSize} property-jénék értékével.
+
+A teszt megvalósításánál a legnagyobb problémát az okozta, hogy a \texttt{Image} QML
+típus nem nyújt API-t a pixelek lekérdezésére. QML-ben erre a \texttt{Canvas} típusban
+van lehetőség, amely ugyan tud képet betölteni provider-ből, viszont támogat
+\texttt{sourceSize} vagy ahhoz hasonló property. Ennek a problémának a megoldására egy
+sor workaround-ra volt szükség, de végül sikerült a betöltött ikon egy pixelét QML és
+JavaScript kóddal lekérdezni. Ezen speciális teszt megvalósítása során sikerült a
+Qt Declarative komponens Quick moduljában is hibát találni, amit ki is javítottam.
 
 \begin{center}
     \begin{reviewbox}
         \begin{itemize}
             \renewcommand{\labelitemi}{\textcolor{qtgreen}{$\blacktriangleright$}}
             \item \gerrit{155559}
-            \item \gerrit{156213}
         \end{itemize}
     \end{reviewbox}
 \end{center}
 
-\begin{itemize}
-    \item Az oldalhoz tartozó ikonok elérése egy ikonban
-    \item Átméretezéskor, a mérethez legjobban illeszkedő ikon betöltése
-        \begin{itemize}
-            \item Widget: QIcon API-n keresztül
-            \item Quick: QQuickWebEngineFaviconProvider-en keresztül
-        \end{itemize}
-    \item Quick tesztelés ugyanúgy mint a multi-sized ikon teszt esetében
-    \item Tesztelés során felfedezett bug javítása a Qt Declarative komponensben
-\end{itemize}
+Mivel sikerült a Qt WebEngine Quick és Widget API-jait úgy bővíteni, hogy képesek legyenek
+támogatni a multi-size ikonokat, így kompromisszumos megoldásnak tűnt külön Favicon Manager
+API helyett ezt a funkciót felhasználni arra, hogy egy adott oldalhoz elérhető ikonok
+(\textit{candidate icons}) listájából válogatni lehessen.
+
+A megvalósításban a Favicon Manager a candidate ikonokat egy multi-size ikonba gyűjti össze.
+Azonos méretű ikonok esetén csak az marad bent, amelyik először került bele a multi-size
+ikonba. Amikor a böngészőalkalmazás lekéri az ikont a WebEngine-től akkor ezt az ikont
+fogja megkapni. Az ikon méretezésének megfelelően a méretben legmegfelelőbb ikon kerül
+betöltésre.
+
+A Widget API esetében a méretezést a \texttt{QIcon} API-ján keresztül történik, míg a
+Quick API esetén a \texttt{QQuickWebEngineFaviconProvider}-en keresztül a már leírtak
+szerint. Ebből kifolyólag a tesztelés is hasonlóan történik, mint a multi-size ikonok
+esetén.
 
 \begin{center}
     \begin{reviewbox}
@@ -2023,20 +2057,25 @@ API-k dokumentációit bővítettem és naprakésszé tettem.
     \end{reviewbox}
 \end{center}
 
-\begin{itemize}
-    \item A history bejegyzésekhez tartozó ikonok támogatása Quick-ben
-\end{itemize}
+Böngészőkben az ikonokkal nem csak az éppen látható oldalt azonosíthatjuk, hanem a már
+látogatottakat is. A Quick API-ban korábban nem volt lehetőség a böngészési előzményekhez
+rendelt ikonokhoz hozzáférni. A továbbfejlesztett Navigation History API-ban már elérhető
+az előzményekhez rendelt \texttt{QQuickWebEngineFaviconProvider} specifikus URL.
 
-\begin{itemize}
-    \item 5.7-ben jelent meg
-    \item 5.8-ban bővül
+A fejezetben bemutatott Favicon Manager és az ahhoz kapcsolódó API fejlesztések a Qt 5.7-es
+verziójában fognak megjelenni. A Favicon Manager publikus API-jának elkészítése tervben van,
+az leghamarabb a Qt 5.8-as verziójában jelenhet meg, ha úgy döntünk, hogy szükség van rá.
+További terv az 5.8-as verzióba, egy ikon adatbázis megvalósítása, ami a Qt WebKit-nek is
+része. Az adatbázis segítségével az ikonok lemezre menthetőek lennének és ezáltal offline
+módban is hozzáférhetőek. A tervről issue is készült:
+\begin{center}
+    \begin{issuebox}
         \begin{itemize}
-            \item Favicon Manager API
-            \item Favicon Database: \\
-                \qtbug{51184}
+            \renewcommand{\labelitemi}{\textcolor{qtred}{$\blacktriangleright$}}
+            \item \qtbug{51184}
         \end{itemize}
-\end{itemize}
-\pagebreak
+    \end{issuebox}
+\end{center}
 
 
 \chapter{Egy példa böngészőalkalmazás megvalósítása}

@@ -144,3 +144,5 @@ authenticationRequired
 QAuthenticator
 ResourceDispatcherHostLoginDelegateQt
 FaviconManager
+QQuickImageProvider
+QQuickWebEngineFaviconProvider
