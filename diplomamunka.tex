@@ -19,6 +19,7 @@
 
 \usepackage{enumitem}
 \usepackage{fancyhdr}
+\usepackage{float}
 \usepackage{hyperref}
 \usepackage{makecell}
 \usepackage{verbatim}
@@ -2145,24 +2146,53 @@ kihasználják a Quick keretrendszer által nyújtotta előnyöket: az elemek tu
 egy valódi "fluid" felületté álljanak össze.
 
 \subsection{Vezérlők (controls)}
-\begin{itemize}
-    \item Nem a Qt QuickControls által nyújtottat használom
-    \item saját \texttt{controls} library
-\end{itemize}
+A legalapvetőbb ilyen elemek, amelyek valamilyen felhasználói interakcióra (első sorban
+bal gombbal kattintásra) adnak választ. Ilyen vezérlő elemeket Qt QuickControls modulja
+is tartalmaz, melyeket sok helyen fel is használtam. Néhány elemet azonban magam valósítottam
+meg, hogy jobban illeszkedjenek a tervezett GUI-ba.
 
 \subsubsection{Gombok}
-\begin{itemize}
-    \item különféle gombok:
-        \begin{itemize}
-            \item \texttt{BrowserButton}
-            \item \texttt{FlatButton}
-            \item \texttt{CloseButton}
-        \end{itemize}
-    \item közös ős:
-        \begin{itemize}
-            \item \texttt{Button}
-        \end{itemize}
-\end{itemize}
+Háromféle különböző gombot használtam fel, amelyek egy közös őstől származnak,
+a saját \texttt{Button} QML típusból. A gombok működésben nem térnek el egymástól csak a
+színezésük más. Egy gombnak négy állapota lehet:
+\begin{description}
+    \item[\texttt{released}] Alapállapot
+    \item[\texttt{disabled}] A gomb le van tiltva, nem reagál felhasználói interakcióra
+    \item[\texttt{hovered}] Az egérmutató a gomb felett van
+    \item[\texttt{pressed}] Bal egérgombot lenyomva tartjuk a gomb felett
+\end{description}
+
+A \ref{fig:browser-button}, \ref{fig:settings-button} és \ref{fig:close-button} ábrák
+mutatják be a felhasznált gombokat, rendre azok lehetséges állapotaikkal együtt.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics{BrowserButton}
+    \caption{
+        \label{fig:browser-button}
+        \texttt{BrowserButton} 4 állapota: \textit{released}, \textit{disabled},
+        \textit{hovered} és \textit{pressed}
+    }
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics{SettingsButton}
+    \caption{
+        \label{fig:settings-button}
+        \texttt{SettingsButton} 4 állapota: \textit{released}, \textit{disabled},
+        \textit{hovered} és \textit{pressed}
+    }
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics{CloseButton}
+    \caption{
+        \label{fig:close-button}
+        \texttt{CloseButton} 4 állapota: \textit{released}, \textit{disabled},
+        \textit{hovered} és \textit{pressed}
+    }
+\end{figure}
+
 
 \subsubsection{Kapcsoló}
 \begin{itemize}
