@@ -12,7 +12,7 @@
         <file>controls/BrowserSwitch.qml</file>
         <file>controls/CloseButton.qml</file>
         <file>controls/CompactEntry.qml</file>
-        <file>controls/FlatButton.qml</file>
+        <file>controls/SettingsButton.qml</file>
         <file>controls/WideEntry.qml</file>
 
         <file>views/HistoryListView.qml</file>

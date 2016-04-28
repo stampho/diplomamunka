@@ -236,7 +236,7 @@ ApplicationWindow {
 
                     onActiveFocusChanged: activeFocus ? selectAll() : deselect()
                 }
-                FlatButton {
+                SettingsButton {
                     text: "Set Current URL"
                     onClicked: homeUrlField.text = currentWebEngineView.url
 

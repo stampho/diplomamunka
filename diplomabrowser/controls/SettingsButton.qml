@@ -7,4 +7,6 @@ Button {
     pressedFgColor: Qt.rgba(0.1, 0.1, 0.1, 1.0)
     hoveredBgColor: "transparent"
     hoveredFgColor: "white"
+    disabledFgColor: Qt.darker(releasedFgColor, 2.5)
+    disabledBrColor: Qt.darker(releasedBrColor, 2.5)
 }

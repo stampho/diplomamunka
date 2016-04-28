@@ -16,7 +16,7 @@ OTHER_FILES += \
     controls/BrowserSwitch.qml \
     controls/Button.qml \
     controls/CompactEntry.qml \
-    controls/FlatButton.qml \
+    controls/SettingsButton.qml \
     controls/WideEntry.qml \
     models/LocaleListModel.qml \
     models/WebEngineViewListModel.qml \

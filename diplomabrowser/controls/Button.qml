@@ -12,6 +12,9 @@ Rectangle {
     property color hoveredBgColor: "white"
     property color hoveredFgColor: "black"
     property color hoveredBrColor: hoveredFgColor
+    property color disabledBgColor: releasedBgColor
+    property color disabledFgColor: Qt.lighter(releasedFgColor, 6.0)
+    property color disabledBrColor: Qt.lighter(releasedBrColor, 6.0)
 
     property string text: ""
     property string shortcut: ""
@@ -23,8 +26,8 @@ Rectangle {
 
     signal clicked()
 
-    color: bgColor
-    border.color: brColor
+    color: enabled ? bgColor : disabledBgColor
+    border.color: enabled ? brColor : disabledBrColor
 
     border.width: 1
     radius: 4
@@ -92,7 +95,7 @@ Rectangle {
     Text {
         anchors.centerIn: parent
         text: root.text
-        color: root.enabled ? fgColor : Qt.lighter(fgColor, 6.0)
+        color: root.enabled ? fgColor : disabledFgColor
         font.bold: true
     }
 

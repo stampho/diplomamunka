@@ -157,7 +157,7 @@ Rectangle {
             Item {
                 id: mainView
 
-                FlatButton {
+                SettingsButton {
                     id: closeButton
 
                     anchors.top: parent.top
@@ -173,7 +173,7 @@ Rectangle {
                     onClicked: root.cancelled();
                 }
 
-                FlatButton {
+                SettingsButton {
                     id: okButton
 
                     anchors.horizontalCenter: parent.horizontalCenter
@@ -239,7 +239,7 @@ Rectangle {
                         Layout.alignment: Qt.AlignHCenter
                         spacing: 80
 
-                        FlatButton {
+                        SettingsButton {
                            width: 60; height: 30
                            text: "Yes"
 
@@ -248,7 +248,7 @@ Rectangle {
                                root.state = "hidden";
                            }
                         }
-                        FlatButton {
+                        SettingsButton {
                            width: 60; height: 30
                            text: "No"
 
