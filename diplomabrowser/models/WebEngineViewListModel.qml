@@ -49,6 +49,9 @@ ListModel {
     }
 
     function close(index) {
+        if (count == 0)
+            return;
+
         var currentIndex = wrapper.currentItem.index;
         var webEngineView = get(currentIndex).webEngineView;
 
