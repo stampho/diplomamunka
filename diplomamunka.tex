@@ -2120,19 +2120,29 @@ property-n elérhetőek QML-ből. A segédfüggvények az alábbiak:
         felül a \texttt{locale} paraméterrel
 \end{description}
 
-\section{Felhasználói felület (UI)}
+\section{Felhasználói felület (GUI)}
 
-\begin{itemize}
-    \item nagyon könnyű használni
-    \item implementáció QML nyelven, deklaratív
-    \item próbáltam egyedire csinálni
-    \item a példaalkalmazás desktop-ra fókuszál -> elrendezés -> a monitorok szélesek
-    \item cél: minél nagyobb hely a WebEngineView-nak
-    \item animációk -> fluid UI
-    \item több saját QML típus amiből a böngészőalkalmazás felépül
-    \item minden elemről screenshot (grabImage)
-\end{itemize}
+A QML kód túlnyomó része a GUI-t valósítja meg. Mivel a QML egy deklaratív nyelv, nem kellett
+túl sokat dolgozni a működés megvalósításán, azt a Qt WebEngine Quick/QML API-ja már
+megvalósította. A hangsúly a megjelenés megtervezésén van, ezért könnyű a QML nyelven
+programozni, a fejlesztőnek csak a GUI elemek testre szabására és az azok között interakciókra
+kell figyelni. Lényegében a \texttt{WebEngineView} QML típus is egy GUI elem, ami a
+web oldal tartalmát rajzolja egy téglalap alakú felületre és küld értesítést (signal-okat)
+a nézetben történt változásokról.
 
+A GUI megtervezésénél legfőbb szempontnak tartottam, hogy a böngészőalkalmazás desktop-ra
+készül, ahol a megjelenítő szélessége nagyobb, mint a magassága. Ezzel szemben a web oldalak
+általában magasabbak, mint szélesek, ezért a bal szélen ki nem használt területet a tabok
+és a böngészési előzmények megjelenítésére használtam fel. A másik fontos szempont az volt,
+hogy az alkalmazás ablakának minél nagyobb részét a böngészési felület
+(\texttt{WebEngineView}) töltse ki. Ezt elsősorban animált, nyitható-csukható panelek
+megvalósításával próbáltam elérni.
+
+A böngészőalkalmazás megjelenését igyekeztem minél egyedibbé tenni, ezért a QML megvalósítás
+több új, saját QML típust is tartalmaz. Ezek az új típusok (GUI elemek), ahol csak lehet
+kihasználják a Quick keretrendszer által nyújtotta előnyöket: az elemek tulajdonságai
+(méret, pozíció, szín, stb) dinamikusan változnak, az átmenetek animálva vannak, hogy
+egy valódi "fluid" felületté álljanak össze.
 
 \subsection{Vezérlők (controls)}
 \begin{itemize}
