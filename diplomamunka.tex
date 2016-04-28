@@ -2208,14 +2208,24 @@ van felhasználva, viszont általánosan van megvalósítva, hogy újra felhaszn
     }
 \end{figure}
 
-
-\subsubsection{Lista elemek}
-\begin{itemize}
-    \item Olyan QML komponensek, amelyek a QML \texttt{ListView} által lesznek példányosítva
-
-    \item \texttt{CompactEntry}, \texttt{WideEntry}
-\end{itemize}
-
+\subsubsection{Lista elem sablon}
+A tabok és a böngészési előzmények listáját a \texttt{ListView} QML típus valósítja mag.
+A \texttt{ListView} típus az elemeket egy sablon QML típus példányosításával
+jeleníti meg. Ilyen saját template típusok a \texttt{CompactEntry} és a \texttt{WideEntry}.
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.8]{Compact-Wide-Entries}
+    \caption{
+        \label{fig:compact-wide-entries}
+        \texttt{CompactEntry} felül és \texttt{WideEntry} alul
+    }
+\end{figure}
+A \texttt{CompactEntry} csak a weboldal ikonját jeleníti meg nagy méretben (touch ikont, ha
+van elérhető). A \texttt{WideEntry} szélessége miatt nagyobb helyet foglal, megjeleníti az
+oldal kis méretű favicon-ját, mellette pedig a web oldal címét. Ezek a lista elem sablonok
+tulajdonképpen nem ``vezérlők'', mert a felhasználói eseményeket nem az elem, hanem a
+\texttt{ListView} QML típus kezeli le, viszont a felhasználó a lista elemre kattintva
+``vezérli'' az alkalmazást.
 
 \subsection{Nézetek (views)}
 \dots
