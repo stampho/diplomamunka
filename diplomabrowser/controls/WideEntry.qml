@@ -7,6 +7,7 @@ Rectangle {
     property url iconUrl: ""
     property string pageTitle: ""
     property bool enableClose: true
+    property bool isCurrentItem: false
     signal clicked()
     signal closed()
 
@@ -21,7 +22,8 @@ Rectangle {
         anchors.leftMargin: 5
 
         Image {
-            width: 16; height: 16;
+            width: isCurrentItem ? 24 : 16
+            height: width
             sourceSize: Qt.size(width, height)
             source: iconUrl
         }
@@ -30,6 +32,7 @@ Rectangle {
             text: pageTitle
             font.pixelSize: 16
             clip: true
+            font.bold: isCurrentItem
         }
     }
 

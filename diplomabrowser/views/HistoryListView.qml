@@ -90,6 +90,7 @@ ListView {
             anchors.horizontalCenter: parent ? parent.horizontalCenter : undefined
             z: root.z + 1
             enableClose: false
+            isCurrentItem: ListView.isCurrentItem
 
             iconUrl: icon ? icon : ""
             pageTitle: title ? title : ""
