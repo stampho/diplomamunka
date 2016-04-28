@@ -2259,12 +2259,25 @@ illetve, hogy teljesen vagy csak részben csukódjon össze.
     \includegraphics[scale=0.8]{SliderPanel}
     \caption{
         \label{fig:slider-panel}
-        \texttt{SliderPanel}
+        \texttt{SliderPanel} zárt és nyitott állapotban
     }
 \end{figure}
 
 \subsubsection{SettingsPanel}
-\dots
+A \texttt{SettingsPanel} egy dialógus ablakot megvalósító saját QML típus. A panel
+mozgatható (\textit{drag}), a bezárás és az Ok gombok (\texttt{SettingsButton}) a típus
+részei, a vezérlő elemek bővíthetőek és a tartalom görgethető. A
+\texttt{SettingsPanel} saját stílus definíciókat is tartalmaz a \texttt{Checkbox} és
+\texttt{TextField} QML típusokhoz.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.7]{SettingsPanel}
+    \caption{
+        \label{fig:settings-panel}
+        \texttt{SettingsPanel} beállításokkal és beépített confirm dialog-gal
+    }
+\end{figure}
 
 \subsection{Összetett QML típusok}
 \dots
