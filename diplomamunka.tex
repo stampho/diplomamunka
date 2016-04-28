@@ -2249,7 +2249,19 @@ megjelenítésére a \texttt{ListView} QML típus saját, specializált változa
 \end{figure}
 
 \subsubsection{SliderPanel}
-\dots
+A \texttt{SliderPanel} egy olyan felület, amivel a GUI nem gyakran használt elemeit rejthetjük
+el, vagy kicsinyítjük le a nagyobb helykihasználás érdekében. A lista nézetek esetén a
+\textit{Wide} és \textit{Compact} mód közötti váltás is \texttt{SliderPanel} segítségével
+történik. Ez a QML típus testre szabható, hogy vízszintesen vagy függőlegesen jelenjen meg,
+illetve, hogy teljesen vagy csak részben csukódjon össze.
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.8]{SliderPanel}
+    \caption{
+        \label{fig:slider-panel}
+        \texttt{SliderPanel}
+    }
+\end{figure}
 
 \subsubsection{SettingsPanel}
 \dots
@@ -2262,20 +2274,18 @@ megjelenítésére a \texttt{ListView} QML típus saját, specializált változa
     \item WebEngine specifikus
 \end{itemize}
 
-\subsection{Modellek (models)}
-\begin{itemize}
-    \item Valójában nem a UI részei, mert nem megjelenést definiálnak
-    \item inkább működést határoznak meg: mik legyenek az elemei egy listának?
-    \item \texttt{LocaleListModel}, \texttt{WebEngineViewListModel}
-\end{itemize}
-
-
 \subsubsection{AddressBar}
 \dots
 
 \subsubsection{FindBar}
 \dots
 
+\subsection{Modellek (models)}
+\begin{itemize}
+    \item Valójában nem a UI részei, mert nem megjelenést definiálnak
+    \item inkább működést határoznak meg: mik legyenek az elemei egy listának?
+    \item \texttt{LocaleListModel}, \texttt{WebEngineViewListModel}
+\end{itemize}
 
 \subsection{Összkép}
 \begin{itemize}
