@@ -2167,7 +2167,7 @@ mutatják be a felhasznált gombokat, rendre azok lehetséges állapotaikkal egy
 
 \begin{figure}[H]
     \centering
-    \includegraphics{BrowserButton}
+    \includegraphics[scale=0.8]{BrowserButton}
     \caption{
         \label{fig:browser-button}
         \texttt{BrowserButton} 4 állapota: \textit{released}, \textit{disabled},
@@ -2176,7 +2176,7 @@ mutatják be a felhasznált gombokat, rendre azok lehetséges állapotaikkal egy
 \end{figure}
 \begin{figure}[H]
     \centering
-    \includegraphics{SettingsButton}
+    \includegraphics[scale=0.8]{SettingsButton}
     \caption{
         \label{fig:settings-button}
         \texttt{SettingsButton} 4 állapota: \textit{released}, \textit{disabled},
@@ -2185,7 +2185,7 @@ mutatják be a felhasznált gombokat, rendre azok lehetséges állapotaikkal egy
 \end{figure}
 \begin{figure}[H]
     \centering
-    \includegraphics{CloseButton}
+    \includegraphics[scale=0.8]{CloseButton}
     \caption{
         \label{fig:close-button}
         \texttt{CloseButton} 4 állapota: \textit{released}, \textit{disabled},
@@ -2195,11 +2195,19 @@ mutatják be a felhasznált gombokat, rendre azok lehetséges állapotaikkal egy
 
 
 \subsubsection{Kapcsoló}
-\begin{itemize}
-    \item \texttt{BrowserSwitch}
-    \item Csak egy helyen használva, ezért nem általános
-    \item Tabs <-> History
-\end{itemize}
+A \texttt{BrowserSwitch} QML típus egy két állapotú kapcsolót valósít meg. Csak egy helyen
+van felhasználva, viszont általánosan van megvalósítva, hogy újra felhasználható legyen.
+
+\begin{figure}[H]
+    \centering
+    %\includegraphics[scale=0.8]{BrowserSwitch-compact}
+    \includegraphics[scale=0.8]{BrowserSwitch-wide}
+    \caption{
+        \label{fig:browser-switch}
+        \texttt{BrowserSwitch} 2 állapota: fent bal oldal, lent jobb oldal van kiválasztva
+    }
+\end{figure}
+
 
 \subsubsection{Lista elemek}
 \begin{itemize}
