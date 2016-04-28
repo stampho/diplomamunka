@@ -1059,6 +1059,10 @@ beépítve.
 
 
 \chapter{Új funkciók a QtWebEngine-ben}
+\label{chap:features}
+
+\todo{Magam csináltam, opensource community -> más is fejlesztett, volt közös munka is
+(pl. review)}
 
 \section{Navigation History}
 
@@ -2079,24 +2083,51 @@ módban is hozzáférhetőek. A tervről issue is készült:
 
 
 \chapter{Egy példa böngészőalkalmazás megvalósítása}
-Felvezető duma \dots
-\begin{itemize}
-    \item erőforrás igény, memória, de azért megy embedded-en
-    \item cross-platform
-    \item biztosan van gyorsabb, kisebb
-    \item nagyon könnyű használni
-    \item implementáció QML nyelven, deklaratív
-    \item a példaalkalmazás desktop-ra fókuszál -> elrendezés -> a monitorok szélesek
-    \item cél: minél nagyobb hely a WebEngineView-nak
-    \item kódnév: \textbf{diplomabrowser}
-    \item próbáltam a 2. fejezetben leírt funkcionalitásokat bemutatni
-\end{itemize}
 
+A \ref{chap:features}. fejezetben bemutatott új funkciók használatát egy saját
+böngészőalkalmazás segítségével mutatom be ebben a fejezetben. Az alkalmazást első sorban
+desktop környezetre szántam. Mivel a Qt egy cross-platform keretrendszer így a példa
+böngészőalkalmazás működik a legnépszerűbb desktop operációs rendszereken: Windows, Linux,
+OS X. Mindemellett elméletileg működik beágyazott környezetben is (pl.: Embedded Linux),
+ahol a Qt WebEngine támogatott (Androidon már nem), viszont ez nem került kipróbálásra.
+
+Az alkalmazást QML nyelven valósítottam meg. Minimális C++ kód is része a megvalósításnak,
+amely két részből áll. Az egyik a program fő belépési pontjának megvalósítása, amely
+inicializálja a Qt WebEngine OpenGL és QML környezetét, illetve betölti a QML programot:
+\begin{verbatim}
+int main(int argc, char *argv[])
+{
+    QApplication app(argc, argv);
+
+    QtWebEngine::initialize();
+
+    QQmlApplicationEngine engine;
+    Utils utils;
+    engine.rootContext()->setContextProperty(
+        "utils", &utils);
+    engine.load(QUrl(QStringLiteral("qrc:/main.qml")));
+
+    return app.exec();
+}
+\end{verbatim}
+A másik rész segédfüggvényeket implementál a QML nyelvhez, amelyek a \texttt{utils}
+property-n elérhetőek QML-ből. A segédfüggvények az alábbiak:
+\begin{description}
+    \item[\texttt{fromUserInput(userInput)}] A paraméterül kapott stringet URL-é alakítja
+        annak megfelelően, hogy a hivatkozott erőforrás lokálisan vagy HTTP protokollon
+        keresztül érhető el
+    \item[\texttt{setLocale(locale)}] A Qt alapértelmezett nyelvi beállításait definiálja
+        felül a \texttt{locale} paraméterrel
+\end{description}
 
 \section{Felhasználói felület (UI)}
 
 \begin{itemize}
+    \item nagyon könnyű használni
+    \item implementáció QML nyelven, deklaratív
     \item próbáltam egyedire csinálni
+    \item a példaalkalmazás desktop-ra fókuszál -> elrendezés -> a monitorok szélesek
+    \item cél: minél nagyobb hely a WebEngineView-nak
     \item animációk -> fluid UI
     \item több saját QML típus amiből a böngészőalkalmazás felépül
     \item minden elemről screenshot (grabImage)
