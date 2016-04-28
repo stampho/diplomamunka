@@ -2208,7 +2208,8 @@ van felhasználva, viszont általánosan van megvalósítva, hogy újra felhaszn
     }
 \end{figure}
 
-\subsubsection{Lista elem sablon}
+\subsubsection{Lista elem sablonok}
+\label{sec:list-entry-templates}
 A tabok és a böngészési előzmények listáját a \texttt{ListView} QML típus valósítja mag.
 A \texttt{ListView} típus az elemeket egy sablon QML típus példányosításával
 jeleníti meg. Ilyen saját template típusok a \texttt{CompactEntry} és a \texttt{WideEntry}.
@@ -2228,32 +2229,46 @@ tulajdonképpen nem ``vezérlők'', mert a felhasználói eseményeket nem az el
 ``vezérli'' az alkalmazást.
 
 \subsection{Nézetek (views)}
-\dots
+Ebbe a kategóriába olyan saját QML típusokat sorolok, amelyek más GUI elemeket fognak össze
+és jelenítenek meg a nézet típusa szerint.
 
 \subsubsection{Lista nézetek}
-\begin{itemize}
-    \item \texttt{TabListView}
-    \item \texttt{HistoryListView}
-\end{itemize}
+A \ref{sec:list-entry-templates} alfejezetben már volt arról szó, hogy a példa
+böngészőalkalmazás saját sablonokat használ lista elemek létrehozására. A listák
+megjelenítésére a \texttt{ListView} QML típus saját, specializált változatait használja:
+\texttt{TabListView}-t a tabokhoz és \\
+\texttt{HistoryListView}-t a böngészési előzményekhez.
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.5]{TabListView}
+    \includegraphics[scale=0.5]{HistoryListView}
+    \caption{
+        \label{fig:tab-list-view}
+        \texttt{TabListView} és \texttt{HistoryListView}
+    }
+\end{figure}
 
-\subsubsection{Panelek}
+\subsubsection{SliderPanel}
+\dots
+
+\subsubsection{SettingsPanel}
+\dots
+
+\subsection{Összetett QML típusok}
+\dots
 \begin{itemize}
-    \item \texttt{SliderPanel}
-    \item \texttt{SettingsPanel}
+    \item nézetekhez hasonló, de nem általánosan felhasználhatóak
+    \item a tartalom rögzített és dinamikusan nem változtatható
+    \item WebEngine specifikus
 \end{itemize}
 
 \subsection{Modellek (models)}
 \begin{itemize}
     \item Valójában nem a UI részei, mert nem megjelenést definiálnak
+    \item inkább működést határoznak meg: mik legyenek az elemei egy listának?
     \item \texttt{LocaleListModel}, \texttt{WebEngineViewListModel}
 \end{itemize}
 
-\subsection{Összetett QML típusok}
-\dots
-\begin{itemize}
-    \item nem általánosan felhasználható
-    \item WebEngine specifikus
-\end{itemize}
 
 \subsubsection{AddressBar}
 \dots
