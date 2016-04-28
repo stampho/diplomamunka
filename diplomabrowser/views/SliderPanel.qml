@@ -40,14 +40,14 @@ Item {
             PropertyChanges { target: root; p: pos }
             PropertyChanges { target: handleArrow; rotation: 180 }
             PropertyChanges { target: content; size: root.size - root.marginSize - root.handleSize }
-            PropertyChanges { target: content; marginSize: 0 }
+            PropertyChanges { target: margin; size: root.marginSize }
         },
         State {
             name: "closed"
             PropertyChanges { target: root; p: pos - size + minSize + handleSize }
             PropertyChanges { target: handleArrow; rotation: 0 }
-            PropertyChanges { target: content; size: root.minSize - root.marginSize }
-            PropertyChanges { target: content; marginSize: root.minSize ? root.size - root.minSize - root.handleSize : 0 }
+            PropertyChanges { target: content; size: root.minSize }
+            PropertyChanges { target: margin; size: root.minSize ? root.size - root.minSize - root.handleSize + root.marginSize : 0 }
         }
     ]
 
@@ -67,8 +67,14 @@ Item {
                     easing.type: Easing.InOutBack
                 }
                 PropertyAnimation {
+                    target: margin
+                    property: "size"
+                    duration: 500
+                    easing.type: Easing.InOutBack
+                }
+                PropertyAnimation {
                     target: content
-                    properties: "size, marginSize"
+                    property: "size"
                     duration: 500
                     easing.type: Easing.InOutBack
                 }
@@ -77,18 +83,27 @@ Item {
     ]
 
     Rectangle {
-        id: content
+        id: margin
+        property real size: root.marginSize
 
-        property real size: root.size - root.marginSize - root.handleSize
-        property int marginSize: 0
+        anchors.top: root.top
+        anchors.left: root.left
+
+        width: root.isHorizontal() ? root.width : margin.size
+        height: root.isHorizontal() ? margin.size : root.height
+
+        color: root.color
+    }
+
+    Rectangle {
+        id: content
+        property real size: root.size - root.handleSize
 
         width: root.isHorizontal() ? root.width : content.size
         height: root.isHorizontal() ? content.size : root.height
 
-        anchors.top: root.top
-        anchors.topMargin: root.isHorizontal() ? root.marginSize + content.marginSize : 0
-        anchors.left: root.left
-        anchors.leftMargin: root.isHorizontal() ? 0 : root.marginSize + content.marginSize
+        anchors.top: root.isHorizontal() ? margin.bottom : root.top
+        anchors.left: root.isHorizontal() ? root.left : margin.right
 
         color: root.color
     }

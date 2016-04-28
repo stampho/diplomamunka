@@ -40,7 +40,7 @@ ListView {
         radius: 8
 
         border.color: "lightgray"
-        width: 1
+        border.width: 1
 
         clip: true
 

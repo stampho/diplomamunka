@@ -355,7 +355,7 @@ ApplicationWindow {
 
         pos: parent.x
         width: 250
-        minSize: 80
+        minSize: 70
         anchors.top: navigationPanel.bottom
         anchors.bottom: parent.bottom
 
@@ -366,6 +366,8 @@ ApplicationWindow {
 
             anchors.left: parent.left
             anchors.right: parent.right
+            // FIXME(pvarga): Remove this workaround
+            anchors.rightMargin: historyListView.visible && historyListView.state == "compact" ? 5 : 0
             anchors.top: parent.top
             anchors.bottom: tabControl.top
 
