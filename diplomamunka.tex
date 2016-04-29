@@ -2266,32 +2266,49 @@ illetve, hogy teljesen vagy csak részben csukódjon össze.
 \subsubsection{SettingsPanel}
 A \texttt{SettingsPanel} egy dialógus ablakot megvalósító saját QML típus. A panel
 mozgatható (\textit{drag}), a bezárás és az Ok gombok (\texttt{SettingsButton}) a típus
-részei, a vezérlő elemek bővíthetőek és a tartalom görgethető. A
-\texttt{SettingsPanel} saját stílus definíciókat is tartalmaz a \texttt{Checkbox} és
-\texttt{TextField} QML típusokhoz.
+részei, beépített \textit{confirm dialog}-gal rendelkezik, a vezérlő elemek bővíthetőek
+és a tartalom görgethető. A \texttt{SettingsPanel} saját stílus definíciókat is tartalmaz
+a \texttt{Checkbox} és \texttt{TextField} QML típusokhoz.
 
 \begin{figure}[H]
     \centering
     \includegraphics[scale=0.7]{SettingsPanel}
     \caption{
         \label{fig:settings-panel}
-        \texttt{SettingsPanel} beállításokkal és beépített confirm dialog-gal
+        \texttt{SettingsPanel} beállításokkal és a beépített confirm dialog-gal
     }
 \end{figure}
 
-\subsection{Összetett QML típusok}
-\dots
-\begin{itemize}
-    \item nézetekhez hasonló, de nem általánosan felhasználhatóak
-    \item a tartalom rögzített és dinamikusan nem változtatható
-    \item WebEngine specifikus
-\end{itemize}
+\subsection{Qt WebEngine specifikus QML típusok}
+Az alábbi típusok a nézetekhez hasonlóak, de nem általánosan újra felhasználhatóak.
+Tartalmuk rögzített, melyek felhasználják a \texttt{WebEngineView} QML típus valamely
+property-jét.
 
-\subsubsection{AddressBar}
-\dots
+Az \texttt{AddressBar} típus a betölteni kívánt weboldal URL-jének megadására használatos.
+Ez a GUI eleme interaktív, mutatja az oldal betöltésének állapotát és az oldal favicon-ját
+teljesen betöltött oldal esetén.
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.8]{AddressBar}
+    \caption{
+        \label{fig:address-bar}
+        \texttt{AddressBar} oldal betöltés közben és betöltött oldallal
+    }
+\end{figure}
 
-\subsubsection{FindBar}
-\dots
+A \texttt{FindBar} típus kifejezetten a Qt WebEngine Find Text funkciójának használatára
+lett létrehozva. Tartalmaz egy szövegmezőt a keresendő szöveg beviteléhez, gombokat
+(\texttt{BrowserButton}) a találatok navigációjához és egy bezáró gombot
+(\texttt{CloseButton}) a keresés alapállapotba állításához és a \texttt{FindBar}
+elrejtéséhez.
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.8]{FindBar}
+    \caption{
+        \label{fig:find-bar}
+        \texttt{FindBar}
+    }
+\end{figure}
 
 \subsection{Modellek (models)}
 \begin{itemize}
