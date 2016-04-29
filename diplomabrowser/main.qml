@@ -321,7 +321,7 @@ ApplicationWindow {
 
             BrowserButton {
                 width: height
-                height: parent.height - 4
+                height: parent.height - 10
                 enabled: currentWebEngineView && currentWebEngineView.canGoBack
                 text: "<"
 
@@ -335,7 +335,7 @@ ApplicationWindow {
 
             BrowserButton {
                 width: height
-                height: parent.height - 4
+                height: parent.height - 10
                 enabled: currentWebEngineView && currentWebEngineView.canGoForward
                 text: ">"
 
@@ -366,7 +366,7 @@ ApplicationWindow {
 
             BrowserButton {
                 width: height
-                height: parent.height - 4
+                height: parent.height - 10
                 text: currentWebEngineView && currentWebEngineView.loading ? "X" : "R"
                 enabled: currentWebEngineView
 
