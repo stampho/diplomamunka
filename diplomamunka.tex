@@ -2342,24 +2342,227 @@ A saját és a Qt gyári QML típusai a \texttt{main.qml} QML fájlban vannak p�
     }
 \end{figure}
 
-
+\newpage
 \section{Új Qt WebEngine funkciók használata}
+
 \begin{itemize}
-    \item QML kód a használtról
-    \item screenshot
+    \item QML forráskódok a példa böngészőalkalmazásból vannak, de nem egy az egyben
+    \item Néhány helyen változtatások, hogy olvashatóbb legyen
+    \item A funkció szempontjából lényegtelen kódrészletek elhagyása
 \end{itemize}
 
 \subsection{Favicon Manager}
-\dots
+
+\noindent
+\textbf{AddressBar.qml:}
+\begin{verbatim}
+Image {
+    id: icon
+    width: 16; height: 16
+    sourceSize: Qt.size(width, height)
+    source: root.iconUrl
+    /* ... */
+}
+\end{verbatim}
+
+\noindent
+\textbf{main.qml:}
+\begin{verbatim}
+AddressBar {
+    id: addressBar
+    iconUrl: currentWebEngineView ?
+                    currentWebEngineView.icon : ""
+    /* ... */
+}
+\end{verbatim}
+
+\noindent
+\textbf{main.qml:}
+\begin{verbatim}
+Settings {
+    id: appSettings
+    property alias autoLoadIconsForPage:
+                        autoLoadIconsForPage.checked
+    property alias touchIconsEnabled:
+                        touchIconsEnabled.checked
+    /* ... */
+}
+
+WebEngineViewListModel {
+    id: viewListModel
+    onCreated: {
+        webEngineView.settings.autoLoadIconsForPage =
+            Qt.binding(function() {
+                return appSettings.autoLoadIconsForPage;
+            });
+        webEngineView.settings.touchIconsEnabled =
+            Qt.binding(function() {
+                return appSettings.touchIconsEnabled;
+            });
+        /* ... */
+    }
+    /* ... */
+}
+\end{verbatim}
+
+\begin{itemize}
+    \item \texttt{icon} property hol van használva?
+        \begin{itemize}
+            \item \texttt{AddressBar}
+            \item \texttt{CompactEntry}
+            \item \texttt{WideEntry}
+        \end{itemize}
+    \item \texttt{Image} QML típus \texttt{sourceSize} property-je hogy van beállítva
+    \item \texttt{iconChanged} signal hol van le kezelve: property binding miatt nincs rá
+        szükség
+    \item \texttt{autoLoadIconsForPage} és \texttt{touchIconsEnabled} beállítások hogyan
+        vannak beállítva: mikor a \texttt{WebEngineView} létrejön, JavaScript-ből property
+        binding
+    \item QML Settings API: tartósan (permanent) tárolja a beállításokat
+\end{itemize}
 
 \subsection{Navigation History}
-\dots
+
+\noindent
+\textbf{main.qml:}
+\begin{verbatim}
+HistoryListView {
+    id: historyListView
+    model: currentWebEngineView ?
+            currentWebEngineView.navigationHistory.items :
+            undefined
+
+    onSelected: {
+        navigationAnimation.start();
+        currentWebEngineView.goBackOrForward(offset);
+    }
+
+    /* ... */
+}
+\end{verbatim}
+
+\noindent
+\textbf{views/HistoryListView.qml:}
+\begin{verbatim}
+property Component compactDelegate: Component {
+    CompactEntry {
+        iconUrl: icon ? icon : ""
+
+        /* ... */
+
+        onClicked: {
+            if (currentIndex == index)
+                return;
+            root.currentIndex = index;
+            root.selected(offset);
+        }
+    }
+}
+
+property Component wideDelegate : Component {
+    WideEntry {
+        iconUrl: icon ? icon : ""
+        pageTitle: title ? title : ""
+
+        /* ... */
+
+        onClicked: {
+            if (currentIndex == index)
+                return;
+            root.currentIndex = index;
+            root.selected(offset);
+        }
+    }
+}
+\end{verbatim}
+
+\begin{itemize}
+    \item \texttt{navigationHistory} property hol van használva?
+        \begin{itemize}
+            \item \texttt{HistoryListView}
+        \end{itemize}
+    \item role-ok hol, hogyan vannak használva: lista elem sablonok
+        \begin{itemize}
+            \item \texttt{title} role
+            \item \texttt{offset} role
+            \item \texttt{icon} role
+        \end{itemize}
+\end{itemize}
 
 \subsection{Find Text}
-\dots
+
+\noindent
+\textbf{main.qml:}
+\begin{verbatim}
+FindBar {
+    id: findBar
+
+    onFindNext: currentWebEngineView.findText(text)
+    onFindPrev: currentWebEngineView.findText(text,
+                            WebEngineView.FindBackward)
+
+    onStateChanged: {
+        if (state == "hidden" && currentWebEngineView) {
+            currentWebEngineView.findText("");
+            currentWebEngineView.forceActiveFocus();
+        }
+    }
+}
+\end{verbatim}
 
 \subsection{Form Validation és Localization}
-\dots
+
+\noindent
+\textbf{main.qml:}
+\begin{verbatim}
+ComboBox {
+    id: localeCombo
+
+    model: LocaleListModel { }
+    textRole: "name"
+
+    property string locale: appSettings.locale
+    onCountChanged: currentIndex = model.findLocale(locale)
+    onCurrentIndexChanged: localeCombo.locale = model.get(currentIndex).locale
+}
+\end{verbatim}
+
+\noindent
+\textbf{main.qml:}
+\begin{verbatim}
+SettingsPanel {
+    id: settingsPanel
+
+    property string locale: appSettings.locale
+
+    onAccepted: {
+        homeUrl = utils.fromUserInput(homeUrlField.text);
+        if (locale != localeCombo.locale) {
+            locale = localeCombo.locale;
+            utils.setLocale(locale);
+            settingsPanel.state = "confirm";
+        } else
+            settingsPanel.state = "hidden";
+    }
+
+    onRestartRequest: {
+        for (var i = 0; i < viewListModel.count; ++i)
+            viewListModel.restart(i);
+    }
+
+    /* ... */
+}
+\end{verbatim}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.44]{validation-message-english}
+    \includegraphics[scale=0.44]{validation-message-magyar}
+    \caption{
+        \label{fig:validation-message-localization}
+        Form Validation angolul és magyarul
+    }
+\end{figure}
 
 
 \addtocontents{toc}{\ }

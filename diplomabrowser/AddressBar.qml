@@ -38,6 +38,7 @@ Rectangle {
         text: root.pageUrl
 
         Image {
+            id: icon
             anchors.verticalCenter: addressField.verticalCenter
             x: 5; z: parent.z + 1
             width: 16; height: 16
