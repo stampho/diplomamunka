@@ -2311,11 +2311,23 @@ elrejtéséhez.
 \end{figure}
 
 \subsection{Modellek (models)}
-\begin{itemize}
-    \item Valójában nem a UI részei, mert nem megjelenést definiálnak
-    \item inkább működést határoznak meg: mik legyenek az elemei egy listának?
-    \item \texttt{LocaleListModel}, \texttt{WebEngineViewListModel}
-\end{itemize}
+A példa böngészőalkalmazáshoz megvalósított saját modellek valójában nem GUI része, mert
+nem megjelenést definiálnak. Dinamikus tartalmat határoznak meg, amelyet más QML típusoknak
+kell megjeleníteniük. A megvalósítások a \texttt{ListModel} QML típust specializálják úgy,
+hogy tartalmuk egyedi módon változtatható legyen.
+
+\subsubsection{WebEngineViewListModel}
+Ez a modell az alkalmazás egyik legfontosabb eleme. Új \texttt{WebEngineView} példányok
+ezen keresztül hozhatóak létre, szúrhatóak be listába, távolíthatóak el a már nem
+szükséges példányok. A \texttt{TabListView} saját QML típus ennek a modellnek az elemeit
+jeleníti meg.
+
+\subsubsection{LocaleListModel}
+A \texttt{LocaleListModel} tartalmazza a böngészőalkalmazás által beállítható nyelvek
+listáját. Néhány nyelv a modellben előre meg van adva, példányosításkor a listába
+kerül a futtató rendszer alapértelmezett nyelve is. Ezt a modellt a
+\texttt{SettingsPanel}-en található, nyelv kiválasztó \texttt{ComboBox} QML típus használja.
+
 
 \subsection{Összkép}
 \begin{itemize}
