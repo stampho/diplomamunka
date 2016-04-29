@@ -2328,11 +2328,19 @@ listáját. Néhány nyelv a modellben előre meg van adva, példányosításkor
 kerül a futtató rendszer alapértelmezett nyelve is. Ezt a modellt a
 \texttt{SettingsPanel}-en található, nyelv kiválasztó \texttt{ComboBox} QML típus használja.
 
-
 \subsection{Összkép}
-\begin{itemize}
-    \item main.qml
-\end{itemize}
+A saját és a Qt gyári QML típusai a \texttt{main.qml} QML fájlban vannak példányosítva és
+összekötve. Ez az alkalmazás QML megvalósításának fő belépési pontja, amely egy \\
+\texttt{ApplicationWindow} QML típusban helyezi el a GUI elemeket.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.35]{diplomabrowser}
+    \caption{
+        \label{fig:diplomabrowser}
+        A példa böngészőalkalmazás képernyőképe
+    }
+\end{figure}
 
 
 \section{Új Qt WebEngine funkciók használata}
