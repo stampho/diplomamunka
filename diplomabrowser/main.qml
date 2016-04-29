@@ -89,6 +89,32 @@ ApplicationWindow {
                 onTriggered: viewListModel.close(tabListView.currentIndex);
             }
             MenuItem {
+                text: qsTr("&Screenshot")
+                shortcut: "Ctrl+s"
+                onTriggered: {
+                    if (!currentWebEngineView)
+                        return;
+
+                    Date.prototype.timestamp = function() {
+                        var year = this.getFullYear().toString();
+                        var month = (this.getMonth() + 1).toString();
+                        var day = this.getDate().toString();
+                        var hours = this.getHours().toString();
+                        var mins = this.getMinutes().toString();
+                        var secs = this.getSeconds().toString();
+
+                        return year + (month[1] ? "" : "0" ) + month + (day[1] ? "" : "0") + day + "-" +
+                                (hours[1] ? "" : "0") + hours + (mins[1] ? "" : "0") + mins + (secs[1] ? "" : "0") + secs;
+                    }
+                    var timestamp = new Date().timestamp();
+                    var fileName = "webengineview-screen-" + timestamp + ".png";
+
+                    currentWebEngineView.grabToImage(function(result) { result.saveToFile(fileName); });
+                    console.log("Screenshot has been saved to " + fileName);
+                }
+            }
+
+            MenuItem {
                 text: qsTr("&Quit")
                 shortcut: "Ctrl+q"
                 onTriggered: Qt.quit()
