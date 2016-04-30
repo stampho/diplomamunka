@@ -344,7 +344,7 @@ ami pedig a \texttt{RenderLayer Tree}.
     \includegraphics[scale=0.46]{rendering-trees}
     \caption{
         \label{fig:rendering-trees}
-        Rendering Trees (forrás: \url{https://www.chromium.org} \cite{bib:chromium-oopifs})
+        Rendering Trees \cite{bib:chromium-oopifs}
     }
 \end{figure}
 
@@ -576,8 +576,7 @@ A legfelső réteg a Chrome, helyére a saját beépítő alkalmazás kerül.
     \includegraphics[scale=0.6]{chromium-architecture}
     \caption{
         \label{fig:chromium-architecture}
-        Chromium Architecture
-        (forrás: \url{https://www.chromium.org} \cite{bib:chromium-content-module})
+        Chromium Architecture \cite{bib:chromium-content-module}
     }
 \end{figure}
 
@@ -744,17 +743,17 @@ A \texttt{QtGUI} modulról bővebben a \ref{sec:qt-gui} fejezetben lesz szó.
 Ahogy a Qt-s alkalmazások, használnak egy Qt-s modult, úgy a Qt-s modulok is használják
 egymást. Az alkalmazáséhoz hasonlóan a modul projekt file-jában is meg kell adni a
 függőséget. Továbbá, ha egy komponens modulja használja egy másik komponens modulját, akkor
-a komponensek közötti függőséget külön jelezni kell. Erre a ``felhasználó'' komponens
-\texttt{sync.profile} script-jében van lehetőség:
-\begin{verbatim}
-    %dependencies = (
-        "qtbase" => "",
-        "qtdeclarative" => "",
-        "qtxmlpatterns" => "",
-        "qtquickcontrols" => "",
-        "qtwebchannel" => "",
-    );
-\end{verbatim}
+a komponensek közötti függőséget külön jelezni kell. A függőségek definiálására
+``felhasználó'' komponensben van szükség:
+\begin{lstlisting}[title=sync.profile]
+ %dependencies = (
+    "qtbase" => "",
+    "qtdeclarative" => "",
+    "qtxmlpatterns" => "",
+    "qtquickcontrols" => "",
+    "qtwebchannel" => "",
+ );
+\end{lstlisting}
 
 \noindent
 Ebben az esetben, a komponensre, mint a modult tároló repository-ra kell
@@ -977,8 +976,7 @@ Quick és a Widget API-k osztoznak. A QtWebEngine felépítését a
     \includegraphics[scale=0.75]{qtwebengine-architecture}
     \caption{
         \label{fig:qtwebengine-architecture}
-        QtWebEngine Architecture (forrás: \url{http://doc.qt.io/}
-        \cite{bib:qt-doc-webengine-overview})
+        QtWebEngine Architecture \cite{bib:qt-doc-webengine-overview}
     }
 \end{figure}
 
@@ -1332,9 +1330,7 @@ információ a QtWebEngine-t használó fejlesztő számára, ezért az elsődle
 letiltása volt. Viszont hibakeresés szempontjából fontosak lehetnek a hibaüzenetek a
 fejlesztés során, ezért egy kapcsolóra volt szükség, ami ezt szabályozza.
 
-\pagebreak
-\noindent
-Az üzenetek szűrésére a Chromium log szinteket definiál:
+Az üzenetek szűrésére a Chromium naplózási szinteket definiál:
 \begin{description}[
             labelsep=-0.5cm,
             itemsep=0cm,
@@ -2108,22 +2104,21 @@ ahol a Qt WebEngine támogatott (Androidon már nem), viszont ez nem került kip
 Az alkalmazást QML nyelven valósítottam meg. Minimális C++ kód is része a megvalósításnak,
 amely két részből áll. Az egyik a program fő belépési pontjának megvalósítása, amely
 inicializálja a Qt WebEngine OpenGL és QML környezetét, illetve betölti a QML programot:
-\begin{verbatim}
-int main(int argc, char *argv[])
-{
+\begin{lstlisting}[title=main.cpp]
+ int main(int argc, char *argv[])
+ {
     QApplication app(argc, argv);
 
     QtWebEngine::initialize();
 
     QQmlApplicationEngine engine;
     Utils utils;
-    engine.rootContext()->setContextProperty(
-        "utils", &utils);
+    engine.rootContext()->setContextProperty("utils", &utils);
     engine.load(QUrl(QStringLiteral("qrc:/main.qml")));
 
     return app.exec();
-}
-\end{verbatim}
+ }
+\end{lstlisting}
 A másik rész segédfüggvényeket implementál a QML nyelvhez, amelyek a \texttt{utils} \\
 property-n elérhetőek QML-ből. A segédfüggvények az alábbiak:
 \begin{description}
