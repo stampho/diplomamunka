@@ -10,11 +10,6 @@ Rectangle {
     signal findNext(string text)
     signal findPrev(string text)
 
-    SystemPalette { id: palette }
-
-    visible: false
-    radius: 8
-
     state: "hidden"
     states: [
         State {
@@ -107,7 +102,7 @@ Rectangle {
                 style: TextFieldStyle {
                     background: Rectangle {
                         color: "transparent"
-                        border.color: Qt.darker(palette.window, 2.0)
+                        border.color: Qt.darker(root.color, 2.0)
                         border.width: 1
                         radius: 4
                     }

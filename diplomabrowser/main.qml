@@ -532,6 +532,7 @@ ApplicationWindow {
         height: 45
 
         color: palette.window
+        radius: 8
 
         onFindNext: currentWebEngineView.findText(text)
         onFindPrev: currentWebEngineView.findText(text, WebEngineView.FindBackward)
