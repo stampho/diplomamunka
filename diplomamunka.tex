@@ -2450,40 +2450,82 @@ bekötött property-jei is.
 
 
 \subsection{Navigation History}
-
-\noindent
-\textbf{main.qml:}
-\begin{verbatim}
-HistoryListView {
+A böngészési előzmények megjelenítéséért a már bemutatott \texttt{HistoryListView}
+QML típus felel. Az előzmények modellekben vannak tárolva, melyek a \\
+\texttt{NavigationHistory} API-n keresztül érhetőek el. Az \texttt{items} modell tartalmazza
+az éppen megjelenített oldalt és az az előtt és után betöltött oldalakat is.
+A teljese böngészési előzmény listához ezt a modellt alkalmaztam:
+\begin{lstlisting}[title=main.qml]
+ HistoryListView {
     id: historyListView
-    model: currentWebEngineView ?
-            currentWebEngineView.navigationHistory.items :
-            undefined
 
-    onSelected: {
-        navigationAnimation.start();
-        currentWebEngineView.goBackOrForward(offset);
+    model: currentWebEngineView
+             ? currentWebEngineView.navigationHistory.items
+             : undefined
+
+    function updateCurrentIndex() {
+        if (!currentWebEngineView) {
+            currentIndex = -1;
+            return;
+        }
+
+        var history = currentWebEngineView.navigationHistory;
+        currentIndex = history.backItems.rowCount();
     }
 
     /* ... */
-}
-\end{verbatim}
+ }
+\end{lstlisting}
+Az \texttt{updateCurrentIndex()} függvény a \texttt{HistoryListView}-ban az éppen megtekintett
+oldalt választja ki aktuálisnak, így ez a bejegyzés ki lesz emelve, a többi pedig ehhez
+képest lesz rendezve. A látható oldal indexének meghatározásához a Navigation History egy
+másik modelljét használom, a \texttt{backItems}-t. Ez a modell az aktuálisnál korábban
+látogatott oldalak listáját tartalmazza, a legutóbb látogatott oldal az utolsó a listában.
+Az arra rákövetkező oldal az éppen aktuális lesz, így annak indexe az \texttt{items} modellben
+könnyedén kiszámítható a \texttt{backItems} modell méretéből.
 
-\noindent
-\textbf{views/HistoryListView.qml:}
-\begin{verbatim}
+Mivel a Navigation History modelljei minden oldal betöltés után változhatnak, így a
+\texttt{HistoryListView} aktuális indexét is minden betöltés után frissíteni kell. Nem elég
+csak a \texttt{items} modell változását figyelni, ugyanis amikor éppen a böngészési előzmények
+között navigálunk az \texttt{items} modell nem változik csak a \texttt{backItems} és a \\
+\texttt{forwardItems} modellek. Mivel a másik két modellre nincs szükségünk ezért egyszerűbb
+megoldás az oldal betöltésének változását figyelni:
+\newpage
+\begin{lstlisting}[title=main.qml]
+ WebEngineViewListModel {
+    id: viewListModel
+
+    onCreated: {
+        var onLoadingChanged = function(loadRequest) {
+            var status = loadRequest.status;
+
+            /* ... */
+
+            if (status != WebEngineView.LoadStartedStatus)
+                historyListView.updateCurrentIndex();
+        }
+
+        webEngineView.loadingChanged.connect(onLoadingChanged);
+        /* ... */
+    }
+
+   /* ... */
+ }
+\end{lstlisting}
+A fent kódrészlet minden újonnan létrehozott \texttt{WebEngineView} példány \\
+\texttt{loadingChanged(loadRequest)} signal-jához egy slot-ot kapcsol, amely minden oldal
+betöltés befejeztével (legyen az sikeres vagy sikertelen) frissíti az előzmény lista
+aktuális indexét.
+
+A modellben tárolt adatokat un. \textit{role}-okon keresztül kérdezhetjük le. Ezek a role-ok,
+a lista elem sablonokból (\texttt{CompactEntry} és \texttt{WideEntry}) példányosított
+listelemek környezetében változóként elérhetőek. A megjelenítéshez, az \texttt{icon} és
+\texttt{title} role-okra van szükség:
+\begin{lstlisting}[title=views/HistoryListView.qml]
 property Component compactDelegate: Component {
     CompactEntry {
         iconUrl: icon ? icon : ""
-
         /* ... */
-
-        onClicked: {
-            if (currentIndex == index)
-                return;
-            root.currentIndex = index;
-            root.selected(offset);
-        }
     }
 }
 
@@ -2491,31 +2533,27 @@ property Component wideDelegate : Component {
     WideEntry {
         iconUrl: icon ? icon : ""
         pageTitle: title ? title : ""
-
         /* ... */
-
-        onClicked: {
-            if (currentIndex == index)
-                return;
-            root.currentIndex = index;
-            root.selected(offset);
-        }
     }
 }
-\end{verbatim}
+\end{lstlisting}
+A navigációhoz már az \texttt{offset} role hasznos, ami a kiválasztott böngészési előzmény
+távolságát tárolja az aktuális oldalhoz képest:
+\begin{lstlisting}[title=main.qml]
+ HistoryListView {
+    id: historyListView
 
-\begin{itemize}
-    \item \texttt{navigationHistory} property hol van használva?
-        \begin{itemize}
-            \item \texttt{HistoryListView}
-        \end{itemize}
-    \item role-ok hol, hogyan vannak használva: lista elem sablonok
-        \begin{itemize}
-            \item \texttt{title} role
-            \item \texttt{offset} role
-            \item \texttt{icon} role
-        \end{itemize}
-\end{itemize}
+    onSelected: {
+        navigationAnimation.start();
+        currentWebEngineView.goBackOrForward(offset);
+    }
+
+    /* ... */
+ }
+\end{lstlisting}
+A fenti példában az \texttt{offset} a \texttt{selected} signal paramétere, amit a kiválasztott
+lista bejegyzés váltott ki.
+
 
 \subsection{Find Text}
 
