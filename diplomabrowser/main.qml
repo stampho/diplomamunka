@@ -44,21 +44,25 @@ ApplicationWindow {
             if (webEngineView.url == "")
                 webEngineView.url = appSettings.homeUrl;
 
-            webEngineView.loadingChanged.connect(function(loadRequest){
-                    if (!navigationPanel.lock && loadRequest.status == WebEngineView.LoadSucceededStatus)
-                        navigationPanel.state = "closed";
+            var onLoadingChanged = function(loadRequest) {
+                var status = loadRequest.status;
 
-                    if (!navigationPanel.lock && loadRequest.status == WebEngineView.LoadStartedStatus)
-                        navigationPanel.state = "opened";
+                if (!navigationPanel.lock && status == WebEngineView.LoadSucceededStatus)
+                    navigationPanel.state = "closed";
 
-                    if (loadRequest.status != WebEngineView.LoadStartedStatus)
-                        historyListView.currentIndex = currentWebEngineView ? currentWebEngineView.navigationHistory.backItems.rowCount() : -1;
-                })
+                if (!navigationPanel.lock && status == WebEngineView.LoadStartedStatus)
+                    navigationPanel.state = "opened";
+
+                if (status != WebEngineView.LoadStartedStatus)
+                    historyListView.updateCurrentIndex();
+            }
+
+            webEngineView.loadingChanged.connect(onLoadingChanged);
         }
 
         onSelected: {
             tabListView.currentIndex = index;
-            historyListView.currentIndex = currentWebEngineView ? currentWebEngineView.navigationHistory.backItems.rowCount() : -1;
+            historyListView.updateCurrentIndex();
         }
     }
 
@@ -421,6 +425,16 @@ ApplicationWindow {
                 onSelected: {
                     navigationAnimation.start();
                     currentWebEngineView.goBackOrForward(offset);
+                }
+
+                function updateCurrentIndex() {
+                    if (!currentWebEngineView) {
+                        currentIndex = -1;
+                        return;
+                    }
+
+                    var history = currentWebEngineView.navigationHistory;
+                    currentIndex = history.backItems.rowCount();
                 }
             }
 
