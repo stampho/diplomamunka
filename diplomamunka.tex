@@ -2557,9 +2557,9 @@ lista bejegyzés váltott ki.
 
 \subsection{Find Text}
 
-\noindent
-\textbf{main.qml:}
-\begin{verbatim}
+A Find Text funkció használata nagyon egyszerű, csupán csak a \texttt{WebEngineView} azonos
+nevű függvényét (\texttt{findText()}) kell meghívni a megfelelő paraméterekkel:
+\begin{lstlisting}[title=main.qml]
 FindBar {
     id: findBar
 
@@ -2574,7 +2574,23 @@ FindBar {
         }
     }
 }
-\end{verbatim}
+\end{lstlisting}
+Ismételt keresés ugyanarra az inputra előre mozgatja a kiemelt találatot a web oldalon. A
+\texttt{WebEngineView.FindBackward} paraméter hatására a kiemelést visszafele lehet léptetni.
+A keresés indítása üres string-gel törli a találatok kiemelését a \\
+\texttt{WebEngineView}-ban.
+
+A \ref{fig:find-bar-screen} képernyőkép mutat példát arra, hogy a Find Text hogyan jelöli
+a találatokat. Narancssárga téglalappal az aktuális találat van kijelölve.
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[scale=0.5]{FindBar-screen}
+    \caption{
+        \label{fig:find-bar-screen}
+        Find Text funkció működés közben
+    }
+\end{figure}
 
 \subsection{Form Validation és Localization}
 
