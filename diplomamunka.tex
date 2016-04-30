@@ -2111,7 +2111,7 @@ int main(int argc, char *argv[])
     return app.exec();
 }
 \end{verbatim}
-A másik rész segédfüggvényeket implementál a QML nyelvhez, amelyek a \texttt{utils}
+A másik rész segédfüggvényeket implementál a QML nyelvhez, amelyek a \texttt{utils} \\
 property-n elérhetőek QML-ből. A segédfüggvények az alábbiak:
 \begin{description}
     \item[\texttt{fromUserInput(userInput)}] A paraméterül kapott stringet URL-é alakítja
@@ -2123,13 +2123,13 @@ property-n elérhetőek QML-ből. A segédfüggvények az alábbiak:
 
 \section{Felhasználói felület (GUI)}
 
-A QML kód túlnyomó része a GUI-t valósítja meg. Mivel a QML egy deklaratív nyelv, nem kellett
-túl sokat dolgozni a működés megvalósításán, azt a Qt WebEngine Quick/QML API-ja már
-megvalósította. A hangsúly a megjelenés megtervezésén van, ezért könnyű a QML nyelven
-programozni, a fejlesztőnek csak a GUI elemek testre szabására és az azok között interakciókra
-kell figyelni. Lényegében a \texttt{WebEngineView} QML típus is egy GUI elem, ami a
-web oldal tartalmát rajzolja egy téglalap alakú felületre és küld értesítést (signal-okat)
-a nézetben történt változásokról.
+A QML kód túlnyomó része a GUI-t valósítja meg. Mivel a QML egy deklaratív nyelv,
+nem kellett túl sokat dolgozni a működés megvalósításán, azt a Qt WebEngine \\
+Quick/QML API-ja már megvalósította. A hangsúly a megjelenés megtervezésén van,
+ezért könnyű a QML nyelven programozni, a fejlesztőnek csak a GUI elemek testre szabására
+és az azok közötti interakciókra kell figyelni. Lényegében a \texttt{WebEngineView} QML
+típus is egy GUI elem, ami a web oldal tartalmát rajzolja egy téglalap alakú felületre és
+küld értesítést (signal-okat) a nézetben történt változásokról.
 
 A GUI megtervezésénél legfőbb szempontnak tartottam, hogy a böngészőalkalmazás desktop-ra
 készül, ahol a megjelenítő szélessége nagyobb, mint a magassága. Ezzel szemben a web oldalak
@@ -2281,7 +2281,7 @@ a \texttt{Checkbox} és \texttt{TextField} QML típusokhoz.
 
 \subsection{Qt WebEngine specifikus QML típusok}
 Az alábbi típusok a nézetekhez hasonlóak, de nem általánosan újra felhasználhatóak.
-Tartalmuk rögzített, melyek felhasználják a \texttt{WebEngineView} QML típus valamely
+Tartalmuk rögzített, melyek felhasználják a \texttt{WebEngineView} QML típus valamely \\
 property-jét.
 
 Az \texttt{AddressBar} típus a betölteni kívánt weboldal URL-jének megadására használatos.
@@ -2335,7 +2335,7 @@ A saját és a Qt gyári QML típusai a \texttt{main.qml} QML fájlban vannak p�
 
 \begin{figure}[H]
     \centering
-    \includegraphics[scale=0.35]{diplomabrowser}
+    \includegraphics[scale=0.34]{diplomabrowser}
     \caption{
         \label{fig:diplomabrowser}
         A példa böngészőalkalmazás képernyőképe
@@ -2523,7 +2523,8 @@ ComboBox {
 
     property string locale: appSettings.locale
     onCountChanged: currentIndex = model.findLocale(locale)
-    onCurrentIndexChanged: localeCombo.locale = model.get(currentIndex).locale
+    onCurrentIndexChanged: localeCombo.locale =
+                            model.get(currentIndex).locale
 }
 \end{verbatim}
 
