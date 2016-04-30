@@ -25,6 +25,19 @@
 \usepackage{verbatim}
 \usepackage{xcolor}
 
+\usepackage{listings}
+\lstset{
+    basicstyle=\ttfamily\small,
+    rulecolor=\color{gray},
+    frame=b,
+}
+
+\usepackage{caption}
+\DeclareCaptionFont{white}{\color{white}}
+\DeclareCaptionFormat{listing}{\colorbox{gray}{\parbox{148mm}{\bfseries#3}}}
+\captionsetup[lstlisting]{format=listing,labelfont=white,textfont=white}
+
+
 % Margins
 \hoffset -1in
 \voffset -1in
@@ -2345,51 +2358,80 @@ A saját és a Qt gyári QML típusai a \texttt{main.qml} QML fájlban vannak p�
 \newpage
 \section{Új Qt WebEngine funkciók használata}
 
-\begin{itemize}
-    \item QML forráskódok a példa böngészőalkalmazásból vannak, de nem egy az egyben
-    \item Néhány helyen változtatások, hogy olvashatóbb legyen
-    \item A funkció szempontjából lényegtelen kódrészletek elhagyása
-\end{itemize}
+Az funkciók használatának bemutatására a példa böngészőalkalmazás QML kódját használom fel.
+A legtöbb esetben a példakód nem egy-egy az egyben lett bemásolva, hogy az olvashatóbb
+legyen és nyomtatásban kiférjen. Minden kódrészletnél megjelöltem, hogy az eredeti
+melyik forrásfájlban található. Eltávolításra kerültek még a funkcióhoz nem kapcsolódó
+kódrészletek is, hogy azok ne legyenek zavaróak vagy félrevezetőek a magyarázatban.
 
 \subsection{Favicon Manager}
 
-\noindent
-\textbf{AddressBar.qml:}
-\begin{verbatim}
-Image {
+A példa alkalmazásban az ikonokat minden esetben a \texttt{Image} QML típussal jelenítem meg.
+Ikonok összesen három saját QML típusban fordulnak elő: \texttt{AddressBar}, \\
+\texttt{CompactEntry} és \texttt{WideEntry}. Az API használata lényegében nem tér el a három
+típusban, ezért azt az \texttt{AddressBar} kódjával szemléltetem:
+\begin{lstlisting}[title=AddressBar.qml]
+ Image {
     id: icon
+
     width: 16; height: 16
     sourceSize: Qt.size(width, height)
     source: root.iconUrl
     /* ... */
-}
-\end{verbatim}
+ }
+\end{lstlisting}
+A Favicon Manager szempontjából két property fontos: a \texttt{sourceSize} és a
+\texttt{source}. A \texttt{sourceSize} property mondja meg, hogy mekkora ikont kell
+betöltenie a Favicon Provider-nek. Jelen esetben ez úgy van megadva, hogy egyezzen meg az
+\texttt{Image} elem méretével, így az ha dinamikusan változik, akkor a Favicon Provider
+implicit az új méretnek megfelelő ikont tölti be.
 
-\noindent
-\textbf{main.qml:}
-\begin{verbatim}
-AddressBar {
+A \texttt{source} property értékének egy, a Favicon Provider-re hivatkozó URL-nek kell lennie.
+Ezt az URL-t a \texttt{WebEngineView::icon} property tárolja. Azért, hogy az \\
+\texttt{AddressBar} típusnak ne kelljen beimportálnia a Qt WebEngine modult, ezért a saját
+\texttt{iconUrl} property-jén keresztül éri el az URL-t. Az \texttt{iconUrl} property-nek az \\
+\texttt{AddressBar} létrehozásakor kell értéket adni:
+\begin{lstlisting}[title=main.qml]
+ AddressBar {
     id: addressBar
-    iconUrl: currentWebEngineView ?
-                    currentWebEngineView.icon : ""
-    /* ... */
-}
-\end{verbatim}
 
-\noindent
-\textbf{main.qml:}
-\begin{verbatim}
-Settings {
+    iconUrl: currentWebEngineView
+                ? currentWebEngineView.icon
+                : ""
+    /* ... */
+ }
+\end{lstlisting}
+Az ellenőrzésre azért van szükség, hogy az alkalmazás ne küldjön hiba üzenetet, ha nincs
+megnyitva tab. Ha a \texttt{WebEngineView} példány \texttt{icon} property-je megváltozik
+(új ikon töltődik be), akkor az \texttt{AddressBar} \texttt{iconUrl} property-je is
+automatikusan változni fog. Ez a QML nyelv \textit{property binding} támogatása miatt
+lehetséges, így a példa alkalmazásban nincs is szükség a \texttt{iconChanged} signal
+használatára.
+
+A Favicon Manager megvalósításának része, hogy a publikus \\
+\texttt{WebEngineSettings}
+API-n keresztül befolyásolni lehessen az ikonok letöltését. Erre kétféleképpen lehetünk
+hatással: letilthatjuk az ikonok automatikus letöltését és engedélyezhetjük a touch
+ikonok letöltését\footnote{Alapértelmezetten a favicon-okat automatikusan letöltjük a touch
+ikonokat nem}. A beállítások tartós tárolására \texttt{Settings} QML típust használtam fel:
+\begin{lstlisting}[title=main.qml]
+ Settings {
     id: appSettings
-    property alias autoLoadIconsForPage:
-                        autoLoadIconsForPage.checked
-    property alias touchIconsEnabled:
-                        touchIconsEnabled.checked
-    /* ... */
-}
 
-WebEngineViewListModel {
+    property alias autoLoadIconsForPage:
+                                    autoLoadIconsForPage.checked
+    property alias touchIconsEnabled: touchIconsEnabled.checked
+    /* ... */
+ }
+\end{lstlisting}
+A \texttt{Settings}-ben a \texttt{autoLoadIconsForPage} és \texttt{touchIconsEnabled}
+azonosítójú \texttt{Checkbox}-ok állapotát tárolom. A \texttt{WebEngineSettings} megfelelő
+property-jeit ezek szerint a beállítások szerint inicializálom, amikor létre jön egy új \\
+\texttt{WebEngineView}:
+\begin{lstlisting}[title=main.qml]
+ WebEngineViewListModel {
     id: viewListModel
+
     onCreated: {
         webEngineView.settings.autoLoadIconsForPage =
             Qt.binding(function() {
@@ -2401,25 +2443,16 @@ WebEngineViewListModel {
             });
         /* ... */
     }
-    /* ... */
-}
-\end{verbatim}
 
-\begin{itemize}
-    \item \texttt{icon} property hol van használva?
-        \begin{itemize}
-            \item \texttt{AddressBar}
-            \item \texttt{CompactEntry}
-            \item \texttt{WideEntry}
-        \end{itemize}
-    \item \texttt{Image} QML típus \texttt{sourceSize} property-je hogy van beállítva
-    \item \texttt{iconChanged} signal hol van le kezelve: property binding miatt nincs rá
-        szükség
-    \item \texttt{autoLoadIconsForPage} és \texttt{touchIconsEnabled} beállítások hogyan
-        vannak beállítva: mikor a \texttt{WebEngineView} létrejön, JavaScript-ből property
-        binding
-    \item QML Settings API: tartósan (permanent) tárolja a beállításokat
-\end{itemize}
+    /* ... */
+ }
+\end{lstlisting}
+Ezzel a megoldással a böngésző alkalmazás a legutóbbi kilépéskori beállításokkal indul. A
+\texttt{Qt.binding()} JavaScript függvény hívásra azért van szükség, hogy kikényszerítsem
+a \texttt{QML} property binding-ot: amikor a checkbox-ok állapota változik és azzal együtt
+a \texttt{appSetttings}-é is, úgy automatikusan változnak a \texttt{WebEngineSettings}
+bekötött property-jei is.
+
 
 \subsection{Navigation History}
 
