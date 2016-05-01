@@ -2592,11 +2592,58 @@ a találatokat. Narancssárga téglalappal az aktuális találat van kijelölve.
     }
 \end{figure}
 
+\newpage
 \subsection{Form Validation és Localization}
+A Form Validation funkció használatához nincs szükség a példa böngészőalkalmazás bővítésére,
+hiszen a megjelenítendő üzenetet tartalmazó szövegbuborék megvalósítása a \\
+Qt WebEngine modul része, ami a megfelelő esemény hatására meg is jelenik.
+A funkció segítségével viszont jól demonstrálható egy másik új funkció, a Localization.
+A Qt WebEngine Localization funkciója miatt a Form Validation üzenetnek a Qt \texttt{QLocale}
+API-ján keresztül beállított nyelven kell megjelenítenie.
 
-\noindent
-\textbf{main.qml:}
-\begin{verbatim}
+A QML-ben nincs API a locale beállításához, viszont a nyelv kiegészíthető olyan C++ nyelven
+megvalósított függvénnyel, ami elvégzi a beállítást:
+\begin{lstlisting}[title=utils.h]
+ class Utils : public QObject {
+    Q_OBJECT
+ public:
+    Q_INVOKABLE static void setLocale(const QString &locale);
+    /* ... */
+ };
+
+ inline void Utils::setLocale(const QString &locale)
+ {
+    QLocale::setDefault(QLocale(locale));
+ }
+
+ /* ... */
+\end{lstlisting}
+A \texttt{Utils} osztály már be van regisztrálva a QML környezetbe az alkalmazás fő belépési
+pontjában (\texttt{main.cpp}). A \texttt{setLocale(locale)} függvény a \texttt{Q\_INVOKABLE}
+makróval lett annotálva, ami lehetővé teszi, hogy QML-ből is hívható legyen. Az új függvény
+segítségével az \texttt{appSettings}-ben tárolt nyelvi beállítással felüldefiniálhatjuk a
+Qt alapértelmezett nyelvi beállításait az \texttt{ApplicationWindow} példány létrejöttekor:
+\begin{lstlisting}[title=main.qml]
+ ApplicationWindow {
+    /* ... */
+
+    Component.onCompleted: {
+        utils.setLocale(appSettings.locale);
+        viewListModel.create();
+        viewListModel.select(viewListModel.count - 1);
+    }
+ }
+\end{lstlisting}
+Minden a locale inicializáció után létrejött \texttt{WebEngineView} példány a hozzátartozó
+új Render Process-t a \texttt{-{}-lang locale} kapcsolóval fogja indítani, ahol a
+\texttt{locale} a \texttt{QLocale} API-n keresztül beállított nyelv. Az első
+\texttt{WebEngineView} példány (tab) éppen ezért az inicializáció után van létrehozva:
+\texttt{viewListModel.create();}
+
+Célszerű lehet a nyelvi beállításokat futás közben is megváltoztatni, ezért a \\
+\texttt{SettingsPanel} QML típus példánya tartalmaz egy lenyíló listát, ahol a támogatott
+nyelvek közül lehet választani:
+\begin{lstlisting}[title=main.qml]
 ComboBox {
     id: localeCombo
 
@@ -2608,39 +2655,96 @@ ComboBox {
     onCurrentIndexChanged: localeCombo.locale =
                             model.get(currentIndex).locale
 }
-\end{verbatim}
+\end{lstlisting}
+A támogatott nyelvek kézzel vannak hozzáadva a \texttt{LocaleListModel} QML típushoz, továbbá
+ki vannak egészítve az a rendszer által használt nyelvvel, amit a Qt alapértelmezetten
+használ. Mivel a \texttt{LocaleListModel} hamarabb van példányosítva, mint ahogy az
+\texttt{ApplicationWindow} létrejön, ezért ezen a ponton még nincs felüldefiniálva a Qt
+alapértelmezett nyelve. A lenyíló listában megjelenített neveket (\texttt{name} role) a
+Qt API-n keresztül kérdezem le, így a \texttt{LocaleListModel} egyszerűen, akár dinamikusan
+is bővíthető:
+\newpage
+\begin{lstlisting}[title=models/LocaleListModel.qml]
+ListModel {
+    id: root
+
+    function addLocale(locale) {
+        locale = locale.substring(0, 2);
+        if (findLocale(locale) < 0) {
+           append({ "locale": locale,
+                    "name": Qt.locale(locale).nativeLanguageName
+                  });
+        }
+    }
+
+    /* ... */
+    Component.onCompleted: {
+        addLocale(Qt.locale().name);
+        addLocale("en"); addLocale("de"); addLocale("hu");
+    }
+}
+\end{lstlisting}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.6]{locale-combo}
+    \caption{
+        \label{fig:locale-combo}
+        Nyelvet kiválasztó lenyíló lista a \texttt{SettingsPanel}-en
+    }
+\end{figure}
 
 \noindent
-\textbf{main.qml:}
-\begin{verbatim}
+A nyelvi beállítás kiválasztás után nem lesz érvényes azonnal, azt a \texttt{SettingsPanel}
+\textit{Ok} gombjának megnyomásával lehet alkalmazni (a \texttt{SettingsPanel} bezárása
+visszavonja a nyelvi beállítást). Mivel új nyelvet beállítani a már futó Render Process-ekre
+még nincs lehetőség, ezért az új nyelv beállítása után a böngészőalkalmazás felajánlja
+(\texttt{SettingsPanel} confirm dialog), hogy újraindítja a tabokhoz tartozó már futó
+processzeket, ami a böngészési előzmények elvesztésével jár:
+\begin{lstlisting}[title=main.qml]
 SettingsPanel {
     id: settingsPanel
-
-    property string locale: appSettings.locale
-
-    onAccepted: {
-        homeUrl = utils.fromUserInput(homeUrlField.text);
-        if (locale != localeCombo.locale) {
-            locale = localeCombo.locale;
-            utils.setLocale(locale);
-            settingsPanel.state = "confirm";
-        } else
-            settingsPanel.state = "hidden";
-    }
+    /* ... */
 
     onRestartRequest: {
         for (var i = 0; i < viewListModel.count; ++i)
             viewListModel.restart(i);
     }
+}
+\end{lstlisting}
+
+Az előzmények elvesztésének, az az oka, hogy a processzek újraindítása a meglévő tabok
+bezárásával és újra megnyitásával történik. A jelenlegi Qt WebEngine API-val csak az éppen
+látható oldal URL-jének lementésére van lehetőség:
+\begin{lstlisting}[title=models/WebEngineViewListModel.qml]
+ListModel {
+    id: root
 
     /* ... */
-}
-\end{verbatim}
+
+    function restart(index) {
+        var currentIndex = wrapper.currentItem.index;
+        var webEngineView = get(index).webEngineView;
+        var url = webEngineView.url;
+
+        close(index);
+        create(index, url);
+
+        if (index == currentIndex)
+            select(index);
+
+        webEngineView.destroy(1000);
+    }
+ }
+\end{lstlisting}
+
+A Form Validation funkcióval demonstrált eredmény az alábbi
+(\ref{fig:validation-message-localization}) ábrán látható.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[scale=0.44]{validation-message-english}
-    \includegraphics[scale=0.44]{validation-message-magyar}
+    \includegraphics[scale=0.6]{validation-message-english}
+    \includegraphics[scale=0.6]{validation-message-magyar}
     \caption{
         \label{fig:validation-message-localization}
         Form Validation angolul és magyarul
