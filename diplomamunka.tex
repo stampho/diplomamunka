@@ -2766,32 +2766,29 @@ A Form Validation funkcióval demonstrált eredmény az alábbi
 \addtocontents{toc}{\ }
 \chapter*{Eredmények}
 \addcontentsline{toc}{section}{Eredmények}
-\begin{itemize}
-    \item Eredmények:
-        \begin{itemize}
-            \item Hány darab új feature? Milyen kategória (QtWebKit, Test/Debug, HTML5)?
-            \item Teszt lefedettség?
-            \item Hány db patch ment be? Melyik milyen jellegű?
-                \begin{itemize}
-                    \item Új feature
-                    \item Új teszt
-                    \item Bug fix, build fix, teszt javítás
-                    \item Chromium fork karbantartás
-                    \item \dots
-                \end{itemize}
-            \item Chromium fork külön repository, oda is mentek patch-ek
-            \item Javításaim között vannak olyanok, amelyek kimondottan platform specifikus
-                problémát javítanak. Ezek lefedik a 3 fő desktop platformot: GNU/Linux,
-                Windows, OS X
-        \end{itemize}
-    \item Összegzés?
-        \begin{itemize}
-            \item Hol tartunk most a QtWebKit leváltással? Mi hiányzik még?
-            \item Jelenleg Qt 5.7-en dolgozunk, a felsorolásból mely feature-ök kerülnek
-                be az 5.7-be: \textbf{favicon}
-            \item Jövő: milyen tervek vannak 5.8-ra?
-        \end{itemize}
-\end{itemize}
+
+Dolgozatomban 8 db új QtWebEngine funkciót valósítottam meg és mutattam be. Ebből 4 db a
+QtWebKit-ből átvett és továbbfejlesztett (Navigation History, Find Text, Authentication
+Dialog, Favicon Manager), 1 db HTML5 funkció (Form Validation) és 3 db a hibakeresést és
+tesztelést segíti (Log Level, Test Support API, Localization). A 8 db feature-ből 7 db
+elérhető a Qt legfrissebb (5.6) stabil kiadásában. A Favicon Manager a készülő 5.7-es
+verzióban biztosan benne lesz.
+
+27 db patch-et nyújtottam be a Qt közösségnek, amelyek szorosan ezekhez a funkciókhoz
+kapcsolódnak és be is kerültek a QtWebEngine kódjába. 1 db patch QtDeclarative komponensbe
+került be, ami egy a Favicon Manager tesztelése közben felfedezett \texttt{Context2D}
+QML típus hibáját javítja.
+
+A dolgozatban bemutatott patcheken túl, még 35 db patchem került be (eddig összesen 62 db) a
+QtWebEngine-be. Ezek a bemutatott funkciókhoz szorosan nem köthető, elsősorban hibajavítások,
+új teszt esetek és karbantartási munkálatok. A javítások mindhárom legfontosabb desktop
+platformra kiterjednek (GNU/Linux, Windows, OS X).
+
+A munka során hivatalosan további 34 db patchet review-oltam, amelyből 8 db köthető a
+bemutatott funkciókhoz. A dolgozathoz készített, QtWebEngine-re épülő példa
+böngészőalkalmazás további ötleteket adott a funkciók tovább fejlesztésére (pl. Navigation
+History kibővítése ikon támogatással), egyes részeit tervezem felhasználni a QtWebEngine-hez
+hozzáadott példa alkalmazásokban és a funkciók teszteléséhez is hasznos volt.
 
 
 %%% EPILOGUE %%%
