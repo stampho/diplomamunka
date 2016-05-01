@@ -1073,8 +1073,20 @@ beépítve.
 \chapter{Új funkciók a QtWebEngine-ben}
 \label{chap:features}
 
-\todo{Magam csináltam, opensource community -> más is fejlesztett, volt közös munka is
-(pl. review)}
+Az új funkciók megvalósítását a Qt saját, Gerrit-en alapuló \textit{code review} rendszerébe
+töltöttem fel. Minden funkcióhoz felsoroltam az érintett Gerrit issue-kat, ahol elérhető
+a végleges patch és nyomon követhető megvalósítás folyamata. A Qt-t egy OpenSource
+közösség fejleszti, így a patchek végleges kialakításában más is segített, ami a review
+folyamat része. Ugyanakkor az egyes patchek elfogadásával a funkció fejlesztése nem
+ér véget. Más is folytathatta a fejlesztést, adhatott hozzá új teszteket, javíthatott
+időközben felmerült hibákat. Ezekben a munkákban általában én is, mint ``tanácsadó'',
+\textit{reviewer} vettem/veszek részt.
+
+Ebben a fejezetben csak azokat a patcheket sorolom fel és részletezem, amiket magam
+implementáltam és nem térek ki azokra, amiket mások valósítottak meg. Emiatt előfordulhat,
+hogy az itt bemutatott funkciók és a hozzájuk tartozó API a legfrissebb Qt verzióban
+már eltérnek az itt leírtaktól, habár ezek a leírások a legfrissebb változatok alapjait
+is képezik.
 
 \section{Navigation History}
 
@@ -1157,7 +1169,7 @@ API-hoz további funkcionalitások lettek hozzáadva, amelyek a már látogatott
 újratöltését tették könnyebbé. Ezek listája a \ref{tab:navigation-history-experimental-api}
 táblázatban látható.
 
-\begin{table}[h!]
+\begin{table}[ht]
     \centering
     \begin{tabular}{ | l | l | p{194pt} | }
         \hline
@@ -1230,7 +1242,7 @@ ezért értelemszerűen \texttt{WebEngineView} API része kell, hogy legyen. Miv
 \texttt{WebEngineViewExperimental} API-hoz lett hozzáadva a \ref{tab:find-text-api}
 táblázatban látható módon.
 
-\begin{table}[h!]
+\begin{table}[ht]
     \centering
     \begin{tabular}[t]{ | l | l | p{188pt} | }
         \hline
@@ -1437,7 +1449,7 @@ történtek e, a megfelelő sorrendben.
     }
 \end{table}
 
-\begin{table}[h!]
+\begin{table}[ht]
     \centering
     \begin{tabular}{ | l | l | p{195pt} | }
         \hline
@@ -1620,7 +1632,6 @@ az URL fragment tartalmazza.
 A Form Validation HTML5 funkció támogatása és a hozzátartozó szöveg buborékok a Qt 5.5-ös
 verzióban jelentek meg. A funkció tesztelése már csak az 5.6-os verzióba került be.
 
-\pagebreak
 \section{Localization}
 
 \begin{center}
@@ -2351,7 +2362,7 @@ A saját és a Qt gyári QML típusai a \texttt{main.qml} QML fájlban vannak p�
 \end{figure}
 
 \newpage
-\section{Új Qt WebEngine funkciók használata}
+\section{Az új Qt WebEngine funkciók használata}
 
 Az funkciók használatának bemutatására a példa böngészőalkalmazás QML kódját használom fel.
 A legtöbb esetben a példakód nem egy-egy az egyben lett bemásolva, hogy az olvashatóbb
