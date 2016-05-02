@@ -187,22 +187,22 @@ QtWebSockets QtWebChannel Android WebEngine}
 \noindent
 A QtWebEngine bővítése úgy, hogy a QtWebKit-et használó fejlesztők könnyen portolhassák
 a projektjüket QtWebEngine-re.
-Továbbá, olyan új funkciók megvalósítása is fontos, amelyek hozzásegítik a
+Továbbá olyan új funkciók megvalósítása is fontos, amelyek hozzásegítik a
 QtWebEngine-t, hogy lépést tartson a fejlődő web technológiákkal (pl. HTML5).
 Az újonnan implementált funkciókat tesztelni kell.
 
 \bigskip
 \noindent
-A tesztelésre lehetőséget nyújt a Qt \texttt{auto test}
-keretrendszere, viszont bizonyos funkciók nem tesztelhetőek megfelelően \texttt{auto}
-tesztekkel, továbbá nem biztosítható teljes lefedettség. A probléma kiküszöbölésére
-példa alkalmazás(ok) implementálására van szükség, amelyet a fejlesztő használhat
-``manuális'' tesztelésre, hibakeresésre, továbbá annak forráskódja a funkciók
-dokumentálására, bemutatására is felhasználható.
+A tesztelésre lehetőséget nyújt a Qt \textit{auto test} keretrendszere. Azoknál funkcióknál,
+melyek nem tesztelhetők megfelelően auto tesztekkel, ott manuális tesztelésre van szükség.
+A manuális teszteléshez példa alkalmazás(ok) megvalósítására van szükség. A példa
+alkalmazásnak felhasználhatónak kell lennie hibakeresésre is. A megvalósítás során szem
+előtt kell tartani, hogy az alkalmazás forráskódját a jövőben a funkciók dokumentálására és
+bemutatására is felhasználhatjuk.
 
 \bigskip
 \noindent
-A fejlesztés során az alábbi szempontokat kell figyelembe venni:
+A fejlesztés során az alábbi szempontokat is kell figyelembe venni:
 \begin{itemize}
     \item Bináris kompatibilitás megtartása korábbi QtWebEngine verziókkal:
         publikus API-ban a változtatások számát minimalizálni kell,
@@ -213,7 +213,7 @@ A fejlesztés során az alábbi szempontokat kell figyelembe venni:
         az eredeti QtWebKit API-tól, hacsak ezt az új funkcionalitás bővítése nem indokolja.
     \item Törekedni kell arra, hogy a Quick és Widget API hasonlítson egymásra,
         amennyire csak lehet.
-    \item Az új funkcionalitásokhoz \texttt{auto} tesztet kell készíteni,
+    \item Az új funkcionalitásokhoz auto tesztet kell készíteni,
         ahol ez megoldható.
     \item Qt 5.6-os verziójától minden új funkcionalitást dokumentálni kell.
 \end{itemize}
@@ -230,17 +230,17 @@ A fejlesztés során az alábbi szempontokat kell figyelembe venni:
         egy saját böngészőalkalmazás megvalósításával.
     \item \textbf{A megoldási mód:} \\
         Részvétel a QtWebEngine project fejlesztésében. Az új funkciók
-        megvalósítása \texttt{C++} nyelven. Egy példa böngészőalkalmazás implementálása
-        QtQuick használatával, \texttt{C++} és \texttt{QML} nyelven.
+        megvalósítása C++ és QML nyelven. Egy példa böngészőalkalmazás implementálása
+        QtQuick keretrendszer használatával, C++ és QML nyelven.
     \item \textbf{Alkalmazott eszközök, módszerek:} \\
         A fejlesztés GNU/Linux rendszeren, QtCreator fejlesztői
         környezetben (IDE) történt. A hibakereséshez GDB-t használtam.
         Makefile-ok legenerálását a project file-okból a qmake végzi.
         A project fordítása Linux-on a GNU Toolchain-el (GCC 5.3),
-        Os X-en Xcode-al (Xcode 7.2.1), Windows-on pedig
+        OS X-en Xcode-al (Xcode 7.2.1), Windows-on pedig
         MSVC 2013 32-bites verziójával történt. A verzió-követéshez Git-et
         használtam. A teszteléshez szükséges keretrendszert és a teszteket a Qt
-        repository-k tartalmazzák.
+        repository tartalmazza.
     \item \textbf{Elért eredmények:} \\
         A QtWebEngine 8 új funkcióval lett kibővítve. Ebből 4 a QtWebKit-ből
         átvett, 3 a tesztelést és hibakeresést segíti, 1 pedig HTML5 funkció.
@@ -256,37 +256,42 @@ A fejlesztés során az alábbi szempontokat kell figyelembe venni:
 
 \chapter*{Bevezetés}
 \addcontentsline{toc}{section}{Bevezetés}
-A QtWebEngine-t 2013-ban kezdték el fejleszteni a Qt fejlesztői kísérleti jelleggel
-a WebKit--Chromium szétválás után. A szétválás előtt a Qt fejlesztői csapata volt a harmadik
-legtermékenyebb contributor-a (hozzájárulója) a WebKit kód bázisnak, az Apple és a
-Google után. A kérdés adott volt: megtartsa e a Qt jól bevált QtWebKit komponensét és
-maradjon az Apple szárnysegédje, vagy beálljon az új lehetőségeket és irányt mutató Google
-mögé azáltal, hogy az ő web platformjára épít egy új API-t. Végül az utóbbi mellett
-döntöttek, a QtWebKit projektet parkolópályára helyezték és a QtWebEngine éles lett.
+A QtWebEngine projekt fejlesztése 2013-ban kezdődött a WebKit--Chromium szétválás bejelentését
+követően. A projekt megkezdése előtt a Qt fejlesztői csapata volt a harmadik legaktívabb
+contributora a WebKit projektnek az Apple és a Google után. A szétválást a Google távozása
+jelentette projektből, amikor saját WebKit forkon (Blink) kezdtek el dolgozni. Ebben az időben
+a Qt fejlesztői dönteni kényszerültek: folytassák-e a WebKit-re épülő QtWebKit
+projektjüket és maradjanak az Apple szárnysegédjei, vagy beálljanak az új lehetőséget
+és irányt mutató Google mögé azáltal, hogy egy Blink-et beágyazó web  böngésző platform fölé
+építenek egy új API-t. A döntés megkönnyítése érdekében kezdték el fejleszteni -- eleinte csak
+kísérleti jelleggel -- a Chromium-ra épülő QtWebEngine-t. Végül a QtWebEngine és a Google
+mellett döntöttek.
 \cite{bib:qt-blog-introducing-qtwebengine}
 
 2014 elején kapcsolódtam be a projektbe és azóta is részmunkaidőben veszek részt a
-fejlesztésekben. Az azóta eltelt több, mint 2 év alatt sokat tanultam a Qt-ról,
-Chromium-ról és a web technológiákról, úgy egyáltalán. Dolgozatomban az ez idő alatt
-gyűjtött tapasztalatokból szeretnék megörökíteni egy szeletet.
+fejlesztésekben. Az azóta eltelt több mint 2 év alatt sokat tanultam a Qt-ról,
+Chromium-ról és a web technológiákról. Dolgozatomban az ez idő alatt gyűjtött
+tapasztalatokból szeretnék megörökíteni egy részletet.
 
 A QtWebEngine (korábban QtWebKit) projekt célja egy Qt modul (függvénykönyvtár) nyújtása a
 fejlesztők számára, amelynek használatával könnyedén integrálhatnak böngésző
-funkcionalitásokat saját Qt alkalmazásaikba vagy könnyedén valósíthatnak meg Qt platform
-felett saját böngészőt. Ráadásul, mindezt úgy tehetik meg, hogy nincs szükségük semmilyen
-ismeretre arról, hogy egy böngésző, hogyan működik a motorháztető alatt.
+funkcionalitásokat saját Qt alkalmazásaikba vagy akár valósíthatnak meg saját
+böngészőalkalmazást Qt platform felett, mindezt úgy, hogy nincs szükség mélyebb ismeretekre
+arról, hogyan is működik egy böngésző.
 
 Dolgozatomat 3 részre tagoltam. Az első részben adok áttekintést arról, hogy mi is az a
-Chromium, mi a Qt, ezek hogyan kapcsolódnak egymáshoz és hogyan is lesz ebből QtWebEngine.
+Chromium, mi a Qt, ezek hogyan kapcsolódnak egymáshoz és hogyan is épül fel ebből a
+QtWebEngine.
 A második részben összegyűjtöttem 8 olyan funkcionalitást (feature-t), amit magam
 fejlesztettem és adtam hozzá a QtWebEngine-hez. Röviden leírom, hogyan valósítottam meg
 őket, mi volt a célom velük és milyen nehézségekkel kellett szembe néznem a megvalósítás
 során.
 
-A legutolsó fejezetben szeretném bebizonyítani, hogy könnyű a QtWebEngine-el böngészőt
-készíteni. Sajnos a Chromium erőforrás igénye és a magas szintű API-ja miatt, nem várható el
-a QtWebEngine-től, hogy lekörözze sebességben és/vagy memória-fogyasztásban a versenytársakat.
-A QtWebEngine igazi előnye kétség nélkül az egyszerű használhatóságban és a cross-platform
+A legutolsó fejezetben szeretném bebizonyítani, hogy könnyű a QtWebEngine használatával
+böngészőalkalmazást készíteni. Sajnos a Chromium erőforrás igénye és magas szintű API-ja
+miatt, nem várható el a QtWebEngine-től, hogy sebességben és/vagy memória-fogyasztásban
+jobb vagy hatékonyabb legyen más, hasonló keretrendszereknél.
+A QtWebEngine igazi előnye kétség kívül az egyszerű használhatóságban és a cross-platform
 támogatásban rejlik.
 
 
@@ -2298,7 +2303,7 @@ a \texttt{Checkbox} és \texttt{TextField} QML típusokhoz.
     }
 \end{figure}
 
-\subsection{Qt WebEngine specifikus QML típusok}
+\subsection{QtWebEngine specifikus QML típusok}
 Az alábbi típusok a nézetekhez hasonlóak, de nem általánosan újra felhasználhatóak.
 Tartalmuk rögzített, melyek felhasználják a \texttt{WebEngineView} QML típus valamely \\
 property-jét.
@@ -2362,7 +2367,7 @@ A saját és a Qt gyári QML típusai a \texttt{main.qml} QML fájlban vannak p�
 \end{figure}
 
 \newpage
-\section{Az új Qt WebEngine funkciók használata}
+\section{Az új QtWebEngine funkciók használata}
 
 Az funkciók használatának bemutatására a példa böngészőalkalmazás QML kódját használom fel.
 A legtöbb esetben a példakód nem egy-egy az egyben lett bemásolva, hogy az olvashatóbb
