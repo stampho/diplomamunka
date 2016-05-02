@@ -120,7 +120,7 @@
 
 
 \hyphenation{QtWebEngine QtWebKit WebKit Chromium Content Apple Google Quick Widget WebSocket
-QtWebSockets QtWebChannel Android WebEngine}
+QtWebSockets QtWebChannel Android WebEngine JavaScript JavaScriptCore WebCore thread}
 
 \def\title{A QtWebEngine bővítése és bemutatása saját böngészőalkalmazás segítségével}
 
@@ -298,51 +298,54 @@ támogatásban rejlik.
 \chapter{Áttekintés: \mbox{Chromium + Qt = QtWebEngine}}
 
 \section{Chromium}
-A Chromium a Google által fejlesztett, nyílt forrású (open source) web böngésző projekt. Nagy
-része \texttt{C++} nyelven íródott. Támogatja napjaink legnépszerűbb operációs rendszereit \\
-(``cross-platform''), legyen az desktop (Windows, Linux, OS X) vagy mobil (Android, iOS,
-QNX).
+A Chromium a Google által fejlesztett, nyílt forrású (open source) web böngésző projekt.
+Túlnyomó része C++ nyelven van megvalósítva. Támogatja napjaink legnépszerűbb operációs
+rendszereit (cross-platform), legyen az desktop (Windows, Linux, OS X) vagy mobil
+(Android, iOS, QNX).
 A Chromium nem egy böngésző alkalmazás, hanem egy tabokat használó ablakkezelő (vagy shell)
 a web-hez.
 \cite{bib:wiki-chromium}
 
 \subsection{Chrome}
-A Google saját Chromium-ra épülő böngésző alkalmazása a Google Chrome.
+A Google saját Chromium-ra épülő böngészőalkalmazása a Google Chrome.
 Ez az alkalmazás Chromium-mal szemben nem nyílt forrású, viszont a böngésző
-megvalósításának nagy része a Chromium projektben megtalálható.
+megvalósításának nagy része a Chromium projekt része.
 A Chrome nem nyílt részei például a beépített Adobe Flash Player (Pepper Flash Player)
 és az automatikus frissítésekért felelős komponens (GoogleUpdate). \cite{bib:wiki-chrome}
-Egy másik, szintén népszerű Chromium-ra épülő böngésző alkalmazás az Opera.
+Egy másik, szintén népszerű Chromium-ra épülő böngészőalkalmazás az Opera.
 
 \subsection{Blink}
-A Chromium 28-as verziójától kezdve a Blink böngésző motort használja.
-A böngésző motor elsődleges feladata a webes tartalom megjelenítése a képernyőn. Talán
-ebből is látszik, hogy a Blink talán a legfontosabb komponense a Chromium-nak.
-A Chromium a 28-es verzió előtt WebKit-et használt, a Google ezt a projektet forkolta és
-nevezte el Blink-nek. Pontosabban, annak csak egy részét, név szerint a WebCore-t.
+A Chromium a 28-as verziójától kezdve a Blink böngészőmotort használja.
+A motor elsődleges feladata a webes tartalom megjelenítése a képernyőn. Talán
+ebből is látszik, hogy a Blink az egyik legfontosabb komponense a Chromium-nak.
+A Chromium a 28-es verzió előtt WebKit-et használt erre célra. A Google a WebKit projektet
+forkolta és nevezte át Blink-re.
 \cite{bib:wiki-blink}
 
-A Blink nem tartalmazza a WebKit-ben alkalmazott multi-processz architektúrát és sandbox
-megoldást, ezek a feladatok a Chromium más szintjein vannak megvalósítva, így egyszerűbbé
-téve a Blink forráskódját.
-Továbbá, a WebKit része JavaScriptCore JavaScript motor is, ami a Blink-be már nem került
-bele, hiszen a Chromium-nak van sajátja, a V8. Ezektől eltekintve a Blink még mindig nagyon
-hasonlít a WebCore-ra/WebKit-re. A Chromium forrásában és könyvtár struktúrájában továbbra is
-``WebKit'' néven hivatkoznak erre a komponensre\footnote{Például, a Blink forrása a
-\texttt{third\_party/WebKit} könyvtárban található a Chromium repository-n belül}.
+A Blink a WebKit projekt csak egy részét vette át. Nem tartalmazza a WebKit2-ben megvalósított
+multi-processz architektúrát, nincs benne a sandbox támogatás és a JavaScriptCore JavaScript
+motor. Tulajdonképpen a WebKit-ből a Blink-ben csak a \\
+WebCore renderelő motor maradt, így jelentősen leegyszerűsítve és lecsökkentve annak
+forráskódját. A WebKit által nyújtott, viszont elhagyott funkciókat a Chromium más szinteken,
+saját megoldásokkal valósítja meg (például saját JavaScript motorja a V8). Az eltávolításoktól
+eltekintve a Blink még mindig nagyon hasonlít a WebKit-re (WebCore-ra). A legtöbb változó és
+függvény elnevezés megmaradt, gyakori az elnevezésekben a ``WebKit'' kulcsszó. Maga a Blink
+projekt is a Chromium forrás struktúrán belül a \\
+\texttt{third\_party/WebKit} könyvtárban helyezkedik el.
 \cite{bib:chromium-displays-web-pages, bib:chromium-blink}
 
-A Blink az a komponens, ami a weboldal tartalmát feldolgozza és előkészíti megjelenítésre.
-Az oldal tartalmát először parse-olja és a HTML elemekből \texttt{Node} objektumokat gyárt.
+A Blink felel a weboldal tartalmának feldolgozásért és a tartalom megjelenítésének
+előkészítésért a képernyőn. Az oldal tartalmát először parse-olja és a HTML elemekből
+\texttt{Node} objektumokat gyárt.
 Ezeket a \texttt{Node}-okat egy fába rendezi, amit DOM (Document Object Model) fának hívnak.
 A DOM fának a gyökér \texttt{Node}-ja mindig, az úgynevezett, \texttt{Document Node}.
 A fa építése során, a motor, minden megjeleníthető \texttt{Node}-hoz egy
 \texttt{RenderObject}-et rendel. A \texttt{RenderObject} az az elem, ami ``tudja'',
 hogyan kell a hozzátartozó \texttt{Node}-ot megjeleníteni.
 A DOM fa építésével párhuzamosan, a Blink egy másik fát is épít a
-\texttt{RenderObject}-ekből, ez a \texttt{Render Tree}. Továbbá, bizonyos
-\texttt{RenderObject}-hez \texttt{RenderLayer}-t is rendel, amiből egy újabb fát épít,
-ami pedig a \texttt{RenderLayer Tree}.
+\texttt{RenderObject}-ekből, ez a \texttt{Render Tree}. Egyes
+\texttt{RenderObject}-ekhez \texttt{RenderLayer}-t is rendel, amiből egy újabb fát épít,
+ami a \texttt{RenderLayer Tree} lesz.
 
 \begin{figure}[h]
     \centering
@@ -367,7 +370,7 @@ Az, hogy a rajzolás hogyan történik az függ attól, hogy van e elérhető ha
 Ha nincs, akkor szoftveres renderelés történik. A szoftveres renderelés során a rajzoló
 algoritmus bejárja a \texttt{RenderLayer Tree}-n keresztül a \texttt{RenderObject}-eket és
 azokat egy közös bitmap-re rajzoltatja ki. Ha kész, ez a bitmap lesz elküldve egy másik
-processz (browser process) számára megjelenítésre. Szoftveres renderelés esetén a rajzolást
+processz (Browser Process) számára megjelenítésre. Szoftveres renderelés esetén a rajzolást
 a Skia grafikus motor végzi.
 
 Ha van elérhető hardveres gyorsítás, akkor az eljárás valamivel bonyolultabb. Ebben az
@@ -378,34 +381,37 @@ Chrome Compositor (CC) végzi.
 \cite{bib:chromium-gpu, bib:chromium-oopifs}
 
 \subsection{Chrome Compositor (CC)}
-A Chrome Compositor már nem része a Blink-nek (ahogy a Skia sem). Ennek az az oka,
-hogy most már a Chromium a browser UI megrajzolásához is a Chrome Compositor-t használja.
+A Chrome Compositor nem része a Blink-nek (ahogy a Skia sem). Ennek az az oka,
+hogy a Chromium a böngészőalkalmazás felhasználói felületének (GUI) összeállításához is
+nyújt API-kat (pl. Aura). A Chromium a GUI megrajzolásához is a Chrome Compositor-t
+használja.
+
 Ahhoz, hogy a compositor ki tudja rajzolni a DOM-ban tárolt tartalmat, további layer
 absztrakciókra van szükség:
 \begin{center}
     \texttt{RenderLayers} $\rightarrow$ \texttt{GraphicsLayers} $\rightarrow$
     \texttt{WebLayers} $\rightarrow$ \texttt{CC Layers}
 \end{center}
-
-A compositor a végeredményt nem bitmap-be, hanem textúrába ``rajzolja''. Az elkészült
-textúrák a GPU memóriájában vannak tárolva és úgy nevezett texture mailbox segítségével
-azonosítják. A texture mailbox egy OpenGL extension kiterjesztés, ami egyedi és globális
-string azonosítót rendel a textúrához és lehetővé teszi, hogy más OpenGL context-en
-is elérhető legyen a textúra, ami normális esetben nem lenne megosztva.
+A compositor a végeredményt nem bitmap-be, hanem textúrába rajzolja. Az elkészült
+textúrák a GPU memóriájában vannak tárolva és úgynevezett \textit{texture mailbox}
+segítségével azonosítják őket.
+A texture mailbox egy OpenGL kiterjesztés, ami egyedi és globális
+string azonosítót rendel a textúrához és lehetővé teszi, hogy az más OpenGL context-ben
+is elérhető legyen.
 \cite{bib:chromium-gpu, bib:chromium-oopifs}
 
 A texture mailbox-nak hála az összeállított képet nem kell az IPC-n (Inter-Process
 Communication) keresztül megosztani a processzek között (mint a szoftveres rendering
-esetében), hanem a GPU memórián keresztül bármelyik processz hozzáférhet a textúrához, így
-elég csak a textúra azonosítót átküldeni IPC-n.
+esetében), hanem a GPU memórián keresztül bármelyik processz hozzáférhet a textúrához.
+Ezzel a megoldással elég csak a textúra azonosítót (mailbox) átküldeni IPC-n.
 \cite{bib:chromium-texture-mailbox}
 
 \subsection{Multi-processz Architektúra}
 Chromium volt az egyik első olyan böngésző, ami úgy lett megtervezve, hogy több processzre
-legyen felosztva. A WebKit multi-processz architektúrára épülő API-ja (WebKit2) is a
-Chromium-ról vette a mintát. \cite{bib:webkit-webkit2}
-Ez az API a Blink-nek nem része, viszont a QtWebEngine elődjének, a QtWebKit-nek
-Quick API-ja a WebKit2-re épül.
+legyen felosztva. A WebKit multi-processz architektúrára épülő API-ja \\
+-- a WebKit2\footnote{A QtWebKit Quick API-ja a WebKit2-re épül} --
+is a Chromium megvalósításáról mintázta a multi-processz architektúráját.
+\cite{bib:webkit-webkit2}
 
 A multi-processz architektúrán alapuló böngésző alapgondolata az, hogy a böngészőalkalmazás
 UI-ért felelős része saját processzben fut, míg a weboldalak megjelenítésért más
@@ -424,7 +430,7 @@ processzek felelnek. Ennek több előnye is van: \cite{bib:chromium-blog-multi-p
         videó memória, stb).
         Továbbá a különböző weboldalakat megjelenítő processzek egymástól is el vannak
         különítve, így egy ártalmas oldal, vagy plugin nem férhet hozzá más oldalon használt
-        szenzitív információhoz (pl. jelszó).
+        ``kényes'' információhoz (pl. jelszó).
     \item[Hibatűrés, Robosztusság]
         Ha egy oldal betöltésekor vagy egy bővítmény futtatásakor hiba történik és
         összeomlik, az nem rántja magával a teljes böngészőt. Hiba esetén a UI és más
@@ -433,7 +439,7 @@ processzek felelnek. Ennek több előnye is van: \cite{bib:chromium-blog-multi-p
 
 A multi-processz architektúrának hátrányai is vannak: ez a megoldás sokkal \\
 erőforrás-igényesebb, és a megvalósítás is bonyolultabb (több hibalehetőség).
-A processzek használata memória többletköltséggel jár. Továbbá, a futtatható processzek
+A processzek használata memória többletköltséggel jár. A futtatható processzek
 számát limitálni kell, mert túl sok processz jelentős lassulást okozhat (pl. az ütemező
 többletköltsége miatt).
 
@@ -449,7 +455,7 @@ viszont nem tölt be vagy dolgoz fel web tartalmat.
 \subsubsection{Render Process}
 A renderelő motor egy nagyon összetett és bonyolult szoftver komponens. Szinte lehetetlen
 olyat implementálni, ami sosem hibázik és/vagy omlik össze. \cite{bib:chromium-multi-process}
-Ezért racionális döntés az egymástól független oldalak renderelését egymástól független
+Ezért érdemes az egymástól független oldalak renderelését egymástól független
 processzekben végrehajtani. Amennyiben egy Render Process összeomlik, arról a
 Browser Process értesül és az oldal helyett az \ref{fig:sad-tab} ábrán látható,
 úgynevezett, ``sad tab'' értesítést jeleníti meg.
@@ -472,7 +478,7 @@ A Chromium-ban különböző parancssori kapcsolókkal is beállítható process
 vannak definiálva:
 \begin{description}
     \item[Process-per-site-instance]
-        Minden site\footnote{Site alatt olyan weboldalak csoportját értjük, amelyek
+        Minden \textit{site}\footnote{Site alatt olyan weboldalak csoportját értjük, amelyek
         közös beregisztrált domain néven osztoznak} külön processz.
         Ha ugyanaz a site kétszer van megnyitva, akkor az is két külön processz lesz.
     \item[Process-per-site]
@@ -482,58 +488,62 @@ vannak definiálva:
         Minden tab külön processz. Több tab kerülhet közös processzbe, ha függnek egymástól.
     \item[Single Process]
         A ``hagyományos, egy-processzes'' modell. \\
-        Nincs külön Render Process. A rendering a Browser Process-ben történik.
+        Nincs külön Render Process. A rendering a Browser Process-ben, \\
+        külön szálon (thread) történik.
 \end{description}
 
 \noindent
-Alapértelmezetten a \textit{Process-per-site-instance} modellt használja a böngésző, de
-ettől függetlenül előfordulhat, hogy több site is osztozik, ugyanazon a processzen.
-Erre vagy akkor van szükség amikor két site hivatkozik script-ből egymásra,
-vagy amikor a futó Render Proess-ek száma elér egy limitet.
+Alapértelmezetten a \textit{Process-per-site-instance} modellt használja a Chromium.
+Ettől függetlenül azonban előfordulhat, hogy több site is osztozik, ugyanazon a processzen.
+Erre vagy akkor van szükség amikor két site hivatkozik script-ből egymásra (függnek
+egymástól), vagy amikor a futó Render Process-ek száma elér egy korlátot.
 \cite{bib:chromium-process-models}
 
 \subsubsection{Plugin Process}
-A pluginok okozzák a legtöbb problémát a böngésző stabilitásának szempontjából. A plugint
-egy harmadik fél készíti ezért a Chromium-nak nincs befolyása afelett, hogy milyen
-erőforrásokat használ. Ennél fogva, indokolt lépés a pluginokat nem a Browser Process-ben
-futtatni. A legtöbb plugin nem futhat sandbox-ban, mivel olyan
-képességekkel bővítik a böngészőt, amelyekhez szükség van hozzáférésre a rendszer
-erőforrásaihoz. Ezért a Render Process-en kívül szükség van egy újabb processz típusra is,
-amelyben a pluginok futhatnak.
+A pluginok okozzák a legtöbb problémát egy böngésző stabilitásának szempontjából. A plugint
+egy harmadik fél készíti, ezért a Chromium-nak nincs befolyása afelett, hogy milyen
+erőforrásokat használ. Biztonsági és stabilitási megfontolásból érdemes a pluginokat nem
+a Browser Process-ben futtatni. A legtöbb plugin azonban nem futhat sandbox környezetben,
+mivel olyan képességekkel bővítik a böngészőt, amelyekhez szükség van hozzáférésre a rendszer
+erőforrásaihoz. Ezen megszorítás miatt a Render Process nem jöhet számításba, így új
+processz típusra van szükség, ami a Plugin Process.
 \cite{bib:chromium-plugins}
 
 \subsubsection{GPU Process}
 A renderelés a Render Process-ben történik, viszont ez a processz sandbox-ban fut és ezért
 nem küldhet parancsokat GPU-nak. Hardveres gyorsítás esetén a compositing-ot és a rajzolást
-egy külön processzben kell végezni, ami nem sandbox-ban fut.
-\cite{bib:chromium-gpu} \\
-A Chromium úgy is konfigurálható, hogy a GPU Process feladatát a Browser Process lássa el.
+egy külön, nem sandbox környezetben futó processzben\footnote{A Chromium úgy is
+konfigurálható, hogy a GPU Process feladatát a Browser Process lássa el} kell elvégezni.
+Erre a célra szánt processz típus a GPU Process.
+\cite{bib:chromium-gpu}
 
 \subsection{Chromium Content Module}
 A Content Module a Chromium az a része, ami megvalósítja az előző fejezetben bemutatott
-multi-processz architektúrát. Továbbá, ebben van megvalósítva az összes támogatott
+multi-processz architektúrát. Itt van még megvalósítva az összes támogatott
 web platform funkcionalitás (például: HTML5, WebRTC, WebGL, stb.), illetve
-a hardveres GPU gyorsítás. Böngészőalkalmazás specifikus funkcionalitások, nem részei
-Content Module-nak. Lényegében csak az van benne, ami a web tartalom
-megjelenítéséhez\footnote{\textit{content} = web tartalom} szükséges, azaz olyan kód,
-amit minden böngészőt integráló alkalmazásnak szüksége van.
+a hardveres GPU gyorsítás is. Böngészőalkalmazás specifikus funkcionalitások, nem részei
+Content Module-nak. Lényegében csak olyan funkciókat implementál ami a web tartalom
+megjelenítéséhez\footnote{\textit{content} = web tartalom} szükséges.
+Ezekre a legtöbb böngészőt integráló alkalmazásnak szüksége van.
 \cite{bib:chromium-content-module}
 
-A modul célja, hogy az opcionális böngésző funkcionalitások (amire nem feltétlenül van
-szüksége a beágyazó alkalmazásnak (pl. Chrome) le legyenek választva, ezáltal
-megvalósíthatóak és testreszabhatóak legyenek a beágyazó alkalmazásban anélkül,
-hogy a Chromium forráskódját módosítani kellene. Erre nyújt lehetőséget a Content API.
+Az opcionális böngésző funkcionalitásokat a beágyazó
+alkalmazásnak\footnote{A Chromium Content Module-t beágyazó alkalmazás például a Chrome}
+kell implementálnia, viszont egyes funkciók szorosan kötődhetnek a Content Module-hoz,
+így szükség van egy \textit{interface}-re is, amin keresztül a funkciók megvalósíthatóak és
+testreszabhatóak a beágyazó alkalmazásban anélkül, hogy a Chromium forráskódját módosítani
+kellene. Ez az interface a Chromium Content API.
 
 \subsubsection{Chromium Content API}
 A Content API megtervezésekor a WebKit API-t vették alapul, hogy a WebKit fejlesztők
-könnyebben áttérhessenek. Az új API \textit{unstable}, ami azt jelenti, hogy az API minden
-új kiadásban változhat, ezért a beágyazó alkalmazást is minden Chromium frissítés után nagy
-valószínűséggel változtatni kell.
+könnyebben áttérhessenek. A Content API \textit{unstable}, ami azt jelenti, hogy az minden
+új kiadásban változhat, ezért az azt használó alkalmazást is minden Chromium frissítés után
+nagy valószínűséggel változtatni kell.
 
 A Content Module a beágyazó alkalmazást interfészeken (Delegate, Observer)
 és callback függvényeken keresztül értesíti az eseményekről, változásokról (például,
 hol tart a web oldal letöltése vagy sikeres volt-e a letöltés) vagy éppen
-kér le adatokat (például, kell megjeleníteni hiba üzenetet, ha nem sikerül letölteni egy
+kér le adatokat (például, kell-e megjeleníteni hiba üzenetet, ha nem sikerül letölteni egy
 oldalt). Az ilyen interfészek metódusainak törzse üres a Content Module-ban, ezeket a
 beágyazó alkalmazásnak kell megvalósítania és a Content Module hívja meg őket szükség esetén.
 
@@ -544,9 +554,9 @@ Ezek az interfészek \textit{pure abstract} interfészek, mivel csak egy megval�
 és az is a Content Module-on belül. \cite{bib:chromium-content-api}
 
 \subsubsection{Chromium Content Shell}
-\begin{figure}[h]
+\begin{figure}[H]
     \centering
-    \includegraphics[scale=0.5]{content-shell}
+    \includegraphics[scale=0.41]{content-shell}
     \caption{
         \label{fig:content-shell}
         Content Shell
@@ -564,17 +574,17 @@ Az eddigiek alapján a Chromium-ot 3 rétegre oszthatjuk fel:
 \begin{description}
     \item[Chrome]
         Felhasználói felület (UI) és böngészőalkalmazás funkciók
-        (pl.: history, könyvjelzők, favicon, stb.)
+        (pl.: böngészési előzmények, könyvjelzők, favicon, stb.)
     \item[Blink]
-        Webes tartalom feldolgozása és renderelése. A V8 JavaScript motort a
-        Blink-en keresztül érjük el és közös processzben futnak.
+        Webes tartalom feldolgozása és renderelése. A V8 JavaScript motor a
+        Blink-en keresztül érhető el és közös processzben futnak.
     \item[Content]
         Ez a réteg valósítja meg a multi-processz architektúrát,
         felel a web platform funkciókért és a hardveres GPU gyorsításért.
 \end{description}
 A \ref{fig:chromium-architecture} ábra mutatja, hogyan is állnak össze a Chromium rétegei.
-Itt a Blink böngészőmotor még ``WebKit''-nek van jelölve.
-A legfelső réteg a Chrome, helyére a saját beépítő alkalmazás kerül.
+A Blink böngészőmotor ``WebKit'' elnevezéssel van jelölve.
+A legfelső réteg a Chrome, helyére a saját beágyazó alkalmazás kerül.
 
 \begin{figure}[h]
     \centering
@@ -770,7 +780,7 @@ még explicit meg kell adni.
 Az \ref{fig:qtwebengine-dependencies} ábra mutatja, hogy a fenti \texttt{sync.profile} script
 alapján a QtWebEngine függőségei hogyan alakulnak.
 
-\begin{figure}[h]
+\begin{figure}[ht]
     \centering
     \includegraphics[scale=.66]{qtwebengine-dependencies}
     \caption{
