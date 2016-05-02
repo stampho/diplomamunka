@@ -185,7 +185,7 @@ QtWebSockets QtWebChannel Android WebEngine JavaScript JavaScriptCore WebCore th
 \addcontentsline{toc}{section}{Feladatkiírás}
 
 \noindent
-A QtWebEngine bővítése úgy, hogy a QtWebKit-et használó fejlesztők könnyen portolhassák
+A QtWebEngine bővítése úgy, hogy a QtWebKitet használó fejlesztők könnyen portolhassák
 a projektjüket QtWebEngine-re.
 Továbbá olyan új funkciók megvalósítása is fontos, amelyek hozzásegítik a
 QtWebEngine-t, hogy lépést tartson a fejlődő web technológiákkal (pl. HTML5).
@@ -208,7 +208,7 @@ A fejlesztés során az alábbi szempontokat is kell figyelembe venni:
         publikus API-ban a változtatások számát minimalizálni kell,
         meglévő API-t (függvény, property, signal, stb.) módosítani vagy eltávolítani
         nem lehet.
-    \item Törekvés kompatibilitásra a QtWebKit-el.
+    \item Törekvés kompatibilitásra a QtWebKittel.
         A QtWebEngine-hez adott új API-k ne térjenek el (névben, paraméterezésben, stb.)
         az eredeti QtWebKit API-tól, hacsak ezt az új funkcionalitás bővítése nem indokolja.
     \item Törekedni kell arra, hogy a Quick és Widget API hasonlítson egymásra,
@@ -236,13 +236,13 @@ A fejlesztés során az alábbi szempontokat is kell figyelembe venni:
         A fejlesztés GNU/Linux rendszeren, QtCreator fejlesztői
         környezetben (IDE) történt. A hibakereséshez GDB-t használtam.
         Makefile-ok legenerálását a project file-okból a qmake végzi.
-        A project fordítása Linux-on a GNU Toolchain-el (GCC 5.3),
-        OS X-en Xcode-al (Xcode 7.2.1), Windows-on pedig
-        MSVC 2013 32-bites verziójával történt. A verzió-követéshez Git-et
+        A project fordítása Linuxon a GNU Toolchainnel (GCC 5.3),
+        OS X-en Xcode-al (Xcode 7.2.1), Windowson pedig
+        MSVC 2013 32-bites verziójával történt. A verzió-követéshez Gitet
         használtam. A teszteléshez szükséges keretrendszert és a teszteket a Qt
         repository tartalmazza.
     \item \textbf{Elért eredmények:} \\
-        A QtWebEngine 8 új funkcióval lett kibővítve. Ebből 4 a QtWebKit-ből
+        A QtWebEngine 8 új funkcióval lett kibővítve. Ebből 4 a QtWebKitből
         átvett, 3 a tesztelést és hibakeresést segíti, 1 pedig HTML5 funkció.
     \item \textbf{Kulcsszavak:} \\
         \texttt{QtWebEngine}, \texttt{QtWebKit}, \texttt{QtQuick}, \texttt{Qt},
@@ -260,17 +260,17 @@ A QtWebEngine projekt fejlesztése 2013-ban kezdődött a WebKit--Chromium szét
 követően. A projekt megkezdése előtt a Qt fejlesztői csapata volt a harmadik legaktívabb
 contributora a WebKit projektnek az Apple és a Google után. A szétválást a Google távozása
 jelentette projektből, amikor saját WebKit forkon (Blink) kezdtek el dolgozni. Ebben az időben
-a Qt fejlesztői dönteni kényszerültek: folytassák-e a WebKit-re épülő QtWebKit
+a Qt fejlesztői dönteni kényszerültek: folytassák-e a WebKitre épülő QtWebKit
 projektjüket és maradjanak az Apple szárnysegédjei, vagy beálljanak az új lehetőséget
-és irányt mutató Google mögé azáltal, hogy egy Blink-et beágyazó web  böngésző platform fölé
+és irányt mutató Google mögé azáltal, hogy egy Blinket beágyazó web  böngésző platform fölé
 építenek egy új API-t. A döntés megkönnyítése érdekében kezdték el fejleszteni -- eleinte csak
-kísérleti jelleggel -- a Chromium-ra épülő QtWebEngine-t. Végül a QtWebEngine és a Google
+kísérleti jelleggel -- a Chromiumra épülő QtWebEngine-t. Végül a QtWebEngine és a Google
 mellett döntöttek.
 \cite{bib:qt-blog-introducing-qtwebengine}
 
 2014 elején kapcsolódtam be a projektbe és azóta is részmunkaidőben veszek részt a
 fejlesztésekben. Az azóta eltelt több mint 2 év alatt sokat tanultam a Qt-ról,
-Chromium-ról és a web technológiákról. Dolgozatomban az ez idő alatt gyűjtött
+Chromiumról és a web technológiákról. Dolgozatomban az ez idő alatt gyűjtött
 tapasztalatokból szeretnék megörökíteni egy részletet.
 
 A QtWebEngine (korábban QtWebKit) projekt célja egy Qt modul (függvénykönyvtár) nyújtása a
@@ -307,28 +307,28 @@ a web-hez.
 \cite{bib:wiki-chromium}
 
 \subsection{Chrome}
-A Google saját Chromium-ra épülő böngészőalkalmazása a Google Chrome.
-Ez az alkalmazás Chromium-mal szemben nem nyílt forrású, viszont a böngésző
+A Google saját Chromiumra épülő böngészőalkalmazása a Google Chrome.
+Ez az alkalmazás Chromiummal szemben nem nyílt forrású, viszont a böngésző
 megvalósításának nagy része a Chromium projekt része.
 A Chrome nem nyílt részei például a beépített Adobe Flash Player (Pepper Flash Player)
 és az automatikus frissítésekért felelős komponens (GoogleUpdate). \cite{bib:wiki-chrome}
-Egy másik, szintén népszerű Chromium-ra épülő böngészőalkalmazás az Opera.
+Egy másik, szintén népszerű Chromiumra épülő böngészőalkalmazás az Opera.
 
 \subsection{Blink}
 A Chromium a 28-as verziójától kezdve a Blink böngészőmotort használja.
 A motor elsődleges feladata a webes tartalom megjelenítése a képernyőn. Talán
-ebből is látszik, hogy a Blink az egyik legfontosabb komponense a Chromium-nak.
-A Chromium a 28-es verzió előtt WebKit-et használt erre célra. A Google a WebKit projektet
-forkolta és nevezte át Blink-re.
+ebből is látszik, hogy a Blink az egyik legfontosabb komponense a Chromiumnak.
+A Chromium a 28-es verzió előtt WebKitet használt erre célra. A Google a WebKit projektet
+forkolta és nevezte át Blinkre.
 \cite{bib:wiki-blink}
 
 A Blink a WebKit projekt csak egy részét vette át. Nem tartalmazza a WebKit2-ben megvalósított
 multi-processz architektúrát, nincs benne a sandbox támogatás és a JavaScriptCore JavaScript
-motor. Tulajdonképpen a WebKit-ből a Blink-ben csak a \\
+motor. Tulajdonképpen a WebKitből a Blinkben csak a \\
 WebCore renderelő motor maradt, így jelentősen leegyszerűsítve és lecsökkentve annak
 forráskódját. A WebKit által nyújtott, viszont elhagyott funkciókat a Chromium más szinteken,
 saját megoldásokkal valósítja meg (például saját JavaScript motorja a V8). Az eltávolításoktól
-eltekintve a Blink még mindig nagyon hasonlít a WebKit-re (WebCore-ra). A legtöbb változó és
+eltekintve a Blink még mindig nagyon hasonlít a WebKitre (WebCore-ra). A legtöbb változó és
 függvény elnevezés megmaradt, gyakori az elnevezésekben a ``WebKit'' kulcsszó. Maga a Blink
 projekt is a Chromium forrás struktúrán belül a \\
 \texttt{third\_party/WebKit} könyvtárban helyezkedik el.
@@ -339,7 +339,7 @@ előkészítésért a képernyőn. Az oldal tartalmát először parse-olja és 
 \texttt{Node} objektumokat gyárt.
 Ezeket a \texttt{Node}-okat egy fába rendezi, amit DOM (Document Object Model) fának hívnak.
 A DOM fának a gyökér \texttt{Node}-ja mindig, az úgynevezett, \texttt{Document Node}.
-A fa építése során, a motor, minden megjeleníthető \texttt{Node}-hoz egy
+A fa építése során a motor, minden megjeleníthető \texttt{Node}-hoz egy
 \texttt{RenderObject}-et rendel. A \texttt{RenderObject} az az elem, ami ``tudja'',
 hogyan kell a hozzátartozó \texttt{Node}-ot megjeleníteni.
 A DOM fa építésével párhuzamosan, a Blink egy másik fát is épít a
@@ -369,21 +369,21 @@ szerkezete pedig, hordozza azt az információt, hogy milyen sorrendben kell kir
 Az, hogy a rajzolás hogyan történik az függ attól, hogy van e elérhető hardveres gyorsítás.
 Ha nincs, akkor szoftveres renderelés történik. A szoftveres renderelés során a rajzoló
 algoritmus bejárja a \texttt{RenderLayer Tree}-n keresztül a \texttt{RenderObject}-eket és
-azokat egy közös bitmap-re rajzoltatja ki. Ha kész, ez a bitmap lesz elküldve egy másik
+azokat egy közös bitmapre rajzoltatja ki. Ha kész, ez a bitmap lesz elküldve egy másik
 processz (Browser Process) számára megjelenítésre. Szoftveres renderelés esetén a rajzolást
 a Skia grafikus motor végzi.
 
 Ha van elérhető hardveres gyorsítás, akkor az eljárás valamivel bonyolultabb. Ebben az
-esetben, a \texttt{RenderObject} nem bitmap-be ``rajzolja bele magát'', hanem 3D API-n
-keresztül (OpenGL vagy Windows-on esetleg D3D) utasításokat küld közvetlenül a GPU
+esetben, a \texttt{RenderObject} nem bitmapbe ``rajzolja bele magát'', hanem 3D API-n
+keresztül (OpenGL vagy Windowson esetleg D3D) utasításokat küld közvetlenül a GPU
 utasítás pufferébe (command buffer) végrehajtásra. Ezt az eljárást már a
 Chrome Compositor (CC) végzi.
 \cite{bib:chromium-gpu, bib:chromium-oopifs}
 
 \subsection{Chrome Compositor (CC)}
-A Chrome Compositor nem része a Blink-nek (ahogy a Skia sem). Ennek az az oka,
+A Chrome Compositor nem része a Blinknek (ahogy a Skia sem). Ennek az az oka,
 hogy a Chromium a böngészőalkalmazás felhasználói felületének (GUI) összeállításához is
-nyújt API-kat (pl. Aura). A Chromium a GUI megrajzolásához is a Chrome Compositor-t
+nyújt API-kat (pl. Aura). A Chromium a GUI megrajzolásához is a Chrome Compositort
 használja.
 
 Ahhoz, hogy a compositor ki tudja rajzolni a DOM-ban tárolt tartalmat, további layer
@@ -392,11 +392,11 @@ absztrakciókra van szükség:
     \texttt{RenderLayers} $\rightarrow$ \texttt{GraphicsLayers} $\rightarrow$
     \texttt{WebLayers} $\rightarrow$ \texttt{CC Layers}
 \end{center}
-A compositor a végeredményt nem bitmap-be, hanem textúrába rajzolja. Az elkészült
+A compositor a végeredményt nem bitmapbe, hanem textúrába rajzolja. Az elkészült
 textúrák a GPU memóriájában vannak tárolva és úgynevezett \textit{texture mailbox}
 segítségével azonosítják őket.
 A texture mailbox egy OpenGL kiterjesztés, ami egyedi és globális
-string azonosítót rendel a textúrához és lehetővé teszi, hogy az más OpenGL context-ben
+string azonosítót rendel a textúrához és lehetővé teszi, hogy az más OpenGL contextben
 is elérhető legyen.
 \cite{bib:chromium-gpu, bib:chromium-oopifs}
 
@@ -425,7 +425,7 @@ processzek felelnek. Ennek több előnye is van: \cite{bib:chromium-blog-multi-p
         köztük versenyhelyzet, így a UI nagyobb CPU használatnál is ``reszponzívabb''
         lehet.
     \item[Biztonság]
-        Egyes processzek sandbox-ban futhatnak. Ezáltal nem férhetnek hozzá a rendszer
+        Egyes processzek sandboxban futhatnak. Ezáltal nem férhetnek hozzá a rendszer
         olyan erőforrásaihoz, ami veszélyes lehet (pl. merevlemez, hálózat,
         videó memória, stb).
         Továbbá a különböző weboldalakat megjelenítő processzek egymástól is el vannak
@@ -444,7 +444,7 @@ számát limitálni kell, mert túl sok processz jelentős lassulást okozhat (p
 többletköltsége miatt).
 
 A processzek IPC-n (Chromium's IPC System) keresztül kommunikálnak egymással.
-A Chromium-ban 4 fő processz típust különböztetünk meg:
+A Chromiumban 4 fő processz típust különböztetünk meg:
 
 \subsubsection{Browser Process}
 Ez az a processz, ahol maga böngésző alkalmazás (UI) fut. Ez felelős megjelenítésért,
@@ -469,12 +469,12 @@ Browser Process értesül és az oldal helyett az \ref{fig:sad-tab} ábrán lát
     }
 \end{figure}
 
-Mivel a Chromium-ban a renderelésért a Blink felel, ezért az is a Render Process-ben fut.
+Mivel a Chromiumban a renderelésért a Blink felel, ezért az is a Render Processben fut.
 A Blink az, ami közvetlenül feldolgozza a webes tartalmat, ezért jellemzően a
-Render Process-t sandbox-ban futtatják, így a potenciálisan kártékony webes kódok nem
+Render Processt sandboxban futtatják, így a potenciálisan kártékony webes kódok nem
 férhetnek hozzá a rendszer erőforrásaihoz vagy más betöltött webes tartalomhoz.
 
-A Chromium-ban különböző parancssori kapcsolókkal is beállítható processz modellek
+A Chromiumban különböző parancssori kapcsolókkal is beállítható processz modellek
 vannak definiálva:
 \begin{description}
     \item[Process-per-site-instance]
@@ -487,31 +487,31 @@ vannak definiálva:
     \item[Process-per-tab]
         Minden tab külön processz. Több tab kerülhet közös processzbe, ha függnek egymástól.
     \item[Single Process]
-        A ``hagyományos, egy-processzes'' modell. \\
-        Nincs külön Render Process. A rendering a Browser Process-ben, \\
+        A ``hagyományos'', egy-processzes modell. \\
+        Nincs külön Render Process. A rendering a Browser Processben, \\
         külön szálon (thread) történik.
 \end{description}
 
 \noindent
 Alapértelmezetten a \textit{Process-per-site-instance} modellt használja a Chromium.
 Ettől függetlenül azonban előfordulhat, hogy több site is osztozik, ugyanazon a processzen.
-Erre vagy akkor van szükség amikor két site hivatkozik script-ből egymásra (függnek
-egymástól), vagy amikor a futó Render Process-ek száma elér egy korlátot.
+Erre vagy akkor van szükség amikor két site hivatkozik scriptből egymásra (függnek
+egymástól), vagy amikor a futó Render Processek száma elér egy korlátot.
 \cite{bib:chromium-process-models}
 
 \subsubsection{Plugin Process}
 A pluginok okozzák a legtöbb problémát egy böngésző stabilitásának szempontjából. A plugint
-egy harmadik fél készíti, ezért a Chromium-nak nincs befolyása afelett, hogy milyen
+egy harmadik fél készíti, ezért a Chromiumnak nincs befolyása afelett, hogy milyen
 erőforrásokat használ. Biztonsági és stabilitási megfontolásból érdemes a pluginokat nem
-a Browser Process-ben futtatni. A legtöbb plugin azonban nem futhat sandbox környezetben,
+a Browser Processben futtatni. A legtöbb plugin azonban nem futhat sandbox környezetben,
 mivel olyan képességekkel bővítik a böngészőt, amelyekhez szükség van hozzáférésre a rendszer
 erőforrásaihoz. Ezen megszorítás miatt a Render Process nem jöhet számításba, így új
 processz típusra van szükség, ami a Plugin Process.
 \cite{bib:chromium-plugins}
 
 \subsubsection{GPU Process}
-A renderelés a Render Process-ben történik, viszont ez a processz sandbox-ban fut és ezért
-nem küldhet parancsokat GPU-nak. Hardveres gyorsítás esetén a compositing-ot és a rajzolást
+A renderelés a Render Processben történik, viszont ez a processz sandboxban fut és ezért
+nem küldhet parancsokat GPU-nak. Hardveres gyorsítás esetén a compositingot és a rajzolást
 egy külön, nem sandbox környezetben futó processzben\footnote{A Chromium úgy is
 konfigurálható, hogy a GPU Process feladatát a Browser Process lássa el} kell elvégezni.
 Erre a célra szánt processz típus a GPU Process.
@@ -530,9 +530,9 @@ Ezekre a legtöbb böngészőt integráló alkalmazásnak szüksége van.
 Az opcionális böngésző funkcionalitásokat a beágyazó
 alkalmazásnak\footnote{A Chromium Content Module-t beágyazó alkalmazás például a Chrome}
 kell implementálnia, viszont egyes funkciók szorosan kötődhetnek a Content Module-hoz,
-így szükség van egy \textit{interface}-re is, amin keresztül a funkciók megvalósíthatóak és
+így szükség van egy interfészre is, amin keresztül a funkciók megvalósíthatóak és
 testreszabhatóak a beágyazó alkalmazásban anélkül, hogy a Chromium forráskódját módosítani
-kellene. Ez az interface a Chromium Content API.
+kellene. Ez az interfész a Chromium Content API.
 
 \subsubsection{Chromium Content API}
 A Content API megtervezésekor a WebKit API-t vették alapul, hogy a WebKit fejlesztők
@@ -550,13 +550,13 @@ beágyazó alkalmazásnak kell megvalósítania és a Content Module hívja meg 
 Ezeken kívül vannak olyan interfészek is, amelyeket a Content Module implementál
 (például, oldal betöltése: \texttt{LoadURLWithParams()} vagy az URL lekérdezése: \\
 \texttt{GetVisibleURL()}).
-Ezek az interfészek \textit{pure abstract} interfészek, mivel csak egy megvalósításuk lehet
+Ezek \textit{pure abstract} interfészek, mivel csak egy megvalósításuk lehet
 és az is a Content Module-on belül. \cite{bib:chromium-content-api}
 
 \subsubsection{Chromium Content Shell}
-\begin{figure}[H]
+\begin{figure}[h]
     \centering
-    \includegraphics[scale=0.41]{content-shell}
+    \includegraphics[scale=0.3]{content-shell}
     \caption{
         \label{fig:content-shell}
         Content Shell
@@ -566,18 +566,18 @@ Ezek az interfészek \textit{pure abstract} interfészek, mivel csak egy megval�
 \noindent
 Az \ref{fig:content-shell} ábrán látható alkalmazás a Content Shell. Ez a lehető
 legegyszerűbb böngészőalkalmazás, ami a Content API-ra épül. Arra használják, hogy a
-Content Module-t és a Blink-et tesztelhessék, debuggolhassák anélkül, hogy egy teljes
+Content Module-t és a Blinket tesztelhessék, debuggolhassák anélkül, hogy egy teljes
 böngészőalkalmazást (pl. Chrome) le kellene fordítani.
 
 \subsection{Felépítés}
-Az eddigiek alapján a Chromium-ot 3 rétegre oszthatjuk fel:
+Az eddigiek alapján a Chromiumot 3 rétegre oszthatjuk fel:
 \begin{description}
     \item[Chrome]
         Felhasználói felület (UI) és böngészőalkalmazás funkciók
         (pl.: böngészési előzmények, könyvjelzők, favicon, stb.)
     \item[Blink]
         Webes tartalom feldolgozása és renderelése. A V8 JavaScript motor a
-        Blink-en keresztül érhető el és közös processzben futnak.
+        Blinken keresztül érhető el és közös processzben futnak.
     \item[Content]
         Ez a réteg valósítja meg a multi-processz architektúrát,
         felel a web platform funkciókért és a hardveres GPU gyorsításért.
@@ -586,7 +586,7 @@ A \ref{fig:chromium-architecture} ábra mutatja, hogyan is állnak össze a Chro
 A Blink böngészőmotor ``WebKit'' elnevezéssel van jelölve.
 A legfelső réteg a Chrome, helyére a saját beágyazó alkalmazás kerül.
 
-\begin{figure}[h]
+\begin{figure}[ht]
     \centering
     \includegraphics[scale=0.6]{chromium-architecture}
     \caption{
@@ -630,7 +630,7 @@ bővült. Új API-k jelentek meg adatbázis kezeléshez (SQL), hálózati progra
 multimédiás alkalmazások készítéséhez, XML dokumentumok feldolgozásához stb.
 
 \subsubsection{2000-2008}
-2000-ben megjelent a Qt-ra épülő Qt/Embedded keretrendszer Linux-os beágyazott eszközökre.
+2000-ben megjelent a Qt-ra épülő Qt/Embedded keretrendszer Linuxos beágyazott eszközökre.
 Ezzel az új technológiával a Qt meg is jelent az első okos telefonokon (2003: Motorola A760)
 és a korabeli PDA-kon. 2006-ban a Trolltech még a saját fejlesztésű mobil telefonját is
 kiadta, Greenphone néven.
@@ -690,7 +690,7 @@ QtQuick2 a saját Qt Quick Scene Graph-ot valósít meg. Ez a scene graph Open G
 Open GL 2.0-ra épül, így a renderelés a GPU-n történik. Ez a megoldás sokkal gyorsabb,
 viszont nem működik olyan platformokon ahol nincs OpenGL 2.0.
 
-2013-ban a Qt fejlesztői úgy döntenek szakítanak a WebKit-el és, hogy böngésző motor
+2013-ban a Qt fejlesztői úgy döntenek szakítanak a WebKittel és, hogy böngésző motor
 API-jukat ezentúl a Chromium felé építik. \cite{bib:qt-blog-introducing-qtwebengine}
 Az új komponenst QtWebEngine-nek hívják és 5.4-es verzióban jelent meg először.
 \cite{bib:qt-wiki-qt-history}
@@ -880,7 +880,7 @@ A Qt keretrendszerben nem a QtWebEngine az egyetlen komponens/modul ami a
 web-hez, web alkalmazásokhoz nyújt API-t.
 
 \subsubsection{QtWebKit}
-A QtWebKit a nyílt forrású WebKit böngésző motor portja. Ez a port lecseréli a WebKit-ben
+A QtWebKit a nyílt forrású WebKit böngésző motor portja. Ez a port lecseréli a WebKitben
 a hálózati kommunikációt és renderelést megvalósító komponenseket a Qt-s megoldásokra és
 a WebKit API felé két fajta Qt-s API-t implementál:
 \texttt{C++} API-t a Widget alkalmazásokba való beágyazáshoz és \texttt{QML} API-t a Quick
@@ -892,7 +892,7 @@ a multi-process WebKit2-re épül.
 A QtWebKit a Qt 4.7-es verziójában jelent meg. A Chromium--WebKit szétválás után a
 fejlesztése leállt és csak karbantartási munkákat végeztek rajta. A Qt 5.5-ös release-ben
 már elavultnak számít az 5.6-os verzióból már a bináris csomagokat is eltávolították, csak
-a QtWebKit forrása elérhető. A QtWebKit leváltására a Chromium-ra épülő QtWebEngine-t
+a QtWebKit forrása elérhető. A QtWebKit leváltására a Chromiumra épülő QtWebEngine-t
 hozták be.
 
 \subsubsection{QtWebView}
@@ -950,37 +950,37 @@ release-t). Dolgozatom készítése idején a Qt 5.6 a legfrissebb stabil kiadá
 bemutatott funkcionalitások, majd csak a Qt 5.7-ben lesznek elérhetőek.
 
 \section{QtWebEngine}
-A QtWebEngine váltotta le a QtWebKit-et a Qt keretrendszer 5.4-es verziójában. A célja
-megegyezik a QtWebKit-ével: webes tartalom integrálása és manipulálása Qt alkalmazásban.
-A QtWebEngine a Chromium-ra épül, pontosabba a Chromium Content Module unstable API-ja
+A QtWebEngine váltotta le a QtWebKitet a Qt keretrendszer 5.4-es verziójában. A célja
+megegyezik a QtWebKitével: webes tartalom integrálása és manipulálása Qt alkalmazásban.
+A QtWebEngine a Chromiumra épül, pontosabba a Chromium Content Module unstable API-ja
 felé implementál egy stable API-t. Az \ref{fig:chromium-architecture} ábra alapján,
 a Chrome böngésző alkalmazás helyére a Chromium stack tetején a QtWebEngine kerül és
 az lesz a Chromium Content Module-t beágyazó ``alkalmazás''.
 
-A QtWebEngine fejlesztői forkolták a Chromium-ot és ennek a forknak a karbantartása jelentős
+A QtWebEngine fejlesztői forkolták a Chromiumot és ennek a forknak a karbantartása jelentős
 nehézséget okoz a QtWebEngine fejlesztőinek. Körülbelül 6 hetente jelenik meg új Chromium
 verzió aminek változik az API-ja. Minden új verzió tartalmazhat biztonsági javításokat is,
-amelyeket nem backportolnak korábbi verziókba\footnote{A Chromium-nak nincs LTS (Long Term
+amelyeket nem backportolnak korábbi verziókba\footnote{A Chromiumnak nincs LTS (Long Term
 Support) verziója}, ezért a rendszeres frissítésekre szükség van. Habár amikor csak
 lehetséges ezek a javítások cherry-pick-elve vannak a forkba.
 
 A QtWebEngine-nek legnagyobb részét ez a Chromium forknak a kódja teszi ki, habár sok
 nem használt Chromium komponens eltávolításra került (pl. Chrome). Viszont egyes
-``backend'' komponensek, amelyek lecserélhetőek voltak QtWebKit-ben Qt modulokra, már
-nem lecserélhetőek a Chromium-ban. Ilyen például a Chromium network library.
+``backend'' komponensek, amelyek lecserélhetőek voltak QtWebKitben Qt modulokra, már
+nem lecserélhetőek a Chromiumban. Ilyen például a Chromium network library.
 
 A web elemek kirajzolását viszont a Qt végzi. A mailbox texture azonosítók segítségével a
 QtWebEngine hozzáfér a Chrome Compositor által összeállított textúrákhoz, amelyek a
-megosztott OpenGL context-en vannak tárolva.
+megosztott OpenGL contexten vannak tárolva.
 A textúrákból a QtWebEngine épít scene graph fát (\texttt{QSGNode} tree), amit majd a
-Qt Quick Scene Graph fog kirajzolni. Emiatt, a Chromium-ban a GPU process ki van kapcsolva,
+Qt Quick Scene Graph fog kirajzolni. Emiatt, a Chromiumban a GPU process ki van kapcsolva,
 mert a GPU-t a Qt használja, ami a Browser process-ben fut (\texttt{switches:kInProcessGPU}).
 
 A scene graph függőség miatt a QtWebEngine nem működik olyan környezetben, ahol nincs
 OpenGL ES 2.0 vagy OpenGL 2.0. Ez igaz a QtWebEngine Widget API-jára is, mivel a web tartalom
 kirajzolásának megvalósítása közös.
 
-A QtWebEngine tartalmazza a QtWebEngine Process-t és 3 modult: a QtWebEngine és a
+A QtWebEngine tartalmazza a QtWebEngine Processt és 3 modult: a QtWebEngine és a
 QtWebEngineWidgets rendre a Quick és Widget API-kat valósítják meg. A QtWebEngineCore
 modul tartalmazza a Chromium forkot és QtWebEngine funkcionalitások közös részét, amin a
 Quick és a Widget API-k osztoznak. A QtWebEngine felépítését a
@@ -996,11 +996,11 @@ Quick és a Widget API-k osztoznak. A QtWebEngine felépítését a
 \end{figure}
 
 \subsection{Process}
-A QtWebEngine Process a Chromium Render Process-t fedi el. Különálló program saját belépési
+A QtWebEngine Process a Chromium Render Processt fedi el. Különálló program saját belépési
 ponttal (\texttt{main()} függvénnyel), amit a Browser Process indít el. Önálló fordítási
 egység, de a hozzátartozó kód a QtWebEngine Core modulban van.
 Ez processz felel a web tartalom rendereléséért és a \texttt{JavaScript} kódok
-végrehajtásáért. A processz OS X-en és Linux-on sandbox-ban fut, Windowson a sandbox
+végrehajtásáért. A processz OS X-en és Linuxon sandboxban fut, Windowson a sandbox
 környezet még nem támogatott.
 
 \subsection{Core}
@@ -1010,7 +1010,7 @@ Chromium Content API interface-eit. Belső (internal) API-ja elfedi a publikus A
 Chromium függőségeik. A publikus API-k számára közös adapter interface-t \\
 (\texttt{WebContentsAdapterClient}) definiál, amit a publikus API-nak kell megvalósítania.
 
-A modul része a Qt Quick Scene Graph integráció is: ő hozza létre a Chromium-ból
+A modul része a Qt Quick Scene Graph integráció is: ő hozza létre a Chromiumból
 kinyert textúrákból a scene graph node-okat (\texttt{QSGNode}) és épít belőle fát a
 megjelenítésre (compositing). Továbbá itt található meg a Browser Process és a QtWebEngine
 Process inicializációja (\texttt{WebEngineContext}), a QtWebEngine beállításainak továbbítása
@@ -1025,10 +1025,10 @@ megjelenített weboldal, kommunikálhat a QtWebEngine-t beágyazó alkalmazássa
 A Qt WebChannel Qt WebSockets-ra épülő backend-jét a Qt WebEngine Core cseréli le úgy,
 hogy a kommunikáció a Chromium IPC felett történjen, továbbá beregisztrálja a web channel-t
 a V8\footnote{a Chromium JavaScript motorja} API-n keresztül az érintett oldal
-\texttt{JavaScript} context-jébe.
+\texttt{JavaScript} contextjébe.
 
 A Qt 5.6-os verziója óta a Qt WebEngine Core modul rendelkezik publikus API-val is.
-Ez az API a Chromium-hoz enged hozzáférést és jellemzően a Widget vagy Quick API-val kell
+Ez az API a Chromiumhoz enged hozzáférést és jellemzően a Widget vagy Quick API-val kell
 együtt használni. Ennélfogva a QtWebEngine Core modulját nem szükséges explicit hozzáadni,
 a saját Qt-s alkalmazás projektjéhez, mert a Qt WebEngine Widgets és Qt WebEngine (Quick)
 modulok automatikusan behúzzák. Ennek az API-nak része a
@@ -1173,11 +1173,11 @@ bontva. Volt egy ``mainline'' (maga a \texttt{WebEngineView}) és annak egy ``r�
 \texttt{WebEngineViewExperimental}. A \texttt{WebEngineViewExperimental} egy ``kísérleti''
 API, ami olyan funkcionalitásokat nyújtott, amelyek újak és még véglegesítésre várnak
 (ezért unstable API), vagy pedig csak a teszteléshez szükségesek (nem javasolt a használata).
-Ez a módszer Qt WebKit-ből került át, viszont a legújabb Qt WebEngine verziókban
+Ez a módszer QtWebKitből került át, viszont a legújabb Qt WebEngine verziókban
 próbálunk a \texttt{WebEngineViewExperimental} API-tól megszabadulni, ezért abba már nem
 kerülnek új funkcionalitások, továbbá dokumentálva sincsen.
 
-Mivel a \texttt{NavigationHistory} még a Qt WebKit-ben is kísérleti API volt, ezért az a
+Mivel a \texttt{NavigationHistory} még a QtWebKitben is kísérleti API volt, ezért az a
 Qt WebEngine-ben is csak a \texttt{WebEngineViewExperimental} API-n keresztül vált
 elérhetővé. Mivel önmagában az előzmények kilistázásának nem sok haszna van, ezért a view
 API-hoz további funkcionalitások lettek hozzáadva, amelyek a már látogatott oldalak
@@ -1216,14 +1216,14 @@ táblázatban látható.
     }
 \end{table}
 
-Az új funkciók tesztelésére a Qt WebKit-ben is használt teszt lett portolva a \\
+Az új funkciók tesztelésére a QtWebKitben is használt teszt lett portolva a \\
 Qt WebEngine-be és további teszt esetekkel lett kibővítve a lefedettség javítására.
 A tesztelés módszere, hogy a \texttt{WebEngineView} API segítségével navigálunk oldalak
 között és minden (sikeres) oldal betöltés után ellenőrizzük a \texttt{NavigationHistory}-ben
 tárolt listák méretét.
 
 A fent bemutatott funkció a Qt 5.4-es verziójában jelent meg a Qt WebEngine bekerülésével
-együtt a kísérleti API részeként. A cél az volt, hogy a Qt WebKit \\
+együtt a kísérleti API részeként. A cél az volt, hogy a QtWebKit \\
 \texttt{NavigationHistory} megvalósítása legyen átültetve a Qt WebEngine-be a lehető
 legkevesebb API módosítással.
 A Qt 5.5-ös verzióban ez az API már a ``mainline'' API-ba került át, jelentős
@@ -1246,7 +1246,7 @@ kompatibilitási okokból.
 
 \noindent
 A Navigation History-hoz hasonlóan a \textbf{Find Text} is már meg volt valósítva a Widget
-API-ban ezért csak a Quick API-t kellett megvalósítani a Qt WebKit implementációja alapján.
+API-ban ezért csak a Quick API-t kellett megvalósítani a QtWebKit implementációja alapján.
 A funkció lényege, hogy adott szöveget keressen meg az oldalon, a legközelebbi előfordulást
 emelje ki a view-ban, és legyen lehetőség találat esetén az esemény kezelésre.
 
@@ -1323,7 +1323,7 @@ változik a keresett string , a következő találat lesz kiemelve és az \\
 Ez a funkció, azért nem lett megvalósítva a Qt WebEngine-ben, mert mikor
 ez az implementáció készült, a Chromium \texttt{activeMatchOrdinal} funkciója hibás volt.
 
-Az új funkcióhoz a tesztek a QtWebKit-ből lettek áthozva és átalakítva úgy, hogy
+Az új funkcióhoz a tesztek a QtWebKitből lettek áthozva és átalakítva úgy, hogy
 támogassák az új callback alapú API-t (a QtWebKit API-ja signal-okkal jelezte, ha van
 találat). A tesztelés során azt ellenőrízük, hogy különböző oldalakon a \texttt{findText}
 megfelelő darabszámú egyezést talált-e. Továbbá, az új API függvény be lett építve a
@@ -1352,7 +1352,7 @@ szó, hanem egy új kapcsoló a \texttt{-{}-log-level=[0123]} hozzáadásáról 
 Az új funkció természetéből adódóan nincs szükség/lehetőség tesztelésre sem.
 
 Az új kapcsolóra azért volt szükség, mert a Qt WebEngine-t beépítő alkalmazások rengeteg
-üzenetet írtak ki a konzolra, ami a Chromium-tól jött. Ezeknek túlnyomó része lényegtelen
+üzenetet írtak ki a konzolra, ami a Chromiumtól jött. Ezeknek túlnyomó része lényegtelen
 információ a QtWebEngine-t használó fejlesztő számára, ezért az elsődleges cél ezek
 letiltása volt. Viszont hibakeresés szempontjából fontosak lehetnek a hibaüzenetek a
 fejlesztés során, ezért egy kapcsolóra volt szükség, ami ezt szabályozza.
@@ -1553,7 +1553,7 @@ egyéni minták is definiálhatóak. Ha az input mezőbe bevitt adat nem felel m
 kívánalmaknak, az űrlap elküldése (\textit{submit}) helyett a böngésző felugró buborékban
 (\textit{Message Bubble}) jelzi a hiba okát.
 
-Ez a funkció meg van valósítva a Chromium-ban, viszont a hibaüzenet megjelenítését, már
+Ez a funkció meg van valósítva a Chromiumban, viszont a hibaüzenet megjelenítését, már
 a beágyazó alkalmazásra bízza. A Qt WebEngine nem támogatta sem a hibaüzenet továbbítását
 API-n keresztül, sem pedig az üzenet megjelenítését egyik modulban sem. A funkció új API
 helyett \texttt{UI Delegate}-el lett megvalósítva Qt WebEngine és Qt WebEngine Widgets
@@ -1691,7 +1691,7 @@ Ez a megoldás azonban nem működött és erről hiba jelentés (bug report) is
     \end{issuebox}
 \end{center}
 
-A hiba oka a Chromium-ban volt, ezért a javítást a \textit{qtwebengine-chromium} Chromium
+A hiba oka a Chromiumban volt, ezért a javítást a \textit{qtwebengine-chromium} Chromium
 forkhoz kellett hozzáadni. A probléma az volt, hogy amelyik rendszeren volt elérhető
 GLib ott arra volt bízva a megfelelő lokalizáció kiválasztása. Qt esetében ezt a kód részt
 (``code path''-t) ki kellett kapcsolni, hogy ne írja felül a Qt beállításait.
@@ -2028,7 +2028,7 @@ volt, mivel sem a QML, sem a Quick nem nyújt ikon támogatást. Az ikon megjele
 betölteni. A Favicon Manager a letöltött ikont a memóriában tárolja és nem érhető el URL-el.
 
 Erre a problémára megoldást a Quick API \texttt{QQuickImageProvider} interface-e nyújt
-megoldást. A QML context-ben beregisztrált image provider egy speciális URL-el rendelkezik,
+megoldást. A QML contextben beregisztrált image provider egy speciális URL-el rendelkezik,
 ha az \texttt{Image} QML típus egy ilyen URL-t kap forrásként, akkor a kérést a provider-hez
 irányítja, amely betölti az \texttt{Image}-be a megfelelő képet.
 
@@ -2105,7 +2105,7 @@ az előzményekhez rendelt \texttt{QQuickWebEngineFaviconProvider} specifikus UR
 A fejezetben bemutatott Favicon Manager és az ahhoz kapcsolódó API fejlesztések a Qt 5.7-es
 verziójában fognak megjelenni. A Favicon Manager publikus API-jának elkészítése tervben van,
 az leghamarabb a Qt 5.8-as verziójában jelenhet meg, ha úgy döntünk, hogy szükség van rá.
-További terv az 5.8-as verzióba, egy ikon adatbázis megvalósítása, ami a Qt WebKit-nek is
+További terv az 5.8-as verzióba, egy ikon adatbázis megvalósítása, ami a QtWebKitnek is
 része. Az adatbázis segítségével az ikonok lemezre menthetőek lennének és ezáltal offline
 módban is hozzáférhetőek. A tervről issue is készült:
 \begin{center}
@@ -2661,7 +2661,7 @@ Qt alapértelmezett nyelvi beállításait az \texttt{ApplicationWindow} példá
  }
 \end{lstlisting}
 Minden a locale inicializáció után létrejött \texttt{WebEngineView} példány a hozzátartozó
-új Render Process-t a \texttt{-{}-lang locale} kapcsolóval fogja indítani, ahol a
+új Render Processt a \texttt{-{}-lang locale} kapcsolóval fogja indítani, ahol a
 \texttt{locale} a \texttt{QLocale} API-n keresztül beállított nyelv. Az első
 \texttt{WebEngineView} példány (tab) éppen ezért az inicializáció után van létrehozva:
 \texttt{viewListModel.create();}
@@ -2723,7 +2723,7 @@ ListModel {
 \noindent
 A nyelvi beállítás kiválasztás után nem lesz érvényes azonnal, azt a \texttt{SettingsPanel}
 \textit{Ok} gombjának megnyomásával lehet alkalmazni (a \texttt{SettingsPanel} bezárása
-visszavonja a nyelvi beállítást). Mivel új nyelvet beállítani a már futó Render Process-ekre
+visszavonja a nyelvi beállítást). Mivel új nyelvet beállítani a már futó Render Processekre
 még nincs lehetőség, ezért az új nyelv beállítása után a böngészőalkalmazás felajánlja
 (\texttt{SettingsPanel} confirm dialog), hogy újraindítja a tabokhoz tartozó már futó
 processzeket, ami a böngészési előzmények elvesztésével jár:
@@ -2783,7 +2783,7 @@ A Form Validation funkcióval demonstrált eredmény az alábbi
 \addcontentsline{toc}{section}{Eredmények}
 
 Dolgozatomban 8 db új QtWebEngine funkciót valósítottam meg és mutattam be. Ebből 4 db a
-QtWebKit-ből átvett és továbbfejlesztett (Navigation History, Find Text, Authentication
+QtWebKitből átvett és továbbfejlesztett (Navigation History, Find Text, Authentication
 Dialog, Favicon Manager), 1 db HTML5 funkció (Form Validation) és 3 db a hibakeresést és
 tesztelést segíti (Log Level, Test Support API, Localization). A 8 db feature-ből 7 db
 elérhető a Qt legfrissebb (5.6) stabil kiadásában. A Favicon Manager a készülő 5.7-es
