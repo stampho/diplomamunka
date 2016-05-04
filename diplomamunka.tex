@@ -707,16 +707,17 @@ Qt keretrendszerre épít. Mint például Skype, Google Earth, VirtualBox,
 a VLC média lejátszó és a Spotify is.
 
 \subsection{Modulok és Komponensek}
-A 4-es Qt verzióban megtörtént az első lépés a modularizáció felé: minden modulnak külön
-library-ként jelenik meg ahelyett, hogy egy nagy közös library-je lenne a Qt-nak.
+A 4-es Qt verzióban megtörtént az első lépés a modularizáció felé: minden modul külön
+függvénykönyvtárként jelenik meg, a korábbi egyetlen Qt függvénykönyvtár helyett.
 Ennek előnye, hogy a fejlesztőnek nem kell olyan modulokat az alkalmazásához linkelnie,
 amit nem is használ.
 
 Az 5-ös Qt verzióban kiterjesztették a modularizációt a projekt struktúrájára is. A projekt
-többé nem egy nagy közös repository, hanem több önálló repository-ból áll össze, melyeket
-a modulok szerint választottak el. Ennek előnye, hogy egyes modulok külön is release-elhetőek
-(egyes modulok gyorsabban fejlődnek, mások nem), a tesztelés és buildelés rugalmasabb és
-gyorsabb lett, hiszen nem kell mindig a teljes rendszert tesztelni vagy buildelni.
+többé nem egy nagy közös repository, hanem több önálló repositoryból áll össze, melyeket
+a modulok szerint választottak szét. Ennek a modellnek több előnye is van: a moduloknak
+saját verzió számuk lehet, ezért a Qt release-től függetlenül is kiadhatóak. Fejlesztés
+szempontjából a buildelés és tesztelés rugalmasabb és gyorsabb lett, hiszen változás esetén
+csak a modult és annak függőségeit kell újra buildelni.
 
 \begin{figure}[h]
     \centering
@@ -727,36 +728,39 @@ gyorsabb lett, hiszen nem kell mindig a teljes rendszert tesztelni vagy buildeln
     }
 \end{figure}
 
-Továbbá, Qt 5 óta a modulokat két kategóriába sorolják: \textbf{Qt Essentials} és
-\textbf{Qt Add-Ons}. A Qt Essentials-ba tartoznak azok a modulok, amelyek működnek az
-összes támogatott platform-on és a legtöbb Qt alkalmazás használja is őket. Ezeknek a
-moduloknak az API-ja az 5-ös verzión belül visszafele kompatibilis marad.
-A Qt Add-on modulok nem általános célú, "opcionális" modulok. Vannak köztük olyanok,
-amelyek nem használhatóak bizonyos Qt által támogatott platformokon vagy olyanok, amelyek
-hamarosan eltávolításra kerülnek a Qt keretrendszerből, csak kompatibilitási okokból vannak
-még bent (pl. QtScript). A QtWebEngine moduljai is Qt Add-On kategóriába vannak sorolva,
-hiszen a legtöbb alkalmazásnak nincs szüksége böngésző funkciókra. API kompatibilitás
-szabályait minden Add-On modul saját magának határozza meg.
+\newpage
+Qt 5-ben a modulokat két kategóriába sorolják: \textbf{Qt Essentials} és
+\textbf{Qt Add-Ons}.
+Az Essential modulok nyújtják a Qt alap funkcionalitását, amit a legtöbb Qt-s alkalmazás
+használ. Ezeknek a moduloknak működniük kell az összes támogatott platformon, az 5-ös
+főverzión belül a bináris és az API kompatibilitás garantált.
+
+Az Add-on modulok nem általános célú, opcionális modulok. Nem garantált, hogy minden
+támogatott platformon működnek és az egyes verziók sem biztos, hogy kompatibilisak egymással.
+A kifutó Qt modulok (pl.: Qt Script) is a az Add-ons kategóriába kerülnek addig, amíg
+véglegesen el nem távolítják őket. A QtWebEngine moduljai is Add-onok, mivel nem általános
+célúak, a legtöbb alkalmazásnak nincs szüksége böngésző funkciókra.
 \cite{bib:qt-doc-qtmodules}
 
-Ha egy Qt-s alkalmazás használ egy Qt modult, akkor azt annak a projekt file-jában
-(\texttt{.pro}) meg kell adni:
-\begin{verbatim}
-    QT += network widgets qml quick
-\end{verbatim}
-Ez alól kivétel a \texttt{QtCore} és a \texttt{QtGUI} modul. A \texttt{QtCore} modult
+Ha egy Qt-s alkalmazás használ egy Qt modult, akkor azt annak a projekt file-jában meg kell
+adni:
+\begin{lstlisting}[title=app.pro]
+ QT += network widgets qml quick
+\end{lstlisting}
+Ez alól kivétel a Qt Core és a Qt GUI modul. A Qt Core modult
 minden Qt-s alkalmazás használja, ezért azt a Qt build rendszere implicit linkeli.
 Ebben a modulban vannak megvalósítva a Qt típusok és adatszerkezetek, a Qt specifikus nyelvi
 elemek és makrók (pl.: \texttt{Q\_OBJECT}, \texttt{signals}, \texttt{slots}),
-smart pointerek, stb. A \texttt{QtGUI} modulra a grafikus felhasználói felület
-megvalósításához van szükség, de nem kötelező használni (explicit le lehet tiltani).
-A \texttt{QtGUI} modulról bővebben a \ref{sec:qt-gui} fejezetben lesz szó.
+smart pointerek, stb. A Qt GUI\footnote{A Qt GUI modulról bővebben a \ref{sec:qt-gui}
+fejezetben lesz szó.} modul a Core-hoz hasonlóan implicit linkelődik viszont ez már
+letiltható (pl. konzolos alkalmazás esetén). Erre a modulra a grafikus felhasználói felület
+megvalósításához van szükség.
 
-Ahogy a Qt-s alkalmazások, használnak egy Qt-s modult, úgy a Qt-s modulok is használják
-egymást. Az alkalmazáséhoz hasonlóan a modul projekt file-jában is meg kell adni a
-függőséget. Továbbá, ha egy komponens modulja használja egy másik komponens modulját, akkor
-a komponensek közötti függőséget külön jelezni kell. A függőségek definiálására
-``felhasználó'' komponensben van szükség:
+Ahogy a Qt-s alkalmazások, használnak egy Qt-s modult, úgy a Qt-s modulok is függhetnek
+egymástól. Az alkalmazáséhoz hasonlóan, a module projekt file-jában is jelölni kell a
+függőséget. Továbbá ez a függőség komponensek közötti függőséget is jelent, hogy ha
+a hivatkozott modul egy másik repository-ban van. A komponens függőségeit a
+\texttt{sync.profile} scriptben kell felsorolni:
 \begin{lstlisting}[title=sync.profile]
  %dependencies = (
     "qtbase" => "",
@@ -766,14 +770,7 @@ a komponensek közötti függőséget külön jelezni kell. A függőségek defi
     "qtwebchannel" => "",
  );
 \end{lstlisting}
-
-\noindent
-Ebben az esetben, a komponensre, mint a modult tároló repository-ra kell
-gondolni\footnote{Tovább bonyolítja a helyzetet, hogy sok esetben a komponenseket is
-``modul'' elnevezéssel illetjük. Például: ``a QtWebEngine modul függősége a QtBase modul''},
-ezért, ha a \texttt{QtCore} modul minden más modul függősége, értelemszerűen az őt tartalmazó
-\texttt{QtBase} komponens minden más komponens függősége is lesz, amit ezen a szinten
-még explicit meg kell adni.
+Habár a QtBase komponens minden más komponens függősége, azt explicit meg kell adni.
 Az \ref{fig:qtwebengine-dependencies} ábra mutatja, hogy a fenti \texttt{sync.profile} script
 alapján a QtWebEngine függőségei hogyan alakulnak.
 
@@ -789,29 +786,28 @@ alapján a QtWebEngine függőségei hogyan alakulnak.
 \subsection{GUI}
 \label{sec:qt-gui}
 A Qt keretrendszer grafikus felhasználói felületek (GUI) megvalósítására gazdag
-eszközkészletet kínál a fejlesztők számára. A QtGUI modul az, amely alacsony szintű API-t
+eszközkészletet kínál a fejlesztők számára. A Qt GUI modul az, amely alacsony szintű API-t
 nyújt 2D (rasztergrafika) és 3D (OpenGL API) rajzoláshoz, esemény kezeléshez, képek és
 szövegek megjelenítéséhez. A Qt build rendszere automatikusan linkeli ezt a modult az
-alkalmazásunkhoz, feltételezvén azt, hogy az úgy is rendelkezik GUI-val. Ha ez nem így
-lenne, a QtGUI modul letiltható ha a következő sort adjuk GUI nélküli alkalmazás
+alkalmazásunkhoz, feltételezvén azt, hogy az rendelkezik grafikus felülettel. Ha ez nem így
+lenne, a Qt GUI modul letiltható ha a következő sort adjuk GUI nélküli alkalmazás
 projekt file-jához:
 \begin{verbatim}
     QT -= gui
 \end{verbatim}
-
-Egy grafikus felület megvalósításához nem érdemes csak a QtGUI modult használni. A Qt nyújt
-magasabb szintű, QtGUI-ra épülő API-kat is. Jelenleg két egymástól eltérő megközelítés
-elérhető: a \textbf{Widget} és a \textbf{Quick}.
+Egy grafikus felület megvalósításához nem érdemes közvetlenül a Qt GUI modul
+alacsony színtű API-ját használni. A Qt nyújt magasabb szintű, Qt GUI-ra épülő API-kat is.
+Jelenleg két egymástól eltérő lehetőség elérhető: \textbf{Widget} és \textbf{Quick}.
 \cite{bib:qt-doc-qt-gui, bib:qt-doc-user-interfaces}
 
 \subsubsection{Widget}
-A widget API-n keresztül a ``klasszikus'' felhasználói felületeket lehet megvalósítani,
-melyeknek megjelenítéséhez a Qt a futtató operációs rendszer stílusát adja\footnote{
-\textit{native look'n'feel}}. A widget-ek jellemzően olyan statikus GUI elemek, amelyek
-általában desktop-on használt alkalmazások használnak. Megjeleníthetnek vagy tárolhatnak
-információt és/vagy felhasználói eseményeket kezelhetnek. Például: gomb (\texttt{QButton}),
-címke (\texttt{QLabel}), görgetősáv (\texttt{QScrollBar}), stb. Az a widget, aminek nincs
-szülője, az ablak.
+A widget API-n keresztül ``hagyományos'' felhasználói felületeket lehet megvalósítani,
+melyeknek megjelenítéséhez a Qt a futtató operációs rendszer stílusát adja (\textit{native \\
+look'n'feel}). A widgetek jellemzően olyan statikus GUI elemek, amelyek általában desktopon
+használt alkalmazások használnak. Megjeleníthetnek vagy tárolhatnak információt és/vagy
+felhasználói eseményeket kezelhetnek.
+Például: gomb (\texttt{QButton}), címke (\texttt{QLabel}), görgetősáv (\texttt{QScrollBar}),
+stb. Az a widget, aminek nincs szülője, az az ablak.
 \cite{bib:qt-doc-qt-widgets}
 
 A Qt beépített widget-jei a \textbf{QtWidgets} modulból elérhetőek, de saját widget-ek is
@@ -822,11 +818,11 @@ A QtWidgets modul a widget-eken túl még tartalmaz API-t a widget-ek megjelení
 testreszabásához (\texttt{QStyle}) és beépített stílusokat is natív megjelenéshez különböző
 platformokon. A widget-ek elrendezésére a beépített \texttt{QLayout} osztályok használhatóak.
 
-A widget alapú GUI-t első sorban \texttt{C++} API-n keresztül lehet felépíteni, de a Qt
+A widget alapú GUI-t első sorban C++ API-n keresztül lehet felépíteni, de a Qt
 keretrendszer tartalmaz egy Qt Designer elnevezésű eszközt is, aminek segítségével,
 akár programozási ismeret nélkül össze lehet állítani a GUI-t. A Qt Designer a widget-eket
 fába rendezi és XML formátumban tárolja egy \texttt{.ui} kiterjesztésű file-ban. Az XML
-file-ból a User Interface Compiler (uic) generál buildelhető \texttt{C++} forrás állományt.
+file-ból a User Interface Compiler (uic) generál buildelhető C++ forrás állományt.
 
 \subsubsection{Quick}
 Az új Quick technológia segítségével modern megjelenésű, dinamikus elemekből felépített,
@@ -837,8 +833,8 @@ leprogramozni, hogyan legyen megjelenítve a GUI, hanem azt, hogy hogyan nézzen
 szükség: \textbf{QtQml}-re és a \textbf{QtQuick}-re.
 
 A Qt egy saját nyelvet nyújt a deklaratív programozáshoz és ez \texttt{QML} (Qt Modeling
-Language). Ez a nyelv a \textbf{QtQml} modulon keresztül válik elérhetővé.
-A modul rendelkezik \texttt{C++} és \texttt{QML} API-val is, hogy \texttt{QML} nyelv saját
+Language). Ez a nyelv a Qt Qml modulon keresztül válik elérhetővé.
+A modul rendelkezik C++ és QML API-val is, hogy QML nyelv saját
 típusokkal és  funkciókkal bővíthető legyen.
 A Quick GUI akár ezen a \texttt{C++} API-n keresztül is megvalósítható, de erre a célra
 sokkal inkább a \texttt{QML} nyelv használata ajánlott.
