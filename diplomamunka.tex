@@ -48,6 +48,13 @@
 \headsep 5mm
 \textheight 237mm
 
+% Justification
+\tolerance=1
+\emergencystretch=\maxdimen
+\hyphenpenalty=10000
+\hbadness=10000
+\sloppy
+
 % Colors
 \definecolor{qtgreen}{HTML}{44A51C}
 \definecolor{qtred}{HTML}{A5441C}
@@ -246,10 +253,9 @@ A fejlesztés során az alábbi szempontokat is kell figyelembe venni:
         átvett, 3 a tesztelést és hibakeresést segíti, 1 pedig HTML5 funkció.
     \item \textbf{Kulcsszavak:} \\
         \texttt{QtWebEngine}, \texttt{QtWebKit}, \texttt{QtQuick}, \texttt{Qt},
-        \texttt{Chromium}, \\
-        \texttt{Chromium Content API}, \texttt{Web}, \texttt{HTML5}, \texttt{WebKit},
-        \texttt{Blink}, \texttt{C++}, \texttt{QML},\\
-        \texttt{Quick}, \texttt{Widget}, \texttt{WebEngineView}
+        \texttt{Chromium}, \texttt{Chromium Content API}, \texttt{Web}, \texttt{HTML5},
+        \texttt{WebKit}, \texttt{Blink}, \texttt{C++}, \texttt{QML}, \texttt{Quick},
+        \texttt{Widget}, \texttt{WebEngineView}
 \end{itemize}
 
 %%% CONTENT %%%
@@ -281,8 +287,7 @@ arról, hogyan is működik egy böngésző.
 
 Dolgozatomat 3 részre tagoltam. Az első részben adok áttekintést arról, hogy mi is az a
 Chromium, mi a Qt, ezek hogyan kapcsolódnak egymáshoz és hogyan is épül fel ebből a
-QtWebEngine.
-A második részben összegyűjtöttem 8 olyan funkcionalitást (feature-t), amit magam
+QtWebEngine. A második részben összegyűjtöttem 8 olyan funkcionalitást, amit magam
 fejlesztettem és adtam hozzá a QtWebEngine-hez. Röviden leírom, hogyan valósítottam meg
 őket, mi volt a célom velük és milyen nehézségekkel kellett szembe néznem a megvalósítás
 során.
@@ -324,14 +329,14 @@ forkolta és nevezte át Blinkre.
 
 A Blink a WebKit projekt csak egy részét vette át. Nem tartalmazza a WebKit2-ben megvalósított
 multi-processz architektúrát, nincs benne a sandbox támogatás és a JavaScriptCore JavaScript
-motor. Tulajdonképpen a WebKitből a Blinkben csak a \\
-WebCore renderelő motor maradt, így jelentősen leegyszerűsítve és lecsökkentve annak
+motor. Tulajdonképpen a WebKitből a Blinkben csak a WebCore
+renderelő motor maradt, így jelentősen leegyszerűsítve és lecsökkentve annak
 forráskódját. A WebKit által nyújtott, viszont elhagyott funkciókat a Chromium más szinteken,
 saját megoldásokkal valósítja meg (például saját JavaScript motorja a V8). Az eltávolításoktól
 eltekintve a Blink még mindig nagyon hasonlít a WebKitre (WebCore-ra). A legtöbb változó és
 függvény elnevezés megmaradt, gyakori az elnevezésekben a ``WebKit'' kulcsszó. Maga a Blink
-projekt is a Chromium forrás struktúrán belül a \\
-\texttt{third\_party/WebKit} könyvtárban helyezkedik el.
+projekt is a Chromium forrás struktúrán belül a \texttt{third\_party/WebKit} könyvtárban
+helyezkedik el.
 \cite{bib:chromium-displays-web-pages, bib:chromium-blink}
 
 A Blink felel a weboldal tartalmának feldolgozásért és a tartalom megjelenítésének
@@ -408,7 +413,7 @@ Ezzel a megoldással elég csak a textúra azonosítót (mailbox) átküldeni IP
 
 \subsection{Multi-processz Architektúra}
 Chromium volt az egyik első olyan böngésző, ami úgy lett megtervezve, hogy több processzre
-legyen felosztva. A WebKit multi-processz architektúrára épülő API-ja \\
+legyen felosztva. A WebKit multi-processz architektúrára épülő API-ja
 -- a WebKit2\footnote{A QtWebKit Quick API-ja a WebKit2-re épül} --
 is a Chromium megvalósításáról mintázta a multi-processz architektúráját.
 \cite{bib:webkit-webkit2}
@@ -437,7 +442,7 @@ processzek felelnek. Ennek több előnye is van: \cite{bib:chromium-blog-multi-p
         megnyitott oldalak, tabok megmaradnak.
 \end{description}
 
-A multi-processz architektúrának hátrányai is vannak: ez a megoldás sokkal \\
+A multi-processz architektúrának hátrányai is vannak: ez a megoldás sokkal
 erőforrás-igényesebb, és a megvalósítás is bonyolultabb (több hibalehetőség).
 A processzek használata memória többletköltséggel jár. A futtatható processzek
 számát limitálni kell, mert túl sok processz jelentős lassulást okozhat (pl. az ütemező
@@ -487,9 +492,8 @@ vannak definiálva:
     \item[Process-per-tab]
         Minden tab külön processz. Több tab kerülhet közös processzbe, ha függnek egymástól.
     \item[Single Process]
-        A ``hagyományos'', egy-processzes modell. \\
-        Nincs külön Render Process. A rendering a Browser Processben, \\
-        külön szálon (thread) történik.
+        A ``hagyományos'', egy-processzes modell. Nincs külön Render Process. A rendering
+        a Browser Processben, külön szálon (thread) történik.
 \end{description}
 
 \noindent
@@ -548,7 +552,7 @@ oldalt). Az ilyen interfészek metódusainak törzse üres a Content Module-ban,
 beágyazó alkalmazásnak kell megvalósítania és a Content Module hívja meg őket szükség esetén.
 
 Ezeken kívül vannak olyan interfészek is, amelyeket a Content Module implementál
-(például, oldal betöltése: \texttt{LoadURLWithParams()} vagy az URL lekérdezése: \\
+(például, oldal betöltése: \texttt{LoadURLWithParams()} vagy az URL lekérdezése:
 \texttt{GetVisibleURL()}).
 Ezek \textit{pure abstract} interfészek, mivel csak egy megvalósításuk lehet
 és az is a Content Module-on belül. \cite{bib:chromium-content-api}
@@ -556,14 +560,12 @@ Ezek \textit{pure abstract} interfészek, mivel csak egy megvalósításuk lehet
 \subsubsection{Chromium Content Shell}
 \begin{figure}[h]
     \centering
-    \includegraphics[scale=0.3]{content-shell}
+    \includegraphics[scale=0.40]{content-shell}
     \caption{
         \label{fig:content-shell}
         Content Shell
     }
 \end{figure}
-
-\noindent
 Az \ref{fig:content-shell} ábrán látható alkalmazás a Content Shell. Ez a lehető
 legegyszerűbb böngészőalkalmazás, ami a Content API-ra épül. Arra használják, hogy a
 Content Module-t és a Blinket tesztelhessék, debuggolhassák anélkül, hogy egy teljes
@@ -712,13 +714,6 @@ függvénykönyvtárként jelenik meg, a korábbi egyetlen Qt függvénykönyvt�
 Ennek előnye, hogy a fejlesztőnek nem kell olyan modulokat az alkalmazásához linkelnie,
 amit nem is használ.
 
-Az 5-ös Qt verzióban kiterjesztették a modularizációt a projekt struktúrájára is. A projekt
-többé nem egy nagy közös repository, hanem több önálló repositoryból áll össze, melyeket
-a modulok szerint választottak szét. Ennek a modellnek több előnye is van: a moduloknak
-saját verzió számuk lehet, ezért a Qt release-től függetlenül is kiadhatóak. Fejlesztés
-szempontjából a buildelés és tesztelés rugalmasabb és gyorsabb lett, hiszen változás esetén
-csak a modult és annak függőségeit kell újra buildelni.
-
 \begin{figure}[h]
     \centering
     \includegraphics[scale=.66]{qt-repos-and-modules}
@@ -728,7 +723,13 @@ csak a modult és annak függőségeit kell újra buildelni.
     }
 \end{figure}
 
-\newpage
+Az 5-ös Qt verzióban kiterjesztették a modularizációt a projekt struktúrájára is. A projekt
+többé nem egy nagy közös repository, hanem több önálló repositoryból áll össze, melyeket
+a modulok szerint választottak szét. Ennek a modellnek több előnye is van: a moduloknak
+saját verzió számuk lehet, ezért a Qt release-től függetlenül is kiadhatóak. Fejlesztés
+szempontjából a buildelés és tesztelés rugalmasabb és gyorsabb lett, hiszen változás esetén
+csak a modult és annak függőségeit kell újra buildelni.
+
 Qt 5-ben a modulokat két kategóriába sorolják: \textbf{Qt Essentials} és
 \textbf{Qt Add-Ons}.
 Az Essential modulok nyújtják a Qt alap funkcionalitását, amit a legtöbb Qt-s alkalmazás
@@ -776,7 +777,7 @@ alapján a QtWebEngine függőségei hogyan alakulnak.
 
 \begin{figure}[ht]
     \centering
-    \includegraphics[scale=.66]{qtwebengine-dependencies}
+    \includegraphics[scale=.6]{qtwebengine-dependencies}
     \caption{
         \label{fig:qtwebengine-dependencies}
         QtWebEngine függőségei
@@ -802,7 +803,7 @@ Jelenleg két egymástól eltérő lehetőség elérhető: \textbf{Widget} és \
 
 \subsubsection{Widget}
 A widget API-n keresztül ``hagyományos'' felhasználói felületeket lehet megvalósítani,
-melyeknek megjelenítéséhez a Qt a futtató operációs rendszer stílusát adja (\textit{native \\
+melyeknek megjelenítéséhez a Qt a futtató operációs rendszer stílusát adja (\textit{native
 look'n'feel}). A widgetek jellemzően olyan statikus GUI elemek, amelyek általában desktopon
 használt alkalmazások használnak. Megjeleníthetnek vagy tárolhatnak információt és/vagy
 felhasználói eseményeket kezelhetnek.
@@ -858,7 +859,7 @@ melyek a QtQml API-ján keresztül beregisztrálhatóak a \texttt{QML} nyelvbe.
 \cite{bib:qt-doc-qt-quick}
 
 A QtQuick modul felel a Quick GUI elemek megjelenítéséért, kirajzolásáért.
-Korábban (QtQuick1) ez ugyanúgy történt, mint a widget esetén, az elemek a \\
+Korábban (QtQuick1) ez ugyanúgy történt, mint a widget esetén, az elemek a
 \texttt{QGraphicsView}-ra voltak kirajzolva. Ez a megoldás lassú, különösen, ha egy folyton
 változó dinamikus felhasználói felületről beszélünk. A jelenleg is használt QtQuick verzióban
 (QtQuick2) megjelent a Qt Quick Scene Graph. A Qt Quick Scene Graph a QtQuick modul része,
@@ -917,8 +918,8 @@ problémát, viszont egy multi-process architektúrára épülő motor (WebKit2 
 a megvalósítás már sokkal bonyolultabb. Erre a problémára nyújt megoldást a QtWebChannel
 modul.
 
-A QtWebChannel segítségével Qt MetaObject-et (\texttt{QObject}) lehet ``meghirdetni'' \\
-szerver oldalon, a kliens oldal pedig ezt a MetaObject-et tudja használni. \\
+A QtWebChannel segítségével Qt MetaObject-et (\texttt{QObject}) lehet ``meghirdetni''
+szerver oldalon, a kliens oldal pedig ezt a MetaObject-et tudja használni.
 A QtWebChannel modul szerver oldalra nyújt \texttt{QML} és \texttt{C++} API-t,
 a kliens oldalra pedig \texttt{JavaScript} API-t. A kliens oldalon megjelenő object a
 szerver oldali Qt MetaObject másolata, \texttt{JavaScript} API. A két objektum szinkronizálva
@@ -997,10 +998,10 @@ végrehajtásáért. A processz OS X-en és Linuxon sandboxban fut, Windowson a 
 környezet még nem támogatott.
 
 \subsection{Core}
-A QtWebEngine Core modul tartalmazza a Chromium fork-ot és implementálja a \\
+A QtWebEngine Core modul tartalmazza a Chromium fork-ot és implementálja a
 Chromium Content API interface-eit. Belső (internal) API-ja elfedi a publikus API-k
 (Widget, Quick) elől a Chromium Content API-t, így a publikus API-knak nincsenek közvetlen
-Chromium függőségeik. A publikus API-k számára közös adapter interface-t \\
+Chromium függőségeik. A publikus API-k számára közös adapter interfészt
 (\texttt{WebContentsAdapterClient}) definiál, amit a publikus API-nak kell megvalósítania.
 
 A modul része a Qt Quick Scene Graph integráció is: ő hozza létre a Chromiumból
@@ -1030,12 +1031,11 @@ alkalmazást ``inicializálni'' kell, azért, hogy a megjelenítéshez használt
 a processzek között megosztott legyen (\texttt{Qt::AA\_ShareOpenGLContexts}).
 
 \subsection{Widget és Quick API}
-A QtWebEngine Widget és Quick API-ját rendre a \\
-\textbf{Qt WebEngine Widgets} és \textbf{Qt WebEngine} modulok valósítják meg.
-Ezek a modulok nem implementálják vagy hívják közvetlenül a Chromium Content API-t,
-hanem azt a Qt WebEngine Core modulon keresztül érik el. A két API között előfordulhatnak
-funkcionalitásban előfordulhatnak különbségek, például az egyikben elérhető egy API
-függvény a másikban még nem.
+A QtWebEngine Widget és Quick API-ját rendre a \textbf{Qt WebEngine Widgets} és
+\textbf{Qt WebEngine} modulok valósítják meg. Ezek a modulok nem implementálják vagy hívják
+közvetlenül a Chromium Content API-t, hanem azt a Qt WebEngine Core modulon keresztül érik el.
+A két API között előfordulhatnak funkcionalitásban előfordulhatnak különbségek, például az
+egyikben elérhető egy API függvény a másikban még nem.
 
 A publikus API-k megvalósításánál nagyon fontos szempont a bináris kompatibilitás
 biztosítása. Ez nem csak annyit jelent, hogy a meglévő API-k nem változnak, hanem a publikus
@@ -1067,7 +1067,7 @@ tartalma.
 További API-k: \texttt{QWebEngineHistory} a már látogatott oldalak nyilvántartására és
 visszatöltésére, \texttt{QWebEngineProfile} weboldal csoportok kezelésére közös
 beállításokkal (pl.: ``inkognitó'' mód: \texttt{QWebEngineProfile::isOffTheRecord()}),
-\texttt{QWebEngineSettings} a weboldalak beállításainak kezelésére, \\
+\texttt{QWebEngineSettings} a weboldalak beállításainak kezelésére,
 \texttt{QWebEngineScript} JavaScript-ek beágyazására.
 
 \subsubsection{Qt WebEngine}
@@ -1116,9 +1116,9 @@ tárolását. A Widget API már kész volt, ezért az mintaként szolgált, tov�
 a szükséges belső API már meg volt valósítva.
 
 Az alapgondolat az volt, hogy a böngészési előzményeket 2 listában tároljuk az szerint,
-hogy az éppen megjelenített oldalnál előbb (\texttt{backItems}) vagy \\
+hogy az éppen megjelenített oldalnál előbb (\texttt{backItems}) vagy
 később (\texttt{forwardItems}) lettek betöltve az adott oldalak. Az adatok tárolására
-a QML nyelv a \texttt{ListModel} QML típust nyújtja. Az előzmények tárolására specializált \\
+a QML nyelv a \texttt{ListModel} QML típust nyújtja. Az előzmények tárolására specializált
 \texttt{ListModel}-re van szükség, amit a \texttt{NavigationHistoryListModel} új QML típus
 valósít meg. Az új model tárolja az oldalak URL-jét és címét (title), továbbá, lekéri
 a látogatott oldalak listáját a Core modul belső API-ján keresztül.
@@ -1154,15 +1154,14 @@ böngészési előzményekhez írt API.
 Az új QML típusok a Qt QML modul C++ API-jával lettek beregisztrálva a QML nyelvbe, viszont
 QML-ből nem példányosíthatóak. Minden \texttt{WebEngineView}-hoz (tab-hoz) tartozik egy
 \texttt{NavigationHistory}, ezért azt értelemszerűen a view expliciten példányosítja.
-A \texttt{NavigationHistoryListModel} példányok a \\
-\texttt{NavigationHistory}-hoz tartoznak, ezért azok azzal együtt jönnek létre.
-Ebből kifolyólag, ha hozzáférünk az expliciten példányosított \texttt{NavigationHistory}-hoz,
-hozzáférünk a listákhoz is. Az \texttt{NavigationHistory} példányt pedig az azt létrehozó
-\texttt{WebEngineView} API-n keresztül érdemes lekérni, de ehhez ezt az API-t is bővíteni
-kell.
+A \texttt{NavigationHistoryListModel} példányok a \texttt{NavigationHistory}-hoz tartoznak,
+ezért azok azzal együtt jönnek létre. Ebből kifolyólag, ha hozzáférünk az expliciten
+példányosított \texttt{NavigationHistory}-hoz, hozzáférünk a listákhoz is. Az
+\texttt{NavigationHistory} példányt pedig az azt létrehozó \texttt{WebEngineView} API-n
+keresztül érdemes lekérni, de ehhez ezt az API-t is bővíteni kell.
 
 Ennek a funkcionalitásnak a megvalósításakor, a \texttt{WebEngineView} két API-ra volt
-bontva. Volt egy ``mainline'' (maga a \texttt{WebEngineView}) és annak egy ``része'', a \\
+bontva. Volt egy ``mainline'' (maga a \texttt{WebEngineView}) és annak egy ``része'', a
 \texttt{WebEngineViewExperimental}. A \texttt{WebEngineViewExperimental} egy ``kísérleti''
 API, ami olyan funkcionalitásokat nyújtott, amelyek újak és még véglegesítésre várnak
 (ezért unstable API), vagy pedig csak a teszteléshez szükségesek (nem javasolt a használata).
@@ -1209,14 +1208,14 @@ táblázatban látható.
     }
 \end{table}
 
-Az új funkciók tesztelésére a QtWebKitben is használt teszt lett portolva a \\
+Az új funkciók tesztelésére a QtWebKitben is használt teszt lett portolva a
 Qt WebEngine-be és további teszt esetekkel lett kibővítve a lefedettség javítására.
 A tesztelés módszere, hogy a \texttt{WebEngineView} API segítségével navigálunk oldalak
 között és minden (sikeres) oldal betöltés után ellenőrizzük a \texttt{NavigationHistory}-ben
 tárolt listák méretét.
 
 A fent bemutatott funkció a Qt 5.4-es verziójában jelent meg a Qt WebEngine bekerülésével
-együtt a kísérleti API részeként. A cél az volt, hogy a QtWebKit \\
+együtt a kísérleti API részeként. A cél az volt, hogy a QtWebKit
 \texttt{NavigationHistory} megvalósítása legyen átültetve a Qt WebEngine-be a lehető
 legkevesebb API módosítással.
 A Qt 5.5-ös verzióban ez az API már a ``mainline'' API-ba került át, jelentős
@@ -1243,7 +1242,7 @@ API-ban ezért csak a Quick API-t kellett megvalósítani a QtWebKit implementá
 A funkció lényege, hogy adott szöveget keressen meg az oldalon, a legközelebbi előfordulást
 emelje ki a view-ban, és legyen lehetőség találat esetén az esemény kezelésre.
 
-Ehhez a funkcióhoz elegendő egyetlen függvényt hozzáadni az API-hoz és ez a \\
+Ehhez a funkcióhoz elegendő egyetlen függvényt hozzáadni az API-hoz és ez a
 \texttt{findText}. Mivel a keresést a view-ban kirenderelt szövegen kell végrehajtani,
 ezért értelemszerűen \texttt{WebEngineView} API része kell, hogy legyen. Mivel, a
 \texttt{findText} is kísérleti funkcióként kezdte, ezért először a
@@ -1298,7 +1297,7 @@ tárolására, ahol a kulcs az azonosító, az érték a JavaScript callback fü
 \begin{verbatim}
     QMap<quint64, QJSValue> m_callbacks;
 \end{verbatim}
-A keresés aszinkron történik (párhuzamosan a render processzben), ezért a \\
+A keresés aszinkron történik (párhuzamosan a render processzben), ezért a
 \texttt{didFindText} függvény itt véget ér és nem ad vissza semmilyen eredményt. Ha volt
 beállítva callback függvény akkor a fejlesztő azon keresztül értesül a találatról, különben
 a megtalált szöveg a view-ban lesz kiemelve. Amint a Chromium befejezte a keresést a
@@ -1306,12 +1305,12 @@ Content API-n keresztül értesíti a WebEngine Core-t, ami pedig az API-ban meg
 \texttt{WebEngineViewExperimental::didFindText} függvényt. Ez a függvény kikeresi a
 paraméterében kapott azonosító a alapján a beregisztrált callback függvényt és meghívja azt.
 
-A JavaScript callback függvénynek egy paramétere van, ami a találatok \\
+A JavaScript callback függvénynek egy paramétere van, ami a találatok
 száma (\texttt{matchCount}). Ha ez a paraméter 0, akkor a keresés sikertelen volt.
-Tervben van a callback függvény kiegészítése egy második, az úgy nevezett \\
+Tervben van a callback függvény kiegészítése egy második, az úgy nevezett
 \texttt{activeMatchOrdinal} paraméterrel is, ami azt mondja meg, hogy az összes találat
 közül melyik van éppen kiemelve. Minden újabb \texttt{findText} hívással, amelyben nem
-változik a keresett string , a következő találat lesz kiemelve és az \\
+változik a keresett string , a következő találat lesz kiemelve és az
 \texttt{activeMatchOrdinal} értéke nő eggyel, amíg a keresés körbe nem ér.
 Ez a funkció, azért nem lett megvalósítva a Qt WebEngine-ben, mert mikor
 ez az implementáció készült, a Chromium \texttt{activeMatchOrdinal} funkciója hibás volt.
@@ -1361,17 +1360,16 @@ Az üzenetek szűrésére a Chromium naplózási szinteket definiál:
     \item[3] \texttt{LOG\_FATAL}
 \end{description}
 Ezek közül a Qt WebEngine szempontjából csak a \texttt{LOG\_FATAL} szintű üzenetek
-relevánsak, tehát minimum log szintnek ezt kell beállítani. \\
+relevánsak, tehát minimum log szintnek ezt kell beállítani.
 Erre szolgál a Chromium \texttt{logging::SetMinLogLevel} függvénye:
 \begin{verbatim}
     int logLevel = logging::LOG_FATAL;
     logging::SetMinLogLevel(logLevel);
 \end{verbatim}
-A \texttt{logging::SetMinLogLevel} függvény, nem a Content API része, hanem a \\
-Chromium base modulé, továbbá a Qt-s üzenetekre semmilyen hatással nincsen. \\
-A \texttt{-{}-log-level} kapcsoló segítségével, ezt a minimum szintet lehet
-parancssorból felüldefiniálni. A kapcsoló is a Chromium része, a
-\texttt{switches::kLoggingLevel} azonosítóval lehet rá hivatkozni:
+A \texttt{logging::SetMinLogLevel} függvény, nem a Content API része, hanem a Chromium base
+modulé, továbbá a Qt-s üzenetekre semmilyen hatással nincsen. A \texttt{-{}-log-level}
+kapcsoló segítségével, ezt a minimum szintet lehet parancssorból felüldefiniálni. A kapcsoló
+is a Chromium része, a \texttt{switches::kLoggingLevel} azonosítóval lehet rá hivatkozni:
 \begin{verbatim}
     std::string logLevelValue = parsedCommandLine->
     GetSwitchValueASCII(switches::kLoggingLevel);
@@ -1402,9 +1400,8 @@ verziójában.
 A \textbf{Test Support API} kimondottan csak tesztelésre lett létrehozva: olyan funkciók
 érhetőek el innen, amit szándékozunk a publikus API részévé tenni, mert a fejlesztőknek
 nincs rá szüksége, viszont bizonyos publikus API funkciók teszteléséhez elengedhetetlenek.
-Ebből kifolyólag dokumentálva sincsen.
-Ez az API csak QML tesztekhez lett megvalósítva, mivel a Qt WebEngine az elsődleges API
-és Widget oldalon könnyebb a tesztelés. \\
+Ebből kifolyólag dokumentálva sincsen. Ez az API csak QML tesztekhez lett megvalósítva,
+mivel a Qt WebEngine az elsődleges API és Widget oldalon könnyebb a tesztelés.
 Másodlagos cél a \texttt{WebEngineViewExperimental} API fokozatos kiváltása volt.
 
 A teszt, ami behozta ezt az új API-t az \textit{Error Page}-ket tesztelte.
@@ -1479,8 +1476,8 @@ történtek e, a megfelelő sorrendben.
 
 Az API megtervezése után a következő kihívást annak kitalálása jelentette, hogy
 hogyan tegyük elérhetővé, a Test Support API-t. Nyilvánvaló, hogy valamilyen módon,
-a \texttt{WebEngineView}-hoz kell kötni. A legkézenfekvőbb megoldásnak a \\
-\texttt{WebEngineView} QML típus kiterjesztése tűnt. Erre a \\
+a \texttt{WebEngineView}-hoz kell kötni. A legkézenfekvőbb megoldásnak a
+\texttt{WebEngineView} QML típus kiterjesztése tűnt. Erre a
 \texttt{qmlRegisterExtendedType()} függvény nyújt lehetőséget, ami a Qt QML C++ API része.
 A \texttt{WebEngineView} ugyanezzel a megoldással van kiterjesztve az Experimental
 API-val. Ez viszont nem működött, mivel egy ismert, de még nem javított hiba miatt,
@@ -1490,9 +1487,9 @@ kiterjesztésként van beregisztrálva, egy QML programban egyszerre csak az egy
 használható.
 
 Így Test Support API (az Experimental API-val való ütközést elkerülendő), önálló,
-példányosítható QML típusként lett megvalósítva. Az összeköttetést a \\
-\texttt{WebEngineView}-al a \texttt{WebEngineView} API kibővítésével lett megoldva: \\
-a \texttt{testSupport} property-n keresztül beregisztrálható az explicit létrehozott \\
+példányosítható QML típusként lett megvalósítva. Az összeköttetést a
+\texttt{WebEngineView}-al a \texttt{WebEngineView} API kibővítésével lett megoldva:
+a \texttt{testSupport} property-n keresztül beregisztrálható az explicit létrehozott
 \texttt{WebEngineTestSupport} példány, a \texttt{WebEngineView} pedig, ha rendelkezik
 ilyen példánnyal, akkor a megfelelő eseményeket át fogja irányítani neki.
 
@@ -1560,7 +1557,7 @@ változik:
     \item[\texttt{HideValidationMessage}] Az üzenetet el kell rejteni
     \item[\texttt{MoveValidationMessage}] Az üzenet pozíciója megváltozott a képernyőn
 \end{description}
-Ezek a függvények a Core modulban meg lettek valósítva úgy, hogy a \\
+Ezek a függvények a Core modulban meg lettek valósítva úgy, hogy a
 \texttt{WebContentsAdapterClient} megfelelő függvényeit hívják meg, paraméterben
 a megjelenítéshez szükséges adatokat Qt-s típusokra konvertálva. Mindkét modul
 szövegbuborékot rajzol, benne a hibaüzenettel a hibás input mező alá.
@@ -1629,7 +1626,7 @@ a Qt WebEngine modul-nak nem lehet Qt Widgets függősége.
 
 Az Form Validation funkció tesztelésére a Test Support API lett felhasználva. Mivel a
 Qt WebEngine-ben a Form Validation-nek nincs publikus API-ja a hiba üzeneteket a
-Test Support API teszi elérhetővé a tesztek számára a \\
+Test Support API teszi elérhetővé a tesztek számára a
 \texttt{QQuickWebEngineTestSupport::ValidationMessageShown}
 signal-on keresztül. A hibásan kitöltött űrlapok ellenőrzéséhez az elküldés (submit) gomb
 megnyomására is szükség van a tesztekben. A teszt a gomb megnyomására felhasználói interakció
@@ -1689,15 +1686,14 @@ forkhoz kellett hozzáadni. A probléma az volt, hogy amelyik rendszeren volt el
 GLib ott arra volt bízva a megfelelő lokalizáció kiválasztása. Qt esetében ezt a kód részt
 (``code path''-t) ki kellett kapcsolni, hogy ne írja felül a Qt beállításait.
 
-Egyes üzenetek a render processztől jönnek, amelyekre nem érvényes a \\
+Egyes üzenetek a render processztől jönnek, amelyekre nem érvényes a
 \texttt{ContentBrowserClient::GetApplicationLocale} beállítása. A render processznek
 és más nem browser processzeknek van egy \texttt{-{}-lang} parancssori kapcsolója, amivel
-megadható a kiválasztott locale. A Content API \\
-\texttt{ContentBrowserClientQt::AppendExtraCommandLineSwitches()} \\
+megadható a kiválasztott locale. A Content API
+\texttt{ContentBrowserClientQt::AppendExtraCommandLineSwitches()}
 függvényének implementálásával megadható, hogy amikor a browser processz új processzt indít,
 annak milyen kapcsolót adjon át. Így ezzel a megoldással minden újonnan induló processznek
-átadjuk a \\
-\texttt{ContentBrowserClient::GetApplicationLocale()} függvény által visszaadott
+átadjuk a \texttt{ContentBrowserClient::GetApplicationLocale()} függvény által visszaadott
 locale-t a processz \texttt{-{}-lang} kapcsolóján keresztül:
 \begin{verbatim}
 AppendSwitchASCII(switches::kLang, GetApplicationLocale());
@@ -1707,8 +1703,7 @@ Ezzel a megoldással a tesztekben kapott Chromium üzenetek minden esetben angol
 viszont előfordulhat, hogy a felhasználó is szeretné felül definiálni parancssorból a
 böngésző alkalmazás nyelvét, ezért a Qt WebEngine-ben a browser processzben is meg lett
 valósítva, hogy \texttt{-{}-lang} kapcsolóval átadott érték felülírja a Qt alapértelmezett
-nyelvi beállítását. \\
-Ez a \texttt{WebEngineLibraryInfo::getApplicationLocale()} függvényben
+nyelvi beállítását. Ez a \texttt{WebEngineLibraryInfo::getApplicationLocale()} függvényben
 lett megvalósítva, hogy ha a browser processz \texttt{-{}-lang} kapcsolóval lett indítva,
 akkor annak az értékével térjen vissza és ne kérje le a Qt-tól a locale értékét.
 
@@ -1786,23 +1781,21 @@ letöltése az \texttt{Image} QML típuson történik, amely nem nyújt lehetős
 autentikációra.
 
 Widget hibák javítása után a következő akadályt a Quick API Authentication Dialog-jának
-megvalósításához a Content API \\
-\texttt{ResourceDispatcherHostLoginDelegate} interface-ének implementációja jelentette.
-Ez az interface már meg volt valósítva az egyszerűség kedvéért a Widget ``szinkron''
-API-jának megfelelően. A szinkron API ez esetben azt jelenti, hogy a \\
-\texttt{QWebEnginePrivate::authenticationRequired()} függvényen belül \\
-kiküldött \texttt{authenticationRequired} vagy \texttt{proxyAuthenticationRequired}
-szignálok által kiváltott slot-ok (ez esetben a dialog) végrehajtását a függvény megvárja
-és nem megy tovább, így nem kell a dialog ablak bezárását külön eseménnyel lekezelni.
-A Quick aszinkron API-jával ez nem megoldható, ezért a \\
-\texttt{ResourceDispatcherHostLoginDelegate}-nek olyan közös megvalósítására \\
-van szükség a Core modulban, amely mind két típusú API-val használható.
+megvalósításához a Content API \texttt{ResourceDispatcherHostLoginDelegate} interfészének
+implementációja jelentette. Ez az interfész már meg volt valósítva az egyszerűség kedvéért
+a Widget ``szinkron'' API-jának megfelelően. A szinkron API ez esetben azt jelenti, hogy a
+\texttt{QWebEnginePrivate::authenticationRequired()} függvényen belül kiküldött
+\texttt{authenticationRequired} vagy \texttt{proxyAuthenticationRequired} szignálok által
+kiváltott slot-ok (ez esetben a dialog) végrehajtását a függvény megvárja és nem megy tovább,
+így nem kell a dialog ablak bezárását külön eseménnyel lekezelni. A Quick aszinkron API-jával
+ez nem megoldható, ezért a \texttt{ResourceDispatcherHostLoginDelegate}-nek olyan közös
+megvalósítására van szükség a Core modulban, amely mind két típusú API-val használható.
 
 A új közös belső Core API-t \texttt{AuthenticationDialogController} osztály valósítja meg
-a hasonló \texttt{JavaScriptDialogController} osztály mintájára. \\
-Az \texttt{AuthenticationDialogController} osztály a \\
+a hasonló \texttt{JavaScriptDialogController} osztály mintájára.
+Az \texttt{AuthenticationDialogController} osztály a
 \texttt{ResourceDispatcherHostLoginDelegateQt} példányosítja, amikor a Content API jelez,
-hogy új Authentication Dialog ablakra van szükség. Példányosítás után a \\
+hogy új Authentication Dialog ablakra van szükség. Példányosítás után a
 \texttt{ResourceDispatcherHostLoginDelegateQt} átadja azt az API-nak, hogy azon keresztül
 az beállíthassa a felhasználótól bekért felhasználónév/jelszó párost.
 
@@ -1820,12 +1813,11 @@ megvalósítani \texttt{UIDelegatesManager} segítségével akár csak a Form Va
 szöveg buborékja (\texttt{MessageBubble}) esetén.
 
 Mivel a Qt Declarative komponens nem nyújt bejelentkező (login) dialog ablakot a Quick-hez,
-ezért nem volt elég egy már meglévő QML típust bekötni a \\
-\texttt{UIDelegatesManager}-be, hanem egy újat kellett implementálni erre a célra
-QML nyelven: \texttt{AuthenticationDialog.qml}. Ez az új QML típus csak a QtWebEngine-ből
-használható, a publikus API-n keresztül nem érhető el. A dialog ablak üzenetei és az
-események lekezelése a \texttt{UIDelegatesManager}-en belül vannak megvalósítva C++
-nyelven.
+ezért nem volt elég egy már meglévő QML típust bekötni a \texttt{UIDelegatesManager}-be,
+hanem egy újat kellett implementálni erre a célra QML nyelven:
+\texttt{AuthenticationDialog.qml}. Ez az új QML típus csak a QtWebEngine-ből használható,
+a publikus API-n keresztül nem érhető el. A dialog ablak üzenetei és az események lekezelése
+a \texttt{UIDelegatesManager}-en belül vannak megvalósítva C++ nyelven.
 
 \begin{figure}[ht]
     \centering
@@ -1899,10 +1891,10 @@ megváltozott, a publikus API ezen keresztül tudja lekérni az ikont.
 A kódban már a C++11 szabvány \textit{range-based for} nyelvi elemét használtam fel az
 iterációkhoz az optimális megvalósítás érdekében.
 
-Az ikonok letöltéséhez a Content API \texttt{WebContents::DownloadImage()} \\
-függvényét használom, ezáltal nincs szükség külön implementációra az autentikációhoz, azt a
-Content API elvégzi. Abban az esetben, ha az ikon QRC-ben (Qt Resource System)\footnote{A Qt
-    ezen funkciójával teszi azt lehetővé, hogy a Qt-s alkalmazáshoz tartozó fájlokat a
+Az ikonok letöltéséhez a Content API \texttt{WebContents::DownloadImage()} függvényét
+használom, ezáltal nincs szükség külön implementációra az autentikációhoz, azt a Content API
+elvégzi. Abban az esetben, ha az ikon QRC-ben (Qt Resource System)\footnote{A Qt ezen
+    funkciójával teszi azt lehetővé, hogy a Qt-s alkalmazáshoz tartozó fájlokat a
     binárison belül tároljuk. A Chromium nem támogatja ezt a protokollt.}
 van tárolva, az ikon betöltése Qt API-n keresztül történik, nincs szükség letöltésre.
 
@@ -2138,8 +2130,8 @@ inicializálja a Qt WebEngine OpenGL és QML környezetét, illetve betölti a Q
     return app.exec();
  }
 \end{lstlisting}
-A másik rész segédfüggvényeket implementál a QML nyelvhez, amelyek a \texttt{utils} \\
-property-n elérhetőek QML-ből. A segédfüggvények az alábbiak:
+A másik rész segédfüggvényeket implementál a QML nyelvhez, amelyek a \texttt{utils} propertyn
+elérhetőek QML-ből. A segédfüggvények az alábbiak:
 \begin{description}
     \item[\texttt{fromUserInput(userInput)}] A paraméterül kapott stringet URL-é alakítja
         annak megfelelően, hogy a hivatkozott erőforrás lokálisan vagy HTTP protokollon
@@ -2150,13 +2142,13 @@ property-n elérhetőek QML-ből. A segédfüggvények az alábbiak:
 
 \section{Felhasználói felület (GUI)}
 
-A QML kód túlnyomó része a GUI-t valósítja meg. Mivel a QML egy deklaratív nyelv,
-nem kellett túl sokat dolgozni a működés megvalósításán, azt a Qt WebEngine \\
-Quick/QML API-ja már megvalósította. A hangsúly a megjelenés megtervezésén van,
-ezért könnyű a QML nyelven programozni, a fejlesztőnek csak a GUI elemek testre szabására
-és az azok közötti interakciókra kell figyelni. Lényegében a \texttt{WebEngineView} QML
-típus is egy GUI elem, ami a web oldal tartalmát rajzolja egy téglalap alakú felületre és
-küld értesítést (signal-okat) a nézetben történt változásokról.
+A QML kód túlnyomó része a GUI-t valósítja meg. Mivel a QML egy deklaratív nyelv, nem kellett
+túl sokat dolgozni a működés megvalósításán, azt a Qt WebEngine Quick/QML API-ja már
+megvalósította. A hangsúly a megjelenés megtervezésén van, ezért könnyű a QML nyelven
+programozni, a fejlesztőnek csak a GUI elemek testre szabására és az azok közötti
+interakciókra kell figyelni. Lényegében a \texttt{WebEngineView} QML típus is egy GUI elem,
+ami a web oldal tartalmát rajzolja egy téglalap alakú felületre és küld értesítést
+(signal-okat) a nézetben történt változásokról.
 
 A GUI megtervezésénél legfőbb szempontnak tartottam, hogy a böngészőalkalmazás desktop-ra
 készül, ahol a megjelenítő szélessége nagyobb, mint a magassága. Ezzel szemben a web oldalak
@@ -2263,8 +2255,7 @@ Ebbe a kategóriába olyan saját QML típusokat sorolok, amelyek más GUI eleme
 A \ref{sec:list-entry-templates} alfejezetben már volt arról szó, hogy a példa
 böngészőalkalmazás saját sablonokat használ lista elemek létrehozására. A listák
 megjelenítésére a \texttt{ListView} QML típus saját, specializált változatait használja:
-\texttt{TabListView}-t a tabokhoz és \\
-\texttt{HistoryListView}-t a böngészési előzményekhez.
+\texttt{TabListView}-t a tabokhoz és \texttt{HistoryListView}-t a böngészési előzményekhez.
 \begin{figure}[H]
     \centering
     \includegraphics[scale=0.5]{TabListView}
@@ -2308,7 +2299,7 @@ a \texttt{Checkbox} és \texttt{TextField} QML típusokhoz.
 
 \subsection{QtWebEngine specifikus QML típusok}
 Az alábbi típusok a nézetekhez hasonlóak, de nem általánosan újra felhasználhatóak.
-Tartalmuk rögzített, melyek felhasználják a \texttt{WebEngineView} QML típus valamely \\
+Tartalmuk rögzített, melyek felhasználják a \texttt{WebEngineView} QML típus valamely
 property-jét.
 
 Az \texttt{AddressBar} típus a betölteni kívánt weboldal URL-jének megadására használatos.
@@ -2357,7 +2348,7 @@ kerül a futtató rendszer alapértelmezett nyelve is. Ezt a modellt a
 
 \subsection{Összkép}
 A saját és a Qt gyári QML típusai a \texttt{main.qml} QML fájlban vannak példányosítva és
-összekötve. Ez az alkalmazás QML megvalósításának fő belépési pontja, amely egy \\
+összekötve. Ez az alkalmazás QML megvalósításának fő belépési pontja, amely egy
 \texttt{ApplicationWindow} QML típusban helyezi el a GUI elemeket.
 
 \begin{figure}[H]
@@ -2381,7 +2372,7 @@ kódrészletek is, hogy azok ne legyenek zavaróak vagy félrevezetőek a magyar
 \subsection{Favicon Manager}
 
 A példa alkalmazásban az ikonokat minden esetben a \texttt{Image} QML típussal jelenítem meg.
-Ikonok összesen három saját QML típusban fordulnak elő: \texttt{AddressBar}, \\
+Ikonok összesen három saját QML típusban fordulnak elő: \texttt{AddressBar},
 \texttt{CompactEntry} és \texttt{WideEntry}. Az API használata lényegében nem tér el a három
 típusban, ezért azt az \texttt{AddressBar} kódjával szemléltetem:
 \begin{lstlisting}[title=AddressBar.qml]
@@ -2401,9 +2392,9 @@ betöltenie a Favicon Provider-nek. Jelen esetben ez úgy van megadva, hogy egye
 implicit az új méretnek megfelelő ikont tölti be.
 
 A \texttt{source} property értékének egy, a Favicon Provider-re hivatkozó URL-nek kell lennie.
-Ezt az URL-t a \texttt{WebEngineView::icon} property tárolja. Azért, hogy az \\
+Ezt az URL-t a \texttt{WebEngineView::icon} property tárolja. Azért, hogy az
 \texttt{AddressBar} típusnak ne kelljen beimportálnia a Qt WebEngine modult, ezért a saját
-\texttt{iconUrl} property-jén keresztül éri el az URL-t. Az \texttt{iconUrl} property-nek az \\
+\texttt{iconUrl} property-jén keresztül éri el az URL-t. Az \texttt{iconUrl} property-nek az
 \texttt{AddressBar} létrehozásakor kell értéket adni:
 \begin{lstlisting}[title=main.qml]
  AddressBar {
@@ -2422,8 +2413,7 @@ automatikusan változni fog. Ez a QML nyelv \textit{property binding} támogatá
 lehetséges, így a példa alkalmazásban nincs is szükség a \texttt{iconChanged} signal
 használatára.
 
-A Favicon Manager megvalósításának része, hogy a publikus \\
-\texttt{WebEngineSettings}
+A Favicon Manager megvalósításának része, hogy a publikus \texttt{WebEngineSettings}
 API-n keresztül befolyásolni lehessen az ikonok letöltését. Erre kétféleképpen lehetünk
 hatással: letilthatjuk az ikonok automatikus letöltését és engedélyezhetjük a touch
 ikonok letöltését\footnote{Alapértelmezetten a favicon-okat automatikusan letöltjük a touch
@@ -2440,7 +2430,7 @@ ikonokat nem}. A beállítások tartós tárolására \texttt{Settings} QML típ
 \end{lstlisting}
 A \texttt{Settings}-ben a \texttt{autoLoadIconsForPage} és \texttt{touchIconsEnabled}
 azonosítójú \texttt{Checkbox}-ok állapotát tárolom. A \texttt{WebEngineSettings} megfelelő
-property-jeit ezek szerint a beállítások szerint inicializálom, amikor létre jön egy új \\
+property-jeit ezek szerint a beállítások szerint inicializálom, amikor létre jön egy új
 \texttt{WebEngineView}:
 \begin{lstlisting}[title=main.qml]
  WebEngineViewListModel {
@@ -2470,7 +2460,7 @@ bekötött property-jei is.
 
 \subsection{Navigation History}
 A böngészési előzmények megjelenítéséért a már bemutatott \texttt{HistoryListView}
-QML típus felel. Az előzmények modellekben vannak tárolva, melyek a \\
+QML típus felel. Az előzmények modellekben vannak tárolva, melyek a
 \texttt{NavigationHistory} API-n keresztül érhetőek el. Az \texttt{items} modell tartalmazza
 az éppen megjelenített oldalt és az az előtt és után betöltött oldalakat is.
 A teljese böngészési előzmény listához ezt a modellt alkalmaztam:
@@ -2506,7 +2496,7 @@ könnyedén kiszámítható a \texttt{backItems} modell méretéből.
 Mivel a Navigation History modelljei minden oldal betöltés után változhatnak, így a
 \texttt{HistoryListView} aktuális indexét is minden betöltés után frissíteni kell. Nem elég
 csak a \texttt{items} modell változását figyelni, ugyanis amikor éppen a böngészési előzmények
-között navigálunk az \texttt{items} modell nem változik csak a \texttt{backItems} és a \\
+között navigálunk az \texttt{items} modell nem változik csak a \texttt{backItems} és a
 \texttt{forwardItems} modellek. Mivel a másik két modellre nincs szükségünk ezért egyszerűbb
 megoldás az oldal betöltésének változását figyelni:
 \newpage
@@ -2531,7 +2521,7 @@ megoldás az oldal betöltésének változását figyelni:
    /* ... */
  }
 \end{lstlisting}
-A fent kódrészlet minden újonnan létrehozott \texttt{WebEngineView} példány \\
+A fent kódrészlet minden újonnan létrehozott \texttt{WebEngineView} példány
 \texttt{loadingChanged(loadRequest)} signal-jához egy slot-ot kapcsol, amely minden oldal
 betöltés befejeztével (legyen az sikeres vagy sikertelen) frissíti az előzmény lista
 aktuális indexét.
@@ -2596,8 +2586,7 @@ FindBar {
 \end{lstlisting}
 Ismételt keresés ugyanarra az inputra előre mozgatja a kiemelt találatot a web oldalon. A
 \texttt{WebEngineView.FindBackward} paraméter hatására a kiemelést visszafele lehet léptetni.
-A keresés indítása üres string-gel törli a találatok kiemelését a \\
-\texttt{WebEngineView}-ban.
+A keresés indítása üres string-gel törli a találatok kiemelését a \texttt{WebEngineView}-ban.
 
 A \ref{fig:find-bar-screen} képernyőkép mutat példát arra, hogy a Find Text hogyan jelöli
 a találatokat. Narancssárga téglalappal az aktuális találat van kijelölve.
@@ -2614,11 +2603,11 @@ a találatokat. Narancssárga téglalappal az aktuális találat van kijelölve.
 \newpage
 \subsection{Form Validation és Localization}
 A Form Validation funkció használatához nincs szükség a példa böngészőalkalmazás bővítésére,
-hiszen a megjelenítendő üzenetet tartalmazó szövegbuborék megvalósítása a \\
-Qt WebEngine modul része, ami a megfelelő esemény hatására meg is jelenik.
-A funkció segítségével viszont jól demonstrálható egy másik új funkció, a Localization.
-A Qt WebEngine Localization funkciója miatt a Form Validation üzenetnek a Qt \texttt{QLocale}
-API-ján keresztül beállított nyelven kell megjelenítenie.
+hiszen a megjelenítendő üzenetet tartalmazó szövegbuborék megvalósítása a Qt WebEngine modul
+része, ami a megfelelő esemény hatására meg is jelenik. A funkció segítségével viszont jól
+demonstrálható egy másik új funkció, a Localization. A Qt WebEngine Localization funkciója
+miatt a Form Validation üzenetnek a Qt \texttt{QLocale} API-ján keresztül beállított nyelven
+kell megjelenítenie.
 
 A QML-ben nincs API a locale beállításához, viszont a nyelv kiegészíthető olyan C++ nyelven
 megvalósított függvénnyel, ami elvégzi a beállítást:
@@ -2659,7 +2648,7 @@ Minden a locale inicializáció után létrejött \texttt{WebEngineView} példá
 \texttt{WebEngineView} példány (tab) éppen ezért az inicializáció után van létrehozva:
 \texttt{viewListModel.create();}
 
-Célszerű lehet a nyelvi beállításokat futás közben is megváltoztatni, ezért a \\
+Célszerű lehet a nyelvi beállításokat futás közben is megváltoztatni, ezért a
 \texttt{SettingsPanel} QML típus példánya tartalmaz egy lenyíló listát, ahol a támogatott
 nyelvek közül lehet választani:
 \begin{lstlisting}[title=main.qml]
@@ -2778,7 +2767,7 @@ A Form Validation funkcióval demonstrált eredmény az alábbi
 Dolgozatomban 8 db új QtWebEngine funkciót valósítottam meg és mutattam be. Ebből 4 db a
 QtWebKitből átvett és továbbfejlesztett (Navigation History, Find Text, Authentication
 Dialog, Favicon Manager), 1 db HTML5 funkció (Form Validation) és 3 db a hibakeresést és
-tesztelést segíti (Log Level, Test Support API, Localization). A 8 db feature-ből 7 db
+tesztelést segíti (Log Level, Test Support API, Localization). A 8 db funkcióból 7 db
 elérhető a Qt legfrissebb (5.6) stabil kiadásában. A Favicon Manager a készülő 5.7-es
 verzióban biztosan benne lesz.
 
