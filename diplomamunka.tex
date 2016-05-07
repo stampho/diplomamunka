@@ -865,66 +865,60 @@ használható olyan platformokon, ahol nem érhető el legalább az OpenGL 2.0 A
 
 \subsection{Web}
 A Qt keretrendszerben nem a QtWebEngine az egyetlen komponens/modul ami a
-web-hez, web alkalmazásokhoz nyújt API-t.
+webhez, web alkalmazásokhoz nyújt API-t.
 
 \subsubsection{QtWebKit}
-A QtWebKit a nyílt forrású WebKit böngésző motor portja. Ez a port lecseréli a WebKitben
-a hálózati kommunikációt és renderelést megvalósító komponenseket a Qt-s megoldásokra és
-a WebKit API felé két fajta Qt-s API-t implementál:
-\texttt{C++} API-t a Widget alkalmazásokba való beágyazáshoz és \texttt{QML} API-t a Quick
-alkalmazásokhoz.
-A \texttt{C++} API szinkron, mivel a single-process architektúrájú WebKit API-ra (WebKit1)
-épül. Ezzel szemben a Quick integrációt lehetővé tevő \texttt{QML} API aszinkron, mert az már
-a multi-process WebKit2-re épül.
+A QtWebKit a nyílt forrású WebKit böngésző motor portja. A WebKit API felé két fajta Qt-s
+API-t implementál: C++ API-t a Widget alkalmazásokba való beágyazáshoz és QML/Quick API-t a
+Quick alkalmazásokhoz. A C++ API szinkron, mivel a single-process architektúrájú WebKit
+API-ra (WebKit1) épül. Ezzel szemben a Quick integrációt lehetővé tevő QML API aszinkron,
+mert az már a multi-process WebKit2-re épül.
 
 A QtWebKit a Qt 4.7-es verziójában jelent meg. A Chromium--WebKit szétválás után a
-fejlesztése leállt és csak karbantartási munkákat végeztek rajta. A Qt 5.5-ös release-ben
-már elavultnak számít az 5.6-os verzióból már a bináris csomagokat is eltávolították, csak
-a QtWebKit forrása elérhető. A QtWebKit leváltására a Chromiumra épülő QtWebEngine-t
-hozták be.
+fejlesztése leállt és csak karbantartási munkálatokat végeztek rajta. A Qt 5.5-ös kiadásban
+már elavultnak (deprecated) számít az 5.6-os verzióból már a bináris csomagokat is
+eltávolították, csak QtWebKit forráskódja érhető el. A QtWebKit leváltására a Chromiumra
+épülő QtWebEngine-t hozták be.
 
 \subsubsection{QtWebView}
 A QtWebKit sosem volt támogatott mobil platformokon (Embedded Linuxon igen) és ez jelenleg
 hivatalosan igaz a QtWebEngine-re is. Azonban, a mobil platformok (pl. Android, iOS, WinRT)
-biztosítanak natív API-t (WebView) a webes tartalmak megjelenítésére, mivel biztonsági
+biztosítanak natív API-t (WebView) a webes tartalmak megjelenítésére. Biztonsági
 megfontolásból más módon a mobil alkalmazások nem is férhetnének hozzá web tartalomhoz.
 
-A QtWebView modul ezek fölé a natív web API-k felé nyújt wrapper-t és egységes API-t.
-Amennyiben nincs elérhető (vagy támogatott) web API a platformon, akkor a QtWebEngine-t
-próbálja használni (fallback). A QtWebView-nak csak \texttt{QML} API-ja van.
-\cite{bib:qt-doc-qt-webview}
+A QtWebView komponens/modul \cite{bib:qt-doc-qt-webview} ezeket a natív API-kat fedi el
+(wrapper) és implementál felettük egységes, Qt API-t. Amennyiben nincs elérhető (vagy
+támogatott) web API a platformon, akkor a QtWebEngine-t próbálja használni (fallback).
+A QtWebView-nak csak QML/Quick API-ja van.
 
 \subsubsection{QtWebSockets}
 A WebSocket egy olyan protokoll, amely kétirányú kommunikációt biztosít a web felett.
-A kommunikáció kliens és szerver között történik.
-A legtöbb modern böngésző integrálja a WebSocket klienst. A QtWebSockets \texttt{C++} és
-\texttt{QML} API-t biztosít mind WebSocket kliens és szerver megvalósításához.
-\cite{bib:qt-doc-qt-websockets}
+A kommunikáció kliens és szerver között történik. A legtöbb modern böngésző integrálja a
+WebSocket klienst. A QtWebSockets \cite{bib:qt-doc-qt-websockets} C++ és QML/Quick API-t
+biztosít mind WebSocket kliens és szerver megvalósításához.
 
 \subsubsection{QtWebChannel}
-A QtWebChannel modul a Qt 5.4-es verziójában jelent meg. Olyan alkalmazások esetében,
-amelyek beépített HTML tartalmat jelenítenek meg szükség lehet olyan megoldásra,
-amelynek segítségével a WebView-ban futó web alkalmazás (\texttt{JavaScript}/\texttt{HTML})
-és a natív alkalmazás (\texttt{QML}/\texttt{C++}) kommunikálni tud.
+A QtWebChannel komponens/modul \cite{bib:qt-doc-qt-webchannel} a Qt 5.4-es verziójában jelent
+meg. Olyan alkalmazások esetében, amelyek beépített HTML tartalmat jelenítenek meg szükség
+lehet olyan megoldásra, amelynek segítségével a WebView-ban futó webalkalmazás
+(JavaScript/HTML) és a natív alkalmazás (QML/C++) kommunikálni tud
+\cite{bib:kdab-qt-webchannel}.
 
 A single-process QtWebKit widget API esetén ennek megvalósítása nem jelentett különösebb
 problémát, viszont egy multi-process architektúrára épülő motor (WebKit2 vagy Chromium)
-a megvalósítás már sokkal bonyolultabb. Erre a problémára nyújt megoldást a QtWebChannel
-modul.
+a megvalósítás már sokkal bonyolultabb. Erre a problémára nyújt megoldást a QtWebChannel.
 
-A QtWebChannel segítségével Qt MetaObject-et (\texttt{QObject}) lehet ``meghirdetni''
-szerver oldalon, a kliens oldal pedig ezt a MetaObject-et tudja használni.
-A QtWebChannel modul szerver oldalra nyújt \texttt{QML} és \texttt{C++} API-t,
-a kliens oldalra pedig \texttt{JavaScript} API-t. A kliens oldalon megjelenő object a
-szerver oldali Qt MetaObject másolata, \texttt{JavaScript} API. A két objektum szinkronizálva
-van, a property változtatások és a Qt-s szignálok mindkét oldalon megjelennek.
+A QtWebChannel segítségével egy \textit{Qt MetaObject}-et (\texttt{QObject}) lehet
+``meghirdetni'' szerver oldalon, a kliens oldal pedig ezt a MetaObject-et tudja használni.
+A komponens szerver oldalra nyújt QML és C++, a kliens oldalra pedig JavaScript API-t.
+A kliens oldalon megjelenő JavaScript objektum a szerver oldali Qt MetaObject másolata. A két
+objektum szinkronizálva van, a property változtatások és a Qt-s szignálok mindkét oldalon
+megjelennek.
 
-Ez úgy valósul meg, hogy a szerver oldali API szerializálja Qt MetaObject-et majd átküldi
-a kliensnek. A kliens oldali API a szerializált Qt MetaObject-ből \texttt{JavaScript}
+Ez úgy valósul meg, hogy a QtWebChannel szerializálja Qt MetaObject-et majd átküldi
+a kliensnek. A kliens oldali API a szerializált Qt MetaObject-ből JavaScript
 object-et gyárt, amely képes kommunikálni az eredeti object-el. A kommunikáció történhet
 QtWebSockets segítségével, de akár IPC-n keresztül is.
-\cite{bib:qt-doc-qt-webchannel, bib:kdab-qt-webchannel}
-
 
 \subsection{Release}
 Egy Qt release verzió száma 3 részből tevődik össze:
@@ -2931,7 +2925,9 @@ hozzáadott példa alkalmazásokban és a funkciók teszteléséhez is hasznos v
 
     \bibitem{bib:kdab-qt-webchannel}
         KDAB: Qt WebChannel: bridging the gap between C++/QML and the web \\
-        \url{http://doc.qt.io/qt-5/qtwebchannel-index.html}
+        \href{https://www.kdab.com/qt-webchannel-bridging-gap-cqml-web}
+        {https://www.kdab.com/\\
+        qt-webchannel-bridging-gap-cqml-web}
 
     \bibitem{bib:qt-wiki-d-pointer}
         Qt Wiki: D-Pointer \\
