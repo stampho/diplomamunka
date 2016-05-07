@@ -1,0 +1,120 @@
+From 072353fed80645a53b4bb22507dca5b98c023232 Mon Sep 17 00:00:00 2001
+From: Peter Varga <pvarga@inf.u-szeged.hu>
+Date: Thu, 27 Mar 2014 17:26:27 +0100
+Subject: [PATCH] Fix QQuickWebEngineForwardHistoryListModel
+
+The index calculation was wrong for the history items in the forward
+list model: model contained the current item too.
+Test has been added for check the previous and next element in the back
+and forward lists.
+
+Change-Id: I0e05881f05b67752e47b01236ffb9636d31a7dc2
+Reviewed-by: Andras Becsi <andras.becsi@digia.com>
+---
+ src/webengine/api/qquickwebenginehistory.cpp             |  2 +-
+ tests/auto/quick/qmltests/data/tst_navigationHistory.qml | 14 ++++++++++++--
+ 2 files changed, 13 insertions(+), 3 deletions(-)
+
+diff --git a/src/webengine/api/qquickwebenginehistory.cpp b/src/webengine/api/qquickwebenginehistory.cpp
+index 551a572..184b707 100644
+--- a/src/webengine/api/qquickwebenginehistory.cpp
++++ b/src/webengine/api/qquickwebenginehistory.cpp
+@@ -89,7 +89,7 @@ int QQuickWebEngineForwardHistoryListModelPrivate::count() const
+ 
+ int QQuickWebEngineForwardHistoryListModelPrivate::index(int i) const
+ {
+-    return adapter()->currentNavigationEntryIndex() + i;
++    return adapter()->currentNavigationEntryIndex() + i + 1;
+ }
+ 
+ QQuickWebEngineHistoryListModel::QQuickWebEngineHistoryListModel()
+diff --git a/tests/auto/quick/qmltests/data/tst_navigationHistory.qml b/tests/auto/quick/qmltests/data/tst_navigationHistory.qml
+index bac87a8..c862455 100644
+--- a/tests/auto/quick/qmltests/data/tst_navigationHistory.qml
++++ b/tests/auto/quick/qmltests/data/tst_navigationHistory.qml
+@@ -53,10 +53,11 @@ TestWebEngineView {
+         id: backItemsList
+         anchors.fill: parent
+         model: webEngineView.experimental.navigationHistory.backItems
++        currentIndex: count - 1
+         delegate:
+             Text {
+                 color:"black"
+-                text: "title : " + title
++                text: url
+             }
+     }
+ 
+@@ -64,10 +65,11 @@ TestWebEngineView {
+         id: forwardItemsList
+         anchors.fill: parent
+         model: webEngineView.experimental.navigationHistory.forwardItems
++        currentIndex: 0
+         delegate:
+             Text {
+                 color:"black"
+-                text: "title : " + title
++                text: url
+             }
+     }
+ 
+@@ -90,6 +92,7 @@ TestWebEngineView {
+             compare(webEngineView.canGoBack, true)
+             compare(webEngineView.canGoForward, false)
+             compare(backItemsList.count, 1)
++            compare(backItemsList.currentItem.text, Qt.resolvedUrl("test1.html"))
+ 
+             webEngineView.experimental.goBackTo(0)
+             verify(webEngineView.waitForLoadSucceeded())
+@@ -98,6 +101,7 @@ TestWebEngineView {
+             compare(webEngineView.canGoForward, true)
+             compare(backItemsList.count, 0)
+             compare(forwardItemsList.count, 1)
++            compare(forwardItemsList.currentItem.text, Qt.resolvedUrl("test2.html"))
+ 
+             webEngineView.goForward()
+             verify(webEngineView.waitForLoadSucceeded())
+@@ -106,6 +110,7 @@ TestWebEngineView {
+             compare(webEngineView.canGoForward, false)
+             compare(backItemsList.count, 1)
+             compare(forwardItemsList.count, 0)
++            compare(backItemsList.currentItem.text, Qt.resolvedUrl("test1.html"))
+ 
+             webEngineView.url = Qt.resolvedUrl("javascript.html")
+             verify(webEngineView.waitForLoadSucceeded())
+@@ -114,6 +119,7 @@ TestWebEngineView {
+             compare(webEngineView.canGoForward, false)
+             compare(backItemsList.count, 2)
+             compare(forwardItemsList.count, 0)
++            compare(backItemsList.currentItem.text, Qt.resolvedUrl("test1.html"))
+ 
+             webEngineView.experimental.goBackTo(1)
+             verify(webEngineView.waitForLoadSucceeded())
+@@ -122,6 +128,7 @@ TestWebEngineView {
+             compare(webEngineView.canGoForward, true)
+             compare(backItemsList.count, 0)
+             compare(forwardItemsList.count, 2)
++            compare(forwardItemsList.currentItem.text, Qt.resolvedUrl("test2.html"))
+ 
+             webEngineView.experimental.goForwardTo(1)
+             verify(webEngineView.waitForLoadSucceeded())
+@@ -130,6 +137,7 @@ TestWebEngineView {
+             compare(webEngineView.canGoForward, false)
+             compare(backItemsList.count, 2)
+             compare(forwardItemsList.count, 0)
++            compare(backItemsList.currentItem.text, Qt.resolvedUrl("test1.html"))
+ 
+             webEngineView.goBack()
+             verify(webEngineView.waitForLoadSucceeded())
+@@ -138,6 +146,8 @@ TestWebEngineView {
+             compare(webEngineView.canGoForward, true)
+             compare(backItemsList.count, 1)
+             compare(forwardItemsList.count, 1)
++            compare(backItemsList.currentItem.text, Qt.resolvedUrl("test1.html"))
++            compare(forwardItemsList.currentItem.text, Qt.resolvedUrl("javascript.html"))
+         }
+     }
+ }
+-- 
+2.7.4 (Apple Git-66)
+

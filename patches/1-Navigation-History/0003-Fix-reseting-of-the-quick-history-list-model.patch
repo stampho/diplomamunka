@@ -1,0 +1,100 @@
+From b8403fa43730401e9d2ff378ff2c084373991cc3 Mon Sep 17 00:00:00 2001
+From: Peter Varga <pvarga@inf.u-szeged.hu>
+Date: Tue, 1 Apr 2014 13:57:24 +0200
+Subject: [PATCH] Fix reseting of the quick history list model
+
+With this fix the quick history list is updated like in the widget API.
+
+Change-Id: I19127a0055a3f1ab8a04da63d847249f6c4c23d9
+Reviewed-by: Jocelyn Turcotte <jocelyn.turcotte@digia.com>
+---
+ src/webengine/api/qquickwebenginehistory.cpp |  6 +-----
+ src/webengine/api/qquickwebenginehistory_p.h |  3 +--
+ src/webengine/api/qquickwebengineview.cpp    | 10 +++++++---
+ src/webengine/api/qquickwebengineview_p_p.h  |  2 +-
+ 4 files changed, 10 insertions(+), 11 deletions(-)
+
+diff --git a/src/webengine/api/qquickwebenginehistory.cpp b/src/webengine/api/qquickwebenginehistory.cpp
+index 184b707..07ab781 100644
+--- a/src/webengine/api/qquickwebenginehistory.cpp
++++ b/src/webengine/api/qquickwebenginehistory.cpp
+@@ -178,13 +178,9 @@ QQuickWebEngineHistoryListModel *QQuickWebEngineHistory::forwardItems() const
+     return d->m_forwardNavigationModel.data();
+ }
+ 
+-void QQuickWebEngineHistory::reset(QQuickWebEngineLoadRequest *loadRequest)
++void QQuickWebEngineHistory::reset()
+ {
+     Q_D(QQuickWebEngineHistory);
+-
+-    if (loadRequest->status() != QQuickWebEngineView::LoadSucceededStatus)
+-        return;
+-
+     d->m_backNavigationModel->reset();
+     d->m_forwardNavigationModel->reset();
+ }
+diff --git a/src/webengine/api/qquickwebenginehistory_p.h b/src/webengine/api/qquickwebenginehistory_p.h
+index 729f707..4364b37 100644
+--- a/src/webengine/api/qquickwebenginehistory_p.h
++++ b/src/webengine/api/qquickwebenginehistory_p.h
+@@ -97,8 +97,7 @@ public:
+     QQuickWebEngineHistoryListModel *backItems() const;
+     QQuickWebEngineHistoryListModel *forwardItems() const;
+ 
+-public Q_SLOTS:
+-    void reset(QQuickWebEngineLoadRequest*);
++    void reset();
+ 
+ private:
+     QQuickWebEngineHistory();
+diff --git a/src/webengine/api/qquickwebengineview.cpp b/src/webengine/api/qquickwebengineview.cpp
+index f9a47a6..ac19de1 100644
+--- a/src/webengine/api/qquickwebengineview.cpp
++++ b/src/webengine/api/qquickwebengineview.cpp
+@@ -260,13 +260,20 @@ qreal QQuickWebEngineViewPrivate::dpiScale() const
+ void QQuickWebEngineViewPrivate::loadStarted(const QUrl &provisionalUrl)
+ {
+     Q_Q(QQuickWebEngineView);
++    m_history->reset();
+     QQuickWebEngineLoadRequest loadRequest(provisionalUrl, QQuickWebEngineView::LoadStartedStatus);
+     Q_EMIT q->loadingChanged(&loadRequest);
+ }
+ 
++void QQuickWebEngineViewPrivate::loadCommitted()
++{
++    m_history->reset();
++}
++
+ void QQuickWebEngineViewPrivate::loadFinished(bool success, int error_code, const QString &error_description)
+ {
+     Q_Q(QQuickWebEngineView);
++    m_history->reset();
+     if (error_code == WebEngineError::UserAbortedError) {
+         QQuickWebEngineLoadRequest loadRequest(q->url(), QQuickWebEngineView::LoadStoppedStatus);
+         Q_EMIT q->loadingChanged(&loadRequest);
+@@ -382,9 +389,6 @@ QQuickWebEngineView::QQuickWebEngineView(QQuickItem *parent)
+     Q_D(QQuickWebEngineView);
+     d->e->q_ptr = this;
+     d->adapter->initialize(d);
+-
+-    QObject::connect(this, &QQuickWebEngineView::loadingChanged, d->m_history.data(), &QQuickWebEngineHistory::reset);
+-
+     this->setFocus(true);
+     this->setActiveFocusOnTab(true);
+     this->setFlag(QQuickItem::ItemIsFocusScope);
+diff --git a/src/webengine/api/qquickwebengineview_p_p.h b/src/webengine/api/qquickwebengineview_p_p.h
+index 9a7736d..be5318a 100644
+--- a/src/webengine/api/qquickwebengineview_p_p.h
++++ b/src/webengine/api/qquickwebengineview_p_p.h
+@@ -135,7 +135,7 @@ public:
+     virtual QRectF viewportRect() const Q_DECL_OVERRIDE;
+     virtual qreal dpiScale() const Q_DECL_OVERRIDE;
+     virtual void loadStarted(const QUrl &provisionalUrl) Q_DECL_OVERRIDE;
+-    virtual void loadCommitted() Q_DECL_OVERRIDE { }
++    virtual void loadCommitted() Q_DECL_OVERRIDE;
+     virtual void loadFinished(bool success, int error_code = 0, const QString &error_description = QString()) Q_DECL_OVERRIDE;
+     virtual void focusContainer() Q_DECL_OVERRIDE;
+     virtual void adoptNewWindow(WebContentsAdapter *newWebContents, WindowOpenDisposition disposition, const QRect &) Q_DECL_OVERRIDE;
+-- 
+2.7.4 (Apple Git-66)
+

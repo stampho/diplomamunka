@@ -147,3 +147,7 @@ FaviconManager
 QQuickImageProvider
 QQuickWebEngineFaviconProvider
 QtDeclarative
+currentNavigation
+EntryIndex
+QtWebKitben
+portolva

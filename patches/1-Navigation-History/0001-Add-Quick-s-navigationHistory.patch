@@ -1,0 +1,766 @@
+From ca417f2aa2a8264f8818bf8dd2df98981b21867b Mon Sep 17 00:00:00 2001
+From: Peter Varga <pvarga@inf.u-szeged.hu>
+Date: Tue, 18 Mar 2014 18:32:39 +0100
+Subject: [PATCH] Add Quick's navigationHistory
+
+Add QQuickWebEngineHistory and list models providing API for the quick's
+navigationHistory.
+
+Change-Id: Ia86c94b120cc5d0b4757fc62386fc7a0dcb3e341
+Reviewed-by: Jocelyn Turcotte <jocelyn.turcotte@digia.com>
+---
+ src/webengine/api/qquickwebenginehistory.cpp       | 193 +++++++++++++++++++++
+ src/webengine/api/qquickwebenginehistory_p.h       | 114 ++++++++++++
+ src/webengine/api/qquickwebenginehistory_p_p.h     |  91 ++++++++++
+ src/webengine/api/qquickwebengineview.cpp          |  27 +++
+ src/webengine/api/qquickwebengineview_p_p.h        |   7 +
+ src/webengine/plugin/experimental/plugin.cpp       |   5 +
+ src/webengine/webengine.pro                        |   2 +
+ tests/auto/quick/qmltests/data/javascript.html     |   8 +
+ tests/auto/quick/qmltests/data/test2.html          |   6 +
+ .../quick/qmltests/data/tst_navigationHistory.qml  | 143 +++++++++++++++
+ 10 files changed, 596 insertions(+)
+ create mode 100644 src/webengine/api/qquickwebenginehistory.cpp
+ create mode 100644 src/webengine/api/qquickwebenginehistory_p.h
+ create mode 100644 src/webengine/api/qquickwebenginehistory_p_p.h
+ create mode 100644 tests/auto/quick/qmltests/data/javascript.html
+ create mode 100644 tests/auto/quick/qmltests/data/test2.html
+ create mode 100644 tests/auto/quick/qmltests/data/tst_navigationHistory.qml
+
+diff --git a/src/webengine/api/qquickwebenginehistory.cpp b/src/webengine/api/qquickwebenginehistory.cpp
+new file mode 100644
+index 0000000..551a572
+--- /dev/null
++++ b/src/webengine/api/qquickwebenginehistory.cpp
+@@ -0,0 +1,193 @@
++/****************************************************************************
++**
++** Copyright (C) 2014 Digia Plc and/or its subsidiary(-ies).
++** Contact: http://www.qt-project.org/legal
++**
++** This file is part of the QtWebEngine module of the Qt Toolkit.
++**
++** $QT_BEGIN_LICENSE:LGPL$
++** Commercial License Usage
++** Licensees holding valid commercial Qt licenses may use this file in
++** accordance with the commercial license agreement provided with the
++** Software or, alternatively, in accordance with the terms contained in
++** a written agreement between you and Digia.  For licensing terms and
++** conditions see http://qt.digia.com/licensing.  For further information
++** use the contact form at http://qt.digia.com/contact-us.
++**
++** GNU Lesser General Public License Usage
++** Alternatively, this file may be used under the terms of the GNU Lesser
++** General Public License version 2.1 as published by the Free Software
++** Foundation and appearing in the file LICENSE.LGPL included in the
++** packaging of this file.  Please review the following information to
++** ensure the GNU Lesser General Public License version 2.1 requirements
++** will be met: http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
++**
++** In addition, as a special exception, Digia gives you certain additional
++** rights.  These rights are described in the Digia Qt LGPL Exception
++** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
++**
++** GNU General Public License Usage
++** Alternatively, this file may be used under the terms of the GNU
++** General Public License version 3.0 as published by the Free Software
++** Foundation and appearing in the file LICENSE.GPL included in the
++** packaging of this file.  Please review the following information to
++** ensure the GNU General Public License version 3.0 requirements will be
++** met: http://www.gnu.org/copyleft/gpl.html.
++**
++**
++** $QT_END_LICENSE$
++**
++****************************************************************************/
++
++#include "qquickwebenginehistory_p.h"
++#include "qquickwebenginehistory_p_p.h"
++#include "qquickwebengineloadrequest_p.h"
++#include "qquickwebengineview_p_p.h"
++#include "web_contents_adapter.h"
++
++QT_BEGIN_NAMESPACE
++
++QQuickWebEngineHistoryListModelPrivate::QQuickWebEngineHistoryListModelPrivate(QQuickWebEngineViewPrivate *view)
++    : view(view)
++{
++}
++
++QQuickWebEngineHistoryListModelPrivate::~QQuickWebEngineHistoryListModelPrivate()
++{
++}
++
++WebContentsAdapter *QQuickWebEngineHistoryListModelPrivate::adapter() const
++{
++    return view->adapter.data();
++}
++
++QQuickWebEngineBackHistoryListModelPrivate::QQuickWebEngineBackHistoryListModelPrivate(QQuickWebEngineViewPrivate *view)
++    : QQuickWebEngineHistoryListModelPrivate(view)
++{
++}
++
++int QQuickWebEngineBackHistoryListModelPrivate::count() const
++{
++    return adapter()->currentNavigationEntryIndex();
++}
++
++int QQuickWebEngineBackHistoryListModelPrivate::index(int i) const
++{
++    Q_ASSERT(i >= 0 && i < count());
++    return count() - 1 - i;
++}
++
++QQuickWebEngineForwardHistoryListModelPrivate::QQuickWebEngineForwardHistoryListModelPrivate(QQuickWebEngineViewPrivate *view)
++    : QQuickWebEngineHistoryListModelPrivate(view)
++{
++}
++
++int QQuickWebEngineForwardHistoryListModelPrivate::count() const
++{
++    return adapter()->navigationEntryCount() - adapter()->currentNavigationEntryIndex() - 1;
++}
++
++int QQuickWebEngineForwardHistoryListModelPrivate::index(int i) const
++{
++    return adapter()->currentNavigationEntryIndex() + i;
++}
++
++QQuickWebEngineHistoryListModel::QQuickWebEngineHistoryListModel()
++    : QAbstractListModel()
++{
++}
++
++QQuickWebEngineHistoryListModel::QQuickWebEngineHistoryListModel(QQuickWebEngineHistoryListModelPrivate *d)
++    : QAbstractListModel()
++    , d_ptr(d)
++{
++}
++
++QQuickWebEngineHistoryListModel::~QQuickWebEngineHistoryListModel()
++{
++}
++
++QHash<int, QByteArray> QQuickWebEngineHistoryListModel::roleNames() const
++{
++    QHash<int, QByteArray> roles;
++    roles[QQuickWebEngineHistory::UrlRole] = "url";
++    roles[QQuickWebEngineHistory::TitleRole] = "title";
++    return roles;
++}
++
++int QQuickWebEngineHistoryListModel::rowCount(const QModelIndex &index) const
++{
++    Q_UNUSED(index);
++    Q_D(const QQuickWebEngineHistoryListModel);
++    return d->count();
++}
++
++QVariant QQuickWebEngineHistoryListModel::data(const QModelIndex &index, int role) const
++{
++    Q_D(const QQuickWebEngineHistoryListModel);
++
++    if (!index.isValid())
++        return QVariant();
++
++    if (role < QQuickWebEngineHistory::UrlRole || role > QQuickWebEngineHistory::TitleRole)
++        return QVariant();
++
++    if (role == QQuickWebEngineHistory::UrlRole)
++        return QUrl(d->adapter()->getNavigationEntryUrl(d->index(index.row())));
++
++    if (role == QQuickWebEngineHistory::TitleRole)
++        return QString(d->adapter()->getNavigationEntryTitle(d->index(index.row())));
++
++    return QVariant();
++}
++
++void QQuickWebEngineHistoryListModel::reset()
++{
++    beginResetModel();
++    endResetModel();
++}
++
++QQuickWebEngineHistoryPrivate::QQuickWebEngineHistoryPrivate(QQuickWebEngineViewPrivate *view)
++    : m_backNavigationModel(new QQuickWebEngineHistoryListModel(new QQuickWebEngineBackHistoryListModelPrivate(view)))
++    , m_forwardNavigationModel(new QQuickWebEngineHistoryListModel(new QQuickWebEngineForwardHistoryListModelPrivate(view)))
++{
++}
++
++QQuickWebEngineHistoryPrivate::~QQuickWebEngineHistoryPrivate()
++{
++}
++
++QQuickWebEngineHistory::QQuickWebEngineHistory(QQuickWebEngineViewPrivate *view)
++    : d_ptr(new QQuickWebEngineHistoryPrivate(view))
++{
++}
++
++QQuickWebEngineHistory::~QQuickWebEngineHistory()
++{
++}
++
++QQuickWebEngineHistoryListModel *QQuickWebEngineHistory::backItems() const
++{
++    Q_D(const QQuickWebEngineHistory);
++    return d->m_backNavigationModel.data();
++}
++
++QQuickWebEngineHistoryListModel *QQuickWebEngineHistory::forwardItems() const
++{
++    Q_D(const QQuickWebEngineHistory);
++    return d->m_forwardNavigationModel.data();
++}
++
++void QQuickWebEngineHistory::reset(QQuickWebEngineLoadRequest *loadRequest)
++{
++    Q_D(QQuickWebEngineHistory);
++
++    if (loadRequest->status() != QQuickWebEngineView::LoadSucceededStatus)
++        return;
++
++    d->m_backNavigationModel->reset();
++    d->m_forwardNavigationModel->reset();
++}
++
++
++QT_END_NAMESPACE
+diff --git a/src/webengine/api/qquickwebenginehistory_p.h b/src/webengine/api/qquickwebenginehistory_p.h
+new file mode 100644
+index 0000000..9267b1a
+--- /dev/null
++++ b/src/webengine/api/qquickwebenginehistory_p.h
+@@ -0,0 +1,114 @@
++/****************************************************************************
++**
++** Copyright (C) 2014 Digia Plc and/or its subsidiary(-ies).
++** Contact: http://www.qt-project.org/legal
++**
++** This file is part of the QtWebEngine module of the Qt Toolkit.
++**
++** $QT_BEGIN_LICENSE:LGPL$
++** Commercial License Usage
++** Licensees holding valid commercial Qt licenses may use this file in
++** accordance with the commercial license agreement provided with the
++** Software or, alternatively, in accordance with the terms contained in
++** a written agreement between you and Digia.  For licensing terms and
++** conditions see http://qt.digia.com/licensing.  For further information
++** use the contact form at http://qt.digia.com/contact-us.
++**
++** GNU Lesser General Public License Usage
++** Alternatively, this file may be used under the terms of the GNU Lesser
++** General Public License version 2.1 as published by the Free Software
++** Foundation and appearing in the file LICENSE.LGPL included in the
++** packaging of this file.  Please review the following information to
++** ensure the GNU Lesser General Public License version 2.1 requirements
++** will be met: http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
++**
++** In addition, as a special exception, Digia gives you certain additional
++** rights.  These rights are described in the Digia Qt LGPL Exception
++** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
++**
++** GNU General Public License Usage
++** Alternatively, this file may be used under the terms of the GNU
++** General Public License version 3.0 as published by the Free Software
++** Foundation and appearing in the file LICENSE.GPL included in the
++** packaging of this file.  Please review the following information to
++** ensure the GNU General Public License version 3.0 requirements will be
++** met: http://www.gnu.org/copyleft/gpl.html.
++**
++**
++** $QT_END_LICENSE$
++**
++****************************************************************************/
++
++#ifndef QQUICKWEBENGINEHISOTRY_P_H
++#define QQUICKWEBENGINEHISTORY_P_H
++
++#include <qtwebengineglobal_p.h>
++#include <QAbstractListModel>
++#include <QtCore/qshareddata.h>
++#include <QQuickItem>
++#include <QUrl>
++#include <QVariant>
++
++QT_BEGIN_NAMESPACE
++
++class WebEngineHistory;
++class WebEngineHistoryItem;
++class QQuickWebEngineHistory;
++class QQuickWebEngineHistoryPrivate;
++class QQuickWebEngineHistoryListModelPrivate;
++class QQuickWebEngineLoadRequest;
++class QQuickWebEngineViewPrivate;
++
++class Q_WEBENGINE_PRIVATE_EXPORT QQuickWebEngineHistoryListModel : public QAbstractListModel {
++    Q_OBJECT
++
++public:
++    QQuickWebEngineHistoryListModel(QQuickWebEngineHistoryListModelPrivate*);
++    virtual ~QQuickWebEngineHistoryListModel();
++
++    int rowCount(const QModelIndex& parent = QModelIndex()) const;
++    QVariant data(const QModelIndex& index, int role) const;
++    QHash<int, QByteArray> roleNames() const;
++    void reset();
++
++private:
++    QQuickWebEngineHistoryListModel();
++
++    Q_DECLARE_PRIVATE(QQuickWebEngineHistoryListModel);
++    QScopedPointer<QQuickWebEngineHistoryListModelPrivate> d_ptr;
++
++    friend class QQuickWebEngineHistory;
++};
++
++class Q_WEBENGINE_PRIVATE_EXPORT QQuickWebEngineHistory : public QQuickItem {
++    Q_OBJECT
++    Q_PROPERTY(QQuickWebEngineHistoryListModel *backItems READ backItems CONSTANT FINAL)
++    Q_PROPERTY(QQuickWebEngineHistoryListModel *forwardItems READ forwardItems CONSTANT FINAL)
++
++public:
++    QQuickWebEngineHistory(QQuickWebEngineViewPrivate*);
++    virtual ~QQuickWebEngineHistory();
++
++    enum NavigationHistoryRoles {
++        UrlRole = Qt::UserRole + 1,
++        TitleRole = Qt::UserRole + 2
++    };
++
++    QQuickWebEngineHistoryListModel *backItems() const;
++    QQuickWebEngineHistoryListModel *forwardItems() const;
++
++public Q_SLOTS:
++    void reset(QQuickWebEngineLoadRequest*);
++
++private:
++    QQuickWebEngineHistory();
++
++    Q_DECLARE_PRIVATE(QQuickWebEngineHistory);
++    QScopedPointer<QQuickWebEngineHistoryPrivate> d_ptr;
++};
++
++QT_END_NAMESPACE
++
++QML_DECLARE_TYPE(QQuickWebEngineHistory)
++
++#endif // QQUICKWEBENGINEHISTORY_P_H
+diff --git a/src/webengine/api/qquickwebenginehistory_p_p.h b/src/webengine/api/qquickwebenginehistory_p_p.h
+new file mode 100644
+index 0000000..6bd0b66
+--- /dev/null
++++ b/src/webengine/api/qquickwebenginehistory_p_p.h
+@@ -0,0 +1,91 @@
++/****************************************************************************
++**
++** Copyright (C) 2014 Digia Plc and/or its subsidiary(-ies).
++** Contact: http://www.qt-project.org/legal
++**
++** This file is part of the QtWebEngine module of the Qt Toolkit.
++**
++** $QT_BEGIN_LICENSE:LGPL$
++** Commercial License Usage
++** Licensees holding valid commercial Qt licenses may use this file in
++** accordance with the commercial license agreement provided with the
++** Software or, alternatively, in accordance with the terms contained in
++** a written agreement between you and Digia.  For licensing terms and
++** conditions see http://qt.digia.com/licensing.  For further information
++** use the contact form at http://qt.digia.com/contact-us.
++**
++** GNU Lesser General Public License Usage
++** Alternatively, this file may be used under the terms of the GNU Lesser
++** General Public License version 2.1 as published by the Free Software
++** Foundation and appearing in the file LICENSE.LGPL included in the
++** packaging of this file.  Please review the following information to
++** ensure the GNU Lesser General Public License version 2.1 requirements
++** will be met: http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
++**
++** In addition, as a special exception, Digia gives you certain additional
++** rights.  These rights are described in the Digia Qt LGPL Exception
++** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
++**
++** GNU General Public License Usage
++** Alternatively, this file may be used under the terms of the GNU
++** General Public License version 3.0 as published by the Free Software
++** Foundation and appearing in the file LICENSE.GPL included in the
++** packaging of this file.  Please review the following information to
++** ensure the GNU General Public License version 3.0 requirements will be
++** met: http://www.gnu.org/copyleft/gpl.html.
++**
++**
++** $QT_END_LICENSE$
++**
++****************************************************************************/
++
++#ifndef QQUICKWEBENGINEHISOTRY_P_P_H
++#define QQUICKWEBENGINEHISTORY_P_P_H
++
++class WebContentsAdapter;
++class QQuickWebEngineHistoryListModel;
++class QQuickWebEngineViewPrivate;
++
++QT_BEGIN_NAMESPACE
++
++class QQuickWebEngineHistoryListModelPrivate {
++public:
++    QQuickWebEngineHistoryListModelPrivate(QQuickWebEngineViewPrivate*);
++    virtual ~QQuickWebEngineHistoryListModelPrivate();
++
++    virtual int count() const = 0;
++    virtual int index(int) const = 0;
++
++    WebContentsAdapter *adapter() const;
++
++    QQuickWebEngineViewPrivate *view;
++};
++
++class QQuickWebEngineBackHistoryListModelPrivate : public QQuickWebEngineHistoryListModelPrivate {
++public:
++    QQuickWebEngineBackHistoryListModelPrivate(QQuickWebEngineViewPrivate*);
++
++    int count() const;
++    int index(int) const;
++};
++
++class QQuickWebEngineForwardHistoryListModelPrivate : public QQuickWebEngineHistoryListModelPrivate {
++public:
++    QQuickWebEngineForwardHistoryListModelPrivate(QQuickWebEngineViewPrivate*);
++
++    int count() const;
++    int index(int) const;
++};
++
++class QQuickWebEngineHistoryPrivate {
++public:
++    QQuickWebEngineHistoryPrivate(QQuickWebEngineViewPrivate*);
++    ~QQuickWebEngineHistoryPrivate();
++
++    QScopedPointer<QQuickWebEngineHistoryListModel> m_backNavigationModel;
++    QScopedPointer<QQuickWebEngineHistoryListModel> m_forwardNavigationModel;
++};
++
++QT_END_NAMESPACE
++
++#endif // QQUICKWEBENGINEHISTORY_P_P_H
+diff --git a/src/webengine/api/qquickwebengineview.cpp b/src/webengine/api/qquickwebengineview.cpp
+index 64c7f33..58262cd 100644
+--- a/src/webengine/api/qquickwebengineview.cpp
++++ b/src/webengine/api/qquickwebengineview.cpp
+@@ -43,6 +43,7 @@
+ #include "qquickwebengineview_p_p.h"
+ 
+ #include "javascript_dialog_controller.h"
++#include "qquickwebenginehistory_p.h"
+ #include "qquickwebengineloadrequest_p.h"
+ #include "qquickwebenginenewviewrequest_p.h"
+ #include "render_widget_host_view_qt_delegate_quick.h"
+@@ -67,6 +68,7 @@ QQuickWebEngineViewPrivate::QQuickWebEngineViewPrivate()
+     : adapter(new WebContentsAdapter(qApp->property("QQuickWebEngineView_DisableHardwareAcceleration").toBool() ? SoftwareRenderingMode : HardwareAccelerationMode))
+     , e(new QQuickWebEngineViewExperimental(this))
+     , v(new QQuickWebEngineViewport(this))
++    , m_history(new QQuickWebEngineHistory(this))
+     , contextMenuExtraItems(0)
+     , loadProgress(0)
+     , inspectable(false)
+@@ -359,6 +361,8 @@ QQuickWebEngineView::QQuickWebEngineView(QQuickItem *parent)
+     d->e->q_ptr = this;
+     d->adapter->initialize(d);
+ 
++    QObject::connect(this, &QQuickWebEngineView::loadingChanged, d->m_history.data(), &QQuickWebEngineHistory::reset);
++
+     this->setFocus(true);
+     this->setActiveFocusOnTab(true);
+     this->setFlag(QQuickItem::ItemIsFocusScope);
+@@ -514,6 +518,29 @@ void QQuickWebEngineViewExperimental::runJavaScript(const QString &script, const
+         d_ptr->adapter->runJavaScript(script, /*xPath=*/QString());
+ }
+ 
++QQuickWebEngineHistory *QQuickWebEngineViewExperimental::navigationHistory() const
++{
++    return d_ptr->m_history.data();
++}
++
++void QQuickWebEngineViewExperimental::goBackTo(int index)
++{
++    int count = d_ptr->adapter->currentNavigationEntryIndex();
++    if (index < 0 || index >= count)
++        return;
++
++    d_ptr->adapter->navigateToIndex(count - 1 - index);
++}
++
++void QQuickWebEngineViewExperimental::goForwardTo(int index)
++{
++    int count = d_ptr->adapter->navigationEntryCount() - d_ptr->adapter->currentNavigationEntryIndex() - 1;
++    if (index < 0 || index >= count)
++        return;
++
++    d_ptr->adapter->navigateToIndex(d_ptr->adapter->currentNavigationEntryIndex() + 1 + index);
++}
++
+ void QQuickWebEngineView::geometryChanged(const QRectF &newGeometry, const QRectF &oldGeometry)
+ {
+     QQuickItem::geometryChanged(newGeometry, oldGeometry);
+diff --git a/src/webengine/api/qquickwebengineview_p_p.h b/src/webengine/api/qquickwebengineview_p_p.h
+index 7fed546..8b48913 100644
+--- a/src/webengine/api/qquickwebengineview_p_p.h
++++ b/src/webengine/api/qquickwebengineview_p_p.h
+@@ -55,6 +55,7 @@ class WebContentsAdapter;
+ class UIDelegatesManager;
+ 
+ QT_BEGIN_NAMESPACE
++class QQuickWebEngineHistory;
+ class QQuickWebEngineNewViewRequest;
+ class QQuickWebEngineView;
+ class QQmlComponent;
+@@ -83,6 +84,7 @@ class Q_WEBENGINE_PRIVATE_EXPORT QQuickWebEngineViewExperimental : public QObjec
+     Q_PROPERTY(QQuickWebEngineViewport *viewport READ viewport)
+     Q_PROPERTY(QQmlComponent *extraContextMenuEntriesComponent READ extraContextMenuEntriesComponent WRITE setExtraContextMenuEntriesComponent NOTIFY extraContextMenuEntriesComponentChanged)
+     Q_PROPERTY(bool isFullScreen READ isFullScreen WRITE setIsFullScreen NOTIFY isFullScreenChanged)
++    Q_PROPERTY(QQuickWebEngineHistory *navigationHistory READ navigationHistory CONSTANT FINAL)
+ 
+ public:
+     void setIsFullScreen(bool fullscreen);
+@@ -90,8 +92,12 @@ public:
+     QQuickWebEngineViewport *viewport() const;
+     void setExtraContextMenuEntriesComponent(QQmlComponent *);
+     QQmlComponent *extraContextMenuEntriesComponent() const;
++    int currentNavigationEntryIndex() const;
++    QQuickWebEngineHistory *navigationHistory() const;
+ 
+ public Q_SLOTS:
++    void goBackTo(int index);
++    void goForwardTo(int index);
+     void runJavaScript(const QString&, const QJSValue & = QJSValue());
+ 
+ Q_SIGNALS:
+@@ -153,6 +159,7 @@ public:
+     QExplicitlySharedDataPointer<WebContentsAdapter> adapter;
+     QScopedPointer<QQuickWebEngineViewExperimental> e;
+     QScopedPointer<QQuickWebEngineViewport> v;
++    QScopedPointer<QQuickWebEngineHistory> m_history;
+     QQmlComponent *contextMenuExtraItems;
+     QUrl icon;
+     int loadProgress;
+diff --git a/src/webengine/plugin/experimental/plugin.cpp b/src/webengine/plugin/experimental/plugin.cpp
+index 6107147..5274ea3 100644
+--- a/src/webengine/plugin/experimental/plugin.cpp
++++ b/src/webengine/plugin/experimental/plugin.cpp
+@@ -41,6 +41,7 @@
+ 
+ #include <QtQml/qqmlextensionplugin.h>
+ 
++#include "qquickwebenginehistory_p.h"
+ #include "qquickwebengineview_p.h"
+ #include "qquickwebengineview_p_p.h"
+ 
+@@ -71,6 +72,10 @@ public:
+             QObject::tr("Cannot create a separate instance of WebEngineViewExperimental"));
+         qmlRegisterUncreatableType<QQuickWebEngineViewport>(uri, 1, 0, "WebEngineViewport",
+             QObject::tr("Cannot create a separate instance of WebEngineViewport"));
++        qmlRegisterUncreatableType<QQuickWebEngineHistory>(uri, 1, 0, "NavigationHistory",
++            QObject::tr("Cannot create a separate instance of NavigationHistory"));
++        qmlRegisterUncreatableType<QQuickWebEngineHistoryListModel>(uri, 1, 0, "NavigationHistoryListModel",
++            QObject::tr("Cannot create a separate instance of NavigationHistory"));
+     }
+ };
+ 
+diff --git a/src/webengine/webengine.pro b/src/webengine/webengine.pro
+index cd175bf..c0e9089 100644
+--- a/src/webengine/webengine.pro
++++ b/src/webengine/webengine.pro
+@@ -9,6 +9,7 @@ QT_PRIVATE += webenginecore qml-private quick-private gui-private core-private
+ INCLUDEPATH += $$PWD api ../core
+ 
+ SOURCES = \
++        api/qquickwebenginehistory.cpp \
+         api/qquickwebengineloadrequest.cpp \
+         api/qquickwebenginenewviewrequest.cpp \
+         api/qquickwebengineview.cpp \
+@@ -18,6 +19,7 @@ SOURCES = \
+ HEADERS = \
+         api/qtwebengineglobal.h \
+         api/qtwebengineglobal_p.h \
++        api/qquickwebenginehistory_p.h \
+         api/qquickwebengineloadrequest_p.h \
+         api/qquickwebenginenewviewrequest_p.h \
+         api/qquickwebengineview_p.h \
+diff --git a/tests/auto/quick/qmltests/data/javascript.html b/tests/auto/quick/qmltests/data/javascript.html
+new file mode 100644
+index 0000000..7a3dc0a
+--- /dev/null
++++ b/tests/auto/quick/qmltests/data/javascript.html
+@@ -0,0 +1,8 @@
++<html>
++<head><title>Original Title</title></head>
++<body>
++<script type="text/javascript">
++document.title = "New Title";
++</script>
++</body>
++</html>
+diff --git a/tests/auto/quick/qmltests/data/test2.html b/tests/auto/quick/qmltests/data/test2.html
+new file mode 100644
+index 0000000..629c2a0
+--- /dev/null
++++ b/tests/auto/quick/qmltests/data/test2.html
+@@ -0,0 +1,6 @@
++<html>
++<head><title>Test page with huge link area</title></head>
++<body>
++<a title="A title" href="test1.html"><img width=200 height=200></a>
++</body>
++</html>
+diff --git a/tests/auto/quick/qmltests/data/tst_navigationHistory.qml b/tests/auto/quick/qmltests/data/tst_navigationHistory.qml
+new file mode 100644
+index 0000000..bac87a8
+--- /dev/null
++++ b/tests/auto/quick/qmltests/data/tst_navigationHistory.qml
+@@ -0,0 +1,143 @@
++/****************************************************************************
++**
++** Copyright (C) 2014 Digia Plc and/or its subsidiary(-ies).
++** Contact: http://www.qt-project.org/legal
++**
++** This file is part of the Qt Quick Controls module of the Qt Toolkit.
++**
++** $QT_BEGIN_LICENSE:LGPL$
++** Commercial License Usage
++** Licensees holding valid commercial Qt licenses may use this file in
++** accordance with the commercial license agreement provided with the
++** Software or, alternatively, in accordance with the terms contained in
++** a written agreement between you and Digia.  For licensing terms and
++** conditions see http://qt.digia.com/licensing.  For further information
++** use the contact form at http://qt.digia.com/contact-us.
++**
++** GNU Lesser General Public License Usage
++** Alternatively, this file may be used under the terms of the GNU Lesser
++** General Public License version 2.1 as published by the Free Software
++** Foundation and appearing in the file LICENSE.LGPL included in the
++** packaging of this file.  Please review the following information to
++** ensure the GNU Lesser General Public License version 2.1 requirements
++** will be met: http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
++**
++** In addition, as a special exception, Digia gives you certain additional
++** rights.  These rights are described in the Digia Qt LGPL Exception
++** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
++**
++** GNU General Public License Usage
++** Alternatively, this file may be used under the terms of the GNU
++** General Public License version 3.0 as published by the Free Software
++** Foundation and appearing in the file LICENSE.GPL included in the
++** packaging of this file.  Please review the following information to
++** ensure the GNU General Public License version 3.0 requirements will be
++** met: http://www.gnu.org/copyleft/gpl.html.
++**
++**
++** $QT_END_LICENSE$
++**
++****************************************************************************/
++
++import QtQuick 2.0
++import QtTest 1.0
++import QtWebEngine 1.0
++import QtWebEngine.experimental 1.0
++
++TestWebEngineView {
++    id: webEngineView
++    width: 400
++    height: 300
++
++    ListView {
++        id: backItemsList
++        anchors.fill: parent
++        model: webEngineView.experimental.navigationHistory.backItems
++        delegate:
++            Text {
++                color:"black"
++                text: "title : " + title
++            }
++    }
++
++    ListView {
++        id: forwardItemsList
++        anchors.fill: parent
++        model: webEngineView.experimental.navigationHistory.forwardItems
++        delegate:
++            Text {
++                color:"black"
++                text: "title : " + title
++            }
++    }
++
++    TestCase {
++        name: "WebViewNavigationHistory"
++
++        function test_navigationHistory() {
++            compare(webEngineView.loadProgress, 0)
++
++            webEngineView.url = Qt.resolvedUrl("test1.html")
++            verify(webEngineView.waitForLoadSucceeded())
++            compare(webEngineView.canGoBack, false)
++            compare(webEngineView.canGoForward, false)
++            compare(backItemsList.count, 0)
++            compare(forwardItemsList.count, 0)
++
++            webEngineView.url = Qt.resolvedUrl("test2.html")
++            verify(webEngineView.waitForLoadSucceeded())
++            compare(webEngineView.url, Qt.resolvedUrl("test2.html"))
++            compare(webEngineView.canGoBack, true)
++            compare(webEngineView.canGoForward, false)
++            compare(backItemsList.count, 1)
++
++            webEngineView.experimental.goBackTo(0)
++            verify(webEngineView.waitForLoadSucceeded())
++            compare(webEngineView.url, Qt.resolvedUrl("test1.html"))
++            compare(webEngineView.canGoBack, false)
++            compare(webEngineView.canGoForward, true)
++            compare(backItemsList.count, 0)
++            compare(forwardItemsList.count, 1)
++
++            webEngineView.goForward()
++            verify(webEngineView.waitForLoadSucceeded())
++            compare(webEngineView.url, Qt.resolvedUrl("test2.html"))
++            compare(webEngineView.canGoBack, true)
++            compare(webEngineView.canGoForward, false)
++            compare(backItemsList.count, 1)
++            compare(forwardItemsList.count, 0)
++
++            webEngineView.url = Qt.resolvedUrl("javascript.html")
++            verify(webEngineView.waitForLoadSucceeded())
++            compare(webEngineView.url, Qt.resolvedUrl("javascript.html"))
++            compare(webEngineView.canGoBack, true)
++            compare(webEngineView.canGoForward, false)
++            compare(backItemsList.count, 2)
++            compare(forwardItemsList.count, 0)
++
++            webEngineView.experimental.goBackTo(1)
++            verify(webEngineView.waitForLoadSucceeded())
++            compare(webEngineView.url, Qt.resolvedUrl("test1.html"))
++            compare(webEngineView.canGoBack, false)
++            compare(webEngineView.canGoForward, true)
++            compare(backItemsList.count, 0)
++            compare(forwardItemsList.count, 2)
++
++            webEngineView.experimental.goForwardTo(1)
++            verify(webEngineView.waitForLoadSucceeded())
++            compare(webEngineView.url, Qt.resolvedUrl("javascript.html"))
++            compare(webEngineView.canGoBack, true)
++            compare(webEngineView.canGoForward, false)
++            compare(backItemsList.count, 2)
++            compare(forwardItemsList.count, 0)
++
++            webEngineView.goBack()
++            verify(webEngineView.waitForLoadSucceeded())
++            compare(webEngineView.url, Qt.resolvedUrl("test2.html"))
++            compare(webEngineView.canGoBack, true)
++            compare(webEngineView.canGoForward, true)
++            compare(backItemsList.count, 1)
++            compare(forwardItemsList.count, 1)
++        }
++    }
++}
+-- 
+2.7.4 (Apple Git-66)
+

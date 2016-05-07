@@ -1103,27 +1103,26 @@ is képezik.
 \end{center}
 
 \noindent
-Az új \textbf{Navigation History} Quick API valósítja meg a böngészési előzmények kezelését,
-tárolását. A Widget API már kész volt, ezért az mintaként szolgált, továbbá a Core modulban
-a szükséges belső API már meg volt valósítva.
+A \textbf{Navigation History} Quick API a Qt WebEngine modulban valósítja meg a böngészési
+előzmények kezelését, tárolását. A megvalósítás megkezdésekor a Qt WebEngine Widgets modul
+már rendelkezett hasonló funkcióval (\texttt{QWebEngineHistory}) így annak megvalósítása
+a fejlesztés során mintaként szolgált, továbbá a szükséges implementáció a Core modulban
+már kész volt.
 
-Az alapgondolat az volt, hogy a böngészési előzményeket 2 listában tároljuk az szerint,
-hogy az éppen megjelenített oldalnál előbb (\texttt{backItems}) vagy
-később (\texttt{forwardItems}) lettek betöltve az adott oldalak. Az adatok tárolására
-a QML nyelv a \texttt{ListModel} QML típust nyújtja. Az előzmények tárolására specializált
-\texttt{ListModel}-re van szükség, amit a \texttt{NavigationHistoryListModel} új QML típus
-valósít meg. Az új model tárolja az oldalak URL-jét és címét (title), továbbá, lekéri
-a látogatott oldalak listáját a Core modul belső API-ján keresztül.
+A funkció alapötlete az, hogy a böngészési előzmények 2 listában vannak tárolva aszerint,
+hogy az éppen megjelenített oldalnál előbb (\texttt{backItems}) vagy később
+(\texttt{forwardItems}) lettek betöltve az adott oldalak. Az előzmények listáit az új
+\texttt{NavigationHistoryListModel} QML típus tárolja. A modellben egy listaelemhez többféle
+információt is lehet rendelni, ezek az úgynevezett \textit{role}-ok. A
+\texttt{NavigationHistoryListModel} ezen megvalósításában egy előzményhez két role tartozik.
+Az \texttt{url} role a látogatott oldal webcíme, a \texttt{title} role pedig az oldal címe.
+A típusból példányosított két lista a Core modul belső API-ján keresztül frissül.
 
-A két \texttt{NavigationHistoryListModel} példány tárolására
-egy új Quick Item, a \texttt{NavigationHistory} lett megvalósítva. A Quick Item-eket QML
-szinten ugyanúgy ``típusokként'' kezeljük, a különbség mindösszesen annyi, hogy az Item,
-a Quick C++ API-jával kerül létrehozásra nem pedig az Qt QML API egy beépített típusának
-specializálásával. A \texttt{NavigationHistory} típus (vagy item) tulajdonképpen maga a
-böngészési előzményekhez írt API.
+A két \texttt{NavigationHistoryListModel} példány tárolására egy új QML típust is
+megvalósítottam, a \texttt{NavigationHistory}-t. Ez a típus adja a böngészési előzményekhez
+a Quick API-t.
 
-%\begin{table}[h!]
-\begin{table}[ht!]
+\begin{table}[H]
     \centering
     \begin{tabular}{ | l | l | p{238pt} | }
         \hline
@@ -1145,28 +1144,28 @@ böngészési előzményekhez írt API.
 
 Az új QML típusok a Qt QML modul C++ API-jával lettek beregisztrálva a QML nyelvbe, viszont
 QML-ből nem példányosíthatóak. Minden \texttt{WebEngineView}-hoz (tab-hoz) tartozik egy
-\texttt{NavigationHistory}, ezért azt értelemszerűen a view expliciten példányosítja.
+\texttt{NavigationHistory} példány, amit a \texttt{WebEngineView} lekérdezéskor létrehoz
 A \texttt{NavigationHistoryListModel} példányok a \texttt{NavigationHistory}-hoz tartoznak,
 ezért azok azzal együtt jönnek létre. Ebből kifolyólag, ha hozzáférünk az expliciten
-példányosított \texttt{NavigationHistory}-hoz, hozzáférünk a listákhoz is. Az
+példányosított \texttt{NavigationHistory}-hoz, hozzáférünk a listákhoz is. A
 \texttt{NavigationHistory} példányt pedig az azt létrehozó \texttt{WebEngineView} API-n
-keresztül érdemes lekérni, de ehhez ezt az API-t is bővíteni kell.
+keresztül érdemes lekérni, de ehhez ezt az API-t is bővíteni kellett.
 
-Ennek a funkcionalitásnak a megvalósításakor, a \texttt{WebEngineView} két API-ra volt
-bontva. Volt egy ``mainline'' (maga a \texttt{WebEngineView}) és annak egy ``része'', a
-\texttt{WebEngineViewExperimental}. A \texttt{WebEngineViewExperimental} egy ``kísérleti''
-API, ami olyan funkcionalitásokat nyújtott, amelyek újak és még véglegesítésre várnak
-(ezért unstable API), vagy pedig csak a teszteléshez szükségesek (nem javasolt a használata).
-Ez a módszer QtWebKitből került át, viszont a legújabb Qt WebEngine verziókban
-próbálunk a \texttt{WebEngineViewExperimental} API-tól megszabadulni, ezért abba már nem
-kerülnek új funkcionalitások, továbbá dokumentálva sincsen.
+A \texttt{WebEngineView} fel van osztva egy stable és egy unstable API-ra. A stable API-t
+maga a \texttt{WebEngineView} QML típus adja, az unstable API a \texttt{WebEngineView}
+típus kiterjesztéseként érhető el, amely a \texttt{WebEngineViewExperimental}.
+Az \textit{experimental} API, korábban olyan funkcionalitásokat nyújtott, amelyek újak és
+még véglegesítésre vártak (ezért unstable API), vagy pedig csak a teszteléshez szükségesek
+(nem javasolt a használata). Ez a módszer QtWebKitből került át, viszont a legújabb
+QtWebEngine verziókban próbálunk a \texttt{WebEngineViewExperimental} API-tól megszabadulni,
+ezért abba már nem adunk hozzá új funkcionalitásokat, emellett dokumentálva sincsen. A
+\texttt{NavigationHistory} a QtWebKitben az experimental API része volt, ezért azt a
+QtWebEngine-ben is az experimental API-hoz adtam hozzá.
 
-Mivel a \texttt{NavigationHistory} még a QtWebKitben is kísérleti API volt, ezért az a
-Qt WebEngine-ben is csak a \texttt{WebEngineViewExperimental} API-n keresztül vált
-elérhetővé. Mivel önmagában az előzmények kilistázásának nem sok haszna van, ezért a view
-API-hoz további funkcionalitások lettek hozzáadva, amelyek a már látogatott oldalak
-újratöltését tették könnyebbé. Ezek listája a \ref{tab:navigation-history-experimental-api}
-táblázatban látható.
+Az előzmények kilistázásának önmagában nem sok haszna van, ezért a
+\texttt{WebEngineViewExperimental} API-t tovább bővítették, hogy alkalmas legyen a böngészési
+előzmények visszatöltésére. Az experimental API-hoz hozzáadott funkciók listája a
+\ref{tab:navigation-history-experimental-api} táblázatban látható.
 
 \begin{table}[ht]
     \centering
@@ -1183,13 +1182,13 @@ táblázatban látható.
         \\ \hline
 
         \texttt{goBackTo(int)} & \texttt{slot} &
-        \makecell[l]{A paraméterben átadott index-el lép \\
+        \makecell[l]{A paraméterben átadott indexszel lép \\
                      vissza a \texttt{backItems} listában és \\
                      tölti be az oldalt}
         \\ \hline
 
         \texttt{goForwardTo(int)} & \texttt{slot} &
-        \makecell[l]{A paraméterben átadott index-el lép \\
+        \makecell[l]{A paraméterben átadott indexszel lép \\
                      előre a \texttt{forwardItems} listában és \\
                      tölti be az oldalt}
         \\ \hline
@@ -1200,20 +1199,19 @@ táblázatban látható.
     }
 \end{table}
 
-Az új funkciók tesztelésére a QtWebKitben is használt teszt lett portolva a
-Qt WebEngine-be és további teszt esetekkel lett kibővítve a lefedettség javítására.
+Az új funkciók tesztelésére a QtWebKitben is használt auto tesztek lettek portolva a
+QtWebEngine-be és további teszt esetekkel bővítettem azokat a lefedettség növelésére.
 A tesztelés módszere, hogy a \texttt{WebEngineView} API segítségével navigálunk oldalak
-között és minden (sikeres) oldal betöltés után ellenőrizzük a \texttt{NavigationHistory}-ben
+között és minden (sikeres) oldal betöltés után ellenőrizzük a \texttt{NavigationHistory}-ban
 tárolt listák méretét.
 
-A fent bemutatott funkció a Qt 5.4-es verziójában jelent meg a Qt WebEngine bekerülésével
-együtt a kísérleti API részeként. A cél az volt, hogy a QtWebKit
+A fent bemutatott funkció a Qt 5.4-es verziójában jelent meg a QtWebEngine bekerülésével
+együtt az experimental API részeként. A cél az volt, hogy a QtWebKit
 \texttt{NavigationHistory} megvalósítása legyen átültetve a Qt WebEngine-be a lehető
-legkevesebb API módosítással.
-A Qt 5.5-ös verzióban ez az API már a ``mainline'' API-ba került át, jelentős
-változtatásokkal az API-n. A legnagyobb eltérés, hogy a QML típusok esetén a
+legkevesebb API módosítással. A Qt 5.5-ös verzióban ez a funkció bekerült a stable API-ba, ami
+jelentős változtatásokkal járt. A legnagyobb eltérés, hogy a QML típusok esetén a
 \texttt{NavigationHistory} elnevezést/prefixet \texttt{WebEngineHistory}-ra cseréltük,
-viszont a \texttt{WebEngineView.navigationHistory} property elnevezés megmaradt, visszafele
+viszont a \texttt{WebEngineView.navigationHistory} property elnevezés megmaradt,
 kompatibilitási okokból.
 
 
@@ -2999,7 +2997,7 @@ Szeretnék köszönetet mondani Dr. Kiss Ákos témavezetőmnek a téma kutatás
 támogatásáért és a diplomamunkám megírásában nyújtott segítségéért.
 
 Ezen kívül szeretnék köszönetet mondani a \textit{The Qt Company} és a
-\textit{Szegedi Tudományegyetem Szoftverfejlesztés Tanszék} volt es jelenleg is a QtWebEngine
+\textit{Szegedi Tudományegyetem Szoftverfejlesztés Tanszék} volt és jelenleg is a QtWebEngine
 projekten dolgozó munkatársainak a beszélgetésekért és a közösségnek benyújtott munkám
 ellenőrzéséért és befogadásáért.
 

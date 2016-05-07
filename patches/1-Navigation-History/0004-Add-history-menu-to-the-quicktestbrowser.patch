@@ -1,0 +1,81 @@
+From 3cb5203cb7a4bee9a867e8616c23ce635d6a8506 Mon Sep 17 00:00:00 2001
+From: Peter Varga <pvarga@inf.u-szeged.hu>
+Date: Wed, 26 Mar 2014 18:56:33 +0100
+Subject: [PATCH] Add history menu to the quicktestbrowser
+
+Change-Id: Ibb5110eb013363f8a7ae386b6a3ccc45cc6ca0aa
+Reviewed-by: Jocelyn Turcotte <jocelyn.turcotte@digia.com>
+---
+ tests/quicktestbrowser/quickwindow.qml | 42 ++++++++++++++++++++++++++++++++++
+ 1 file changed, 42 insertions(+)
+
+diff --git a/tests/quicktestbrowser/quickwindow.qml b/tests/quicktestbrowser/quickwindow.qml
+index 183e41f..0169215 100644
+--- a/tests/quicktestbrowser/quickwindow.qml
++++ b/tests/quicktestbrowser/quickwindow.qml
+@@ -114,6 +114,36 @@ ApplicationWindow {
+         }
+     }
+ 
++    Menu {
++        id: backHistoryMenu
++
++        Instantiator {
++            model: currentWebView && currentWebView.experimental.navigationHistory.backItems
++            MenuItem {
++                text: model.title
++                onTriggered: currentWebView.experimental.goBackTo(index)
++            }
++
++            onObjectAdded: backHistoryMenu.insertItem(index, object)
++            onObjectRemoved: backHistoryMenu.removeItem(object)
++        }
++    }
++
++    Menu {
++        id: forwardHistoryMenu
++
++        Instantiator {
++            model: currentWebView && currentWebView.experimental.navigationHistory.forwardItems
++            MenuItem {
++                text: model.title
++                onTriggered: currentWebView.experimental.goForwardTo(index)
++            }
++
++            onObjectAdded: forwardHistoryMenu.insertItem(index, object)
++            onObjectRemoved: forwardHistoryMenu.removeItem(object)
++        }
++    }
++
+     toolBar: ToolBar {
+         id: navigationBar
+             RowLayout {
+@@ -124,6 +154,12 @@ ApplicationWindow {
+                     onClicked: currentWebView.goBack()
+                     enabled: currentWebView && currentWebView.canGoBack
+                     activeFocusOnTab: !browserWindow.platformIsMac
++
++                    MouseArea {
++                        anchors.fill: parent
++                        acceptedButtons: Qt.RightButton
++                        onClicked: backHistoryMenu.popup()
++                    }
+                 }
+                 ToolButton {
+                     id: forwardButton
+@@ -131,6 +167,12 @@ ApplicationWindow {
+                     onClicked: currentWebView.goForward()
+                     enabled: currentWebView && currentWebView.canGoForward
+                     activeFocusOnTab: !browserWindow.platformIsMac
++
++                    MouseArea {
++                        anchors.fill: parent
++                        acceptedButtons: Qt.RightButton
++                        onClicked: forwardHistoryMenu.popup()
++                    }
+                 }
+                 ToolButton {
+                     id: reloadButton
+-- 
+2.7.4 (Apple Git-66)
+
