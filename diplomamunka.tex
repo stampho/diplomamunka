@@ -932,40 +932,44 @@ release-t). Dolgozatom készítése idején a Qt 5.6 a legfrissebb stabil kiadá
 bemutatott funkcionalitások, majd csak a Qt 5.7-ben lesznek elérhetőek.
 
 \section{QtWebEngine}
-A QtWebEngine váltotta le a QtWebKitet a Qt keretrendszer 5.4-es verziójában. A célja
-megegyezik a QtWebKitével: webes tartalom integrálása és manipulálása Qt alkalmazásban.
-A QtWebEngine a Chromiumra épül, pontosabba a Chromium Content Module unstable API-ja
-felé implementál egy stable API-t. Az \ref{fig:chromium-architecture} ábra alapján,
-a Chrome böngésző alkalmazás helyére a Chromium stack tetején a QtWebEngine kerül és
-az lesz a Chromium Content Module-t beágyazó ``alkalmazás''.
+A QtWebEngine \cite{bib:qt-doc-qtwebengine-overview} váltotta le a QtWebKitet a Qt
+keretrendszer 5.4-es verziójában. A célja megegyezik a QtWebKitével: webes tartalom
+integrálása és manipulálása Qt alkalmazásban. A QtWebEngine a Chromiumra épül, pontosabban a
+Chromium Content Module unstable API-ja -- Chromium Content API -- felé implementál egy
+stable API-t. Az \ref{fig:chromium-architecture} ábra alapján, a Chrome böngésző alkalmazás
+helyére a Chromium \textit{stack} tetejére a QtWebEngine kerül és az lesz a Chromium Content
+Module-t beágyazó ``alkalmazás''\footnote{QtWebEngine esetén inkább ``beépítő''
+függvénykönvytárról van szó, mintsem alkalmazásról}.
 
 A QtWebEngine fejlesztői forkolták a Chromiumot és ennek a forknak a karbantartása jelentős
-nehézséget okoz a QtWebEngine fejlesztőinek. Körülbelül 6 hetente jelenik meg új Chromium
+mennyiségű munkát jelent a fejlesztőknek. Körülbelül 6 hetente jelenik meg új Chromium
 verzió aminek változik az API-ja. Minden új verzió tartalmazhat biztonsági javításokat is,
-amelyeket nem backportolnak korábbi verziókba\footnote{A Chromiumnak nincs LTS (Long Term
-Support) verziója}, ezért a rendszeres frissítésekre szükség van. Habár amikor csak
-lehetséges ezek a javítások cherry-pick-elve vannak a forkba.
+amelyeket a Chromium fejlesztői nem backportolnak korábbi verziókba\footnote{A Chromiumnak
+nincs LTS (Long Term Support) verziója}, ezért a rendszeres frissítésekre szükség van.
+A biztonsági javítások, amikor ez megoldható \textit{cherry-pickelve} vannak a QtWebEngine
+Chromium forkjába.
 
-A QtWebEngine-nek legnagyobb részét ez a Chromium forknak a kódja teszi ki, habár sok
-nem használt Chromium komponens eltávolításra került (pl. Chrome). Viszont egyes
-``backend'' komponensek, amelyek lecserélhetőek voltak QtWebKitben Qt modulokra, már
-nem lecserélhetőek a Chromiumban. Ilyen például a Chromium network library.
+A QtWebEngine legnagyobb részét a Chromium fork forráskódja teszi ki, habár sok
+nem használt Chromium komponens eltávolításra került (például a Chrome böngésző alkalmazás).
+Viszont egyes ``backend'' komponensek, amelyek lecserélhetőek voltak QtWebKitben Qt modulokra,
+már nem cserélhetőek le a Chromiumban. Ilyen például a Chromium \textit{network library}.
 
 A web elemek kirajzolását viszont a Qt végzi. A mailbox texture azonosítók segítségével a
 QtWebEngine hozzáfér a Chrome Compositor által összeállított textúrákhoz, amelyek a
 megosztott OpenGL contexten vannak tárolva.
 A textúrákból a QtWebEngine épít scene graph fát (\texttt{QSGNode} tree), amit majd a
-Qt Quick Scene Graph fog kirajzolni. Emiatt, a Chromiumban a GPU process ki van kapcsolva,
+Qt Quick Scene Graph rajzol ki. Emiatt, a Chromiumban a GPU process ki van kapcsolva,
 mert a GPU-t a Qt használja, ami a Browser process-ben fut (\texttt{switches:kInProcessGPU}).
 
 A scene graph függőség miatt a QtWebEngine nem működik olyan környezetben, ahol nincs
-OpenGL ES 2.0 vagy OpenGL 2.0. Ez igaz a QtWebEngine Widget API-jára is, mivel a web tartalom
-kirajzolásának megvalósítása közös.
+OpenGL ES 2.0 vagy OpenGL 2.0. Ez igaz a QtWebEngine widget API-jára is, mivel a web tartalom
+kirajzolásának megvalósítása közös, így a Qt WebEngine Widgets modul sem működik Qt Quick
+nélkül.
 
-A QtWebEngine tartalmazza a QtWebEngine Processt és 3 modult: a QtWebEngine és a
-QtWebEngineWidgets rendre a Quick és Widget API-kat valósítják meg. A QtWebEngineCore
-modul tartalmazza a Chromium forkot és QtWebEngine funkcionalitások közös részét, amin a
-Quick és a Widget API-k osztoznak. A QtWebEngine felépítését a
+A QtWebEngine tartalmazza a QtWebEngine Processt és 3 modult: a Qt WebEngine és a
+Qt WebEngine Widgets rendre a Quick és Widget API-kat valósítják meg. A Qt WebEngine Core
+modul tartalmazza a Chromium forkot és QtWebEngine funkcionalitások közös megvalósítását,
+amin a Quick és a Widget API-k osztoznak. A QtWebEngine felépítését a
 \ref{fig:qtwebengine-architecture} ábra mutatja.
 
 \begin{figure}[ht]
@@ -978,59 +982,58 @@ Quick és a Widget API-k osztoznak. A QtWebEngine felépítését a
 \end{figure}
 
 \subsection{Process}
-A QtWebEngine Process a Chromium Render Processt fedi el. Különálló program saját belépési
-ponttal (\texttt{main()} függvénnyel), amit a Browser Process indít el. Önálló fordítási
-egység, de a hozzátartozó kód a QtWebEngine Core modulban van.
-Ez processz felel a web tartalom rendereléséért és a \texttt{JavaScript} kódok
-végrehajtásáért. A processz OS X-en és Linuxon sandboxban fut, Windowson a sandbox
-környezet még nem támogatott.
+A QtWebEngine Process \cite{bib:qt-doc-qt-webengine-process} a Chromium Render Processt
+bővíti ki és csomagolja magába. Különálló program saját belépési ponttal (\texttt{main()}
+függvénnyel), amit a Browser Process indít el. Önálló fordítási egység, de a hozzátartozó kód
+a QtWebEngine Core modulban található. Ez a processz felel a web tartalom megjelenítésért
+(Blink) és a JavaScript kódok végrehajtásáért (V8). A processz OS X-en és Linuxon sandboxban
+fut, Windowson a sandbox környezet még (Qt 5.7) nem támogatott.
 
 \subsection{Core}
-A QtWebEngine Core modul tartalmazza a Chromium fork-ot és implementálja a
-Chromium Content API interface-eit. Belső (internal) API-ja elfedi a publikus API-k
-(Widget, Quick) elől a Chromium Content API-t, így a publikus API-knak nincsenek közvetlen
-Chromium függőségeik. A publikus API-k számára közös adapter interfészt
+A Qt WebEngine Core modul \cite{bib:qt-doc-qt-webengine-core} tartalmazza a Chromium forkot
+és implementálja a Chromium Content API interfészeit. Belső (\textit{internal}) API-ja elfedi
+a publikus API-k (Widget, Quick) elől a Chromium Content API-t, így a publikus API-knak
+nincsenek közvetlen Chromium függőségeik. A publikus API-k számára közös adapter interfészt
 (\texttt{WebContentsAdapterClient}) definiál, amit a publikus API-nak kell megvalósítania.
 
 A modul része a Qt Quick Scene Graph integráció is: ő hozza létre a Chromiumból
 kinyert textúrákból a scene graph node-okat (\texttt{QSGNode}) és épít belőle fát a
-megjelenítésre (compositing). Továbbá itt található meg a Browser Process és a QtWebEngine
+megjelenítésre (compositing). Továbbá itt van megvalósítva a Browser Process és a Qt WebEngine
 Process inicializációja (\texttt{WebEngineContext}), a QtWebEngine beállításainak továbbítása
-a Chromium felé (\texttt{WebEngineSettings}), controller osztályok az API specifikus
-dialog ablakok megvalósításához (\texttt{pl.: JavaScriptDialogController}) és még sok minden
+a Chromium felé (\texttt{WebEngineSettings}), \textit{controller} osztályok az API specifikus
+dialog ablakok megvalósításához (például \texttt{JavaScriptDialogController}) és még sok minden
 más.
 
-Továbbá, QtWebEngine Core modul függősége Qt WebChannel modul, hogy a publikus API-t
-használva tetszőlegese saját Qt-s objektum elérhető legyen a weboldal (vagy webalkalmazás)
-számára. Ezáltal a fejlesztő hybrid alkalmazást hozhat létre, amelyben a QtWebEngine-el
-megjelenített weboldal, kommunikálhat a QtWebEngine-t beágyazó alkalmazással.
-A Qt WebChannel Qt WebSockets-ra épülő backend-jét a Qt WebEngine Core cseréli le úgy,
-hogy a kommunikáció a Chromium IPC felett történjen, továbbá beregisztrálja a web channel-t
-a V8\footnote{a Chromium JavaScript motorja} API-n keresztül az érintett oldal
-\texttt{JavaScript} contextjébe.
+A Qt WebEngine Core modul függősége a Qt WebChannel modul. A WebChannel modulra azért van
+szükség, hogy a publikus API-t használva tetszőleges, saját Qt-s objektum elérhető legyen a
+weboldal (vagy webalkalmazás) számára. Ezáltal a fejlesztő hibrid alkalmazásokat hozhat létre,
+melyekben a QtWebEngine-nel megjelenített weboldalak, kommunikálhatnak a QtWebEngine-t
+beágyazó alkalmazással. A Qt WebChannel Qt WebSockets-re épülő backendjét a Qt WebEngine Core
+cseréli le úgy, hogy a kommunikáció a Chromium IPC felett történjen. A \textit{web channel}-t
+a Core modul regisztrálja be a V8\footnote{A V8 a Chromium JavaScript motorja} API-n keresztül
+Qt WebEngine Process (Render Process) JavaScript contextjébe.
 
 A Qt 5.6-os verziója óta a Qt WebEngine Core modul rendelkezik publikus API-val is.
 Ez az API a Chromiumhoz enged hozzáférést és jellemzően a Widget vagy Quick API-val kell
-együtt használni. Ennélfogva a QtWebEngine Core modulját nem szükséges explicit hozzáadni,
-a saját Qt-s alkalmazás projektjéhez, mert a Qt WebEngine Widgets és Qt WebEngine (Quick)
-modulok automatikusan behúzzák. Ennek az API-nak része a
-\texttt{QtWebEngineCore::initialize()} függvény is, amivel a QtWebEngine-t integráló
-alkalmazást ``inicializálni'' kell, azért, hogy a megjelenítéshez használt OpenGL context
-a processzek között megosztott legyen (\texttt{Qt::AA\_ShareOpenGLContexts}).
+együtt használni. A Core modult nem szükséges explicit hozzáadni a saját Qt-s alkalmazás
+projekt fájljához mert a Qt WebEngine Widgets és Qt WebEngine (Quick) modulok implicit
+megteszik ezt. Ennek az API-nak része a \texttt{QtWebEngineCore::initialize()} függvény is,
+amivel a QtWebEngine-t integráló alkalmazásnak inicializálni kell az OpenGL contextet, hogy
+az a processzek között megosztott legyen (\texttt{Qt::AA\_ShareOpenGLContexts}).
 
 \subsection{Widget és Quick API}
 A QtWebEngine Widget és Quick API-ját rendre a \textbf{Qt WebEngine Widgets} és
 \textbf{Qt WebEngine} modulok valósítják meg. Ezek a modulok nem implementálják vagy hívják
 közvetlenül a Chromium Content API-t, hanem azt a Qt WebEngine Core modulon keresztül érik el.
-A két API között előfordulhatnak funkcionalitásban előfordulhatnak különbségek, például az
-egyikben elérhető egy API függvény a másikban még nem.
+A két API között előfordulhatnak funkcionalitásbeli különbségek, például az egyikben elérhető
+egy API függvény a másikban pedig nem.
 
 A publikus API-k megvalósításánál nagyon fontos szempont a bináris kompatibilitás
 biztosítása. Ez nem csak annyit jelent, hogy a meglévő API-k nem változnak, hanem a publikus
-(exportált) \texttt{C++} osztályok sem mérete, sem pedig az elrendezése (layout) nem
-változhat. Ez a felhasználó számára annyit jelent, hogy saját Qt-s alkalmazása alatt
-főverzión belül (esetünkben ez az 5-ös) kicserélheti (frissítheti) a Qt library-t anélkül,
-hogy az alkalmazását újra kellene buildelni.
+(exportált) C++ osztályoknak sem mérete, sem pedig azok belső elrendezése (\texttt{layout})
+nem változhat. Ez a felhasználó számára annyit jelent, hogy saját Qt-s alkalmazása alatt
+főverzión belül (esetünkben ez az 5-ös) kicserélheti (frissítheti) a Qt függvénykönyvtárait
+anélkül, hogy az alkalmazását újra kellene buildelni.
 
 A bináris kompatibilitás megőrzése érdekében a publikus API-k implementálásakor
 \textit{d-pointer} (vagy más néven \textit{opaque pointer}) tervezési mintát alkalmazunk.
@@ -1038,32 +1041,33 @@ Ez nem csak a QtWebEngine API-jaira igaz, hanem az összes publikus Qt API-ra is
 
 A tervezési minta lényege az, hogy az API-ban megvalósított logikát egy rejtett
 (\textit{private}) osztály tartalmazza. Az API maga egy másik, publikus (\textit{public})
-osztály, ami egy pointer-t tartalmaz rejtett osztályra. Ez a pointer a névadó,
-\textit{d-pointer} (private data member). Ezáltal az API implementációja ``rejtve'' marad,
-az implementációban módosítások nem változtatják a publikus API-t és publikus API header
-fájlja átláthatóbb, mert nem tartalmaz olyan metódust vagy adattagot, ami nem a publikus
-API része.
-\cite{bib:qt-wiki-d-pointer}
+osztály, ami egy mutatót (\textit{pointer}) tartalmaz rejtett osztályra. Ez a mutató a névadó,
+\textit{d-pointer} (private data member) \cite{bib:qt-wiki-d-pointer}. Ezáltal az API
+implementációja ``rejtve'' marad, az implementációban módosítások nem változtatják a publikus
+API-t és a publikus API header fájljai átláthatóbbak, mert nem tartalmaznak olyan metódust
+vagy adattagot, ami nem a publikus API része.
 
-\subsubsection{Qt WebEngine Widget}
-A Qt WebEngine Widget modul C++ osztályokat nyújt widget GUI létrehozására. Az API
-fő komponense a \texttt{QWebEngineView} widget, amely a web tartalom megjelenítésért felel.
-Minden \texttt{QWebEngineView} objektumhoz egy \texttt{QWebEnginePage} példány tartozik.
-A \texttt{QWebEnginePage} API-n keresztül kérdezhető le és változtatható a web oldal
-tartalma.
+\subsubsection{Qt WebEngine Widgets}
+A Qt WebEngine Widgets modul \cite{bib:qt-doc-qt-webengine-widgets} C++ osztályokat nyújt
+widget GUI létrehozására. Az API fő komponense a \texttt{QWebEngineView} widget, amely a web
+tartalom megjelenítésért felel. Minden \texttt{QWebEngineView} objektumhoz egy
+\texttt{QWebEnginePage} példány tartozik. A \texttt{QWebEnginePage} API-n keresztül
+kérdezhető le és változtatható a web oldal tartalma, a \texttt{QWebEngineView}-n keresztül a
+WebView szabható testre.
 
-További API-k: \texttt{QWebEngineHistory} a már látogatott oldalak nyilvántartására és
-visszatöltésére, \texttt{QWebEngineProfile} weboldal csoportok kezelésére közös
-beállításokkal (pl.: ``inkognitó'' mód: \texttt{QWebEngineProfile::isOffTheRecord()}),
-\texttt{QWebEngineSettings} a weboldalak beállításainak kezelésére,
-\texttt{QWebEngineScript} JavaScript-ek beágyazására.
+Opcionálisan használható Qt WebEngine Widgets funkcionalitások például a
+\texttt{QWebEngineHistory} a már látogatott oldalak nyilvántartására és visszatöltésére,
+a \texttt{QWebEngineProfile} weboldal csoportok kezelésére közös beállításokkal
+(pl.: ``inkognitó'' mód: \texttt{QWebEngineProfile::isOffTheRecord()}), a
+\texttt{QWebEngineSettings} a weboldalak beállításainak kezelésére és a
+\texttt{QWebEngineScript} JavaScript kódok beágyazására.
 
 \subsubsection{Qt WebEngine}
-A Qt WebEngine ``fő'' modulja a Quick API. QML típusokat definiál QML/Quick alkalmazások
-létrehozására. A nagyjából ugyanazok az API-k állnak rendelkezésre, mint a Widget esetén.
-Egy fontos eltérést nem számítva: nincs külön \texttt{WebEnginePage} QML típus az oldal
-tartalmának kezelésére, hanem annak API-ja is a \texttt{WebEngineView} QML típusba lett
-beépítve.
+A Qt WebEngine modul \cite{bib:qt-doc-qt-webengine-quick} a QtWebEngine projekt elsődleges
+modulja, ami QML típusokat definiál QML/Quick alkalmazások megvalósításához. Többé-kevésbé
+ugyanazok az API-k állnak rendelkezésre, mint a Widget esetén. Lényeges különbség, hogy nincs
+külön \texttt{WebEnginePage} QML típus az oldal tartalmának kezelésére, hanem annak API-ja is
+a \texttt{WebEngineView} QML típusba lett beépítve.
 
 
 \chapter{Új funkciók a QtWebEngine-ben}
@@ -2929,9 +2933,31 @@ hozzáadott példa alkalmazásokban és a funkciók teszteléséhez is hasznos v
         {https://www.kdab.com/\\
         qt-webchannel-bridging-gap-cqml-web}
 
+    \bibitem{bib:qt-doc-qtwebengine-overview}
+        Qt Documentation: Qt WebEngine Overview \\
+        \url{http://doc.qt.io/qt-5/qtwebengine-overview.html}
+
+    \bibitem{bib:qt-doc-qt-webengine-process}
+        Qt Documentation: Qt WebEngine Process \\
+        \href{http://doc.qt.io/qt-5/qtwebengine-overview.html\#qt-webengine-process}
+        {http://doc.qt.io/qt-5/qtwebengine-overview.html\#\\
+        qt-webengine-process}
+
+    \bibitem{bib:qt-doc-qt-webengine-core}
+        Qt Documentation: Qt WebEngine Core C++ Classes \\
+        \url{http://doc.qt.io/qt-5/qtwebenginecore-module.html}
+
     \bibitem{bib:qt-wiki-d-pointer}
         Qt Wiki: D-Pointer \\
         \url{https://wiki.qt.io/D-Pointer}
+
+    \bibitem{bib:qt-doc-qt-webengine-widgets}
+        Qt Documentation: Qt WebEngine Widgets C++ Classes \\
+        \url{http://doc.qt.io/qt-5/qtwebenginewidgets-module.html}
+
+    \bibitem{bib:qt-doc-qt-webengine-quick}
+        Qt Documentation: Qt WebEngine QML Types \\
+        \url{http://doc.qt.io/qt-5/qtwebengine-qmlmodule.html}
 
 \end{thebibliography}
 
