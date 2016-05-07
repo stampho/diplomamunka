@@ -1,0 +1,247 @@
+From bedd043d37b158d420790b8e4b5d4ea8517a4dca Mon Sep 17 00:00:00 2001
+From: Peter Varga <pvarga@inf.u-szeged.hu>
+Date: Tue, 4 Aug 2015 16:36:40 +0200
+Subject: [PATCH] Add QML test for form validation feature
+
+Change-Id: I508aabbdd6a33e7ed8edcd7438e71297d4c0e895
+Reviewed-by: Szabolcs David <davidsz@inf.u-szeged.hu>
+Reviewed-by: Andras Becsi <andras.becsi@theqtcompany.com>
+---
+ src/webengine/api/qquickwebenginetestsupport_p.h   |   3 +
+ src/webengine/api/qquickwebengineview.cpp          |   5 +
+ tests/auto/quick/qmltests/data/forms.html          |  40 +++++++
+ .../quick/qmltests/data/tst_formValidation.qml     | 124 +++++++++++++++++++++
+ tests/auto/quick/qmltests/qmltests.pro             |   2 +
+ 5 files changed, 174 insertions(+)
+ create mode 100644 tests/auto/quick/qmltests/data/forms.html
+ create mode 100644 tests/auto/quick/qmltests/data/tst_formValidation.qml
+
+diff --git a/src/webengine/api/qquickwebenginetestsupport_p.h b/src/webengine/api/qquickwebenginetestsupport_p.h
+index 832ac28..dcda2d7 100644
+--- a/src/webengine/api/qquickwebenginetestsupport_p.h
++++ b/src/webengine/api/qquickwebenginetestsupport_p.h
+@@ -67,6 +67,9 @@ public:
+     QQuickWebEngineTestSupport();
+     QQuickWebEngineErrorPage *errorPage() const;
+ 
++Q_SIGNALS:
++    void validationMessageShown(const QString &mainText, const QString &subText);
++
+ private:
+     QScopedPointer<QQuickWebEngineErrorPage> m_errorPage;
+ };
+diff --git a/src/webengine/api/qquickwebengineview.cpp b/src/webengine/api/qquickwebengineview.cpp
+index 01a62a5..45bb5a1 100644
+--- a/src/webengine/api/qquickwebengineview.cpp
++++ b/src/webengine/api/qquickwebengineview.cpp
+@@ -868,6 +868,11 @@ void QQuickWebEngineViewPrivate::didFindText(quint64 requestId, int matchCount)
+ }
+ void QQuickWebEngineViewPrivate::showValidationMessage(const QRect &anchor, const QString &mainText, const QString &subText)
+ {
++#ifdef ENABLE_QML_TESTSUPPORT_API
++    if (m_testSupport)
++        Q_EMIT m_testSupport->validationMessageShown(mainText, subText);
++#endif
++
+     ui()->showMessageBubble(anchor, mainText, subText);
+ }
+ 
+diff --git a/tests/auto/quick/qmltests/data/forms.html b/tests/auto/quick/qmltests/data/forms.html
+new file mode 100644
+index 0000000..8dc3472
+--- /dev/null
++++ b/tests/auto/quick/qmltests/data/forms.html
+@@ -0,0 +1,40 @@
++<html>
++<head>
++    <title>Forms</title>
++    <script type="text/javascript">
++        function updateFocus() {
++            var name = window.location.hash.substring(1);
++            var element = document.getElementsByName(name)[0];
++
++            element.focus();
++        }
++    </script>
++</head>
++<body onload="updateFocus();">
++    <form>
++        <input type="url" required/>
++        <input type="submit" name="url_empty"/>
++    </form>
++    <form>
++        <input type="url" value="invalid" required/>
++        <input type="submit" name="url_invalid"/>
++    </form>
++    <form>
++        <input type="url" value="invalid" title="url_title" required/>
++        <input type="submit" name="url_title"/>
++    </form>
++
++    <form>
++        <input type="email" required/>
++        <input type="submit" name="email_empty"/>
++    </form>
++    <form>
++        <input type="email" value="invalid" required/>
++        <input type="submit" name="email_invalid"/>
++    </form>
++    <form>
++        <input type="email" value="invalid" title="email_title" required/>
++        <input type="submit" name="email_title"/>
++    </form>
++</body>
++</html>
+diff --git a/tests/auto/quick/qmltests/data/tst_formValidation.qml b/tests/auto/quick/qmltests/data/tst_formValidation.qml
+new file mode 100644
+index 0000000..4acb7ce
+--- /dev/null
++++ b/tests/auto/quick/qmltests/data/tst_formValidation.qml
+@@ -0,0 +1,124 @@
++/****************************************************************************
++**
++** Copyright (C) 2015 The Qt Company Ltd.
++** Contact: http://www.qt.io/licensing/
++**
++** This file is part of the QtWebEngine module of the Qt Toolkit.
++**
++** $QT_BEGIN_LICENSE:LGPL$
++** Commercial License Usage
++** Licensees holding valid commercial Qt licenses may use this file in
++** accordance with the commercial license agreement provided with the
++** Software or, alternatively, in accordance with the terms contained in
++** a written agreement between you and The Qt Company. For licensing terms
++** and conditions see http://www.qt.io/terms-conditions. For further
++** information use the contact form at http://www.qt.io/contact-us.
++**
++** GNU Lesser General Public License Usage
++** Alternatively, this file may be used under the terms of the GNU Lesser
++** General Public License version 2.1 as published by the Free Software
++** Foundation and appearing in the file LICENSE.LGPL included in the
++** packaging of this file. Please review the following information to
++** ensure the GNU Lesser General Public License version 2.1 requirements
++** will be met: http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
++**
++** As a special exception, The Qt Company gives you certain additional
++** rights. These rights are described in The Qt Company LGPL Exception
++** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
++**
++** GNU General Public License Usage
++** Alternatively, this file may be used under the terms of the GNU
++** General Public License version 3.0 as published by the Free Software
++** Foundation and appearing in the file LICENSE.GPL included in the
++** packaging of this file. Please review the following information to
++** ensure the GNU General Public License version 3.0 requirements will be
++** met: http://www.gnu.org/copyleft/gpl.html.
++**
++**
++** $QT_END_LICENSE$
++**
++****************************************************************************/
++
++import QtQuick 2.0
++import QtTest 1.0
++import QtWebEngine 1.2
++import QtWebEngine.testsupport 1.0
++
++TestWebEngineView {
++    id: webEngineView
++    width: 400
++    height: 300
++
++    testSupport: WebEngineTestSupport {
++        id: testSupportAPI
++    }
++
++    SignalSpy {
++        id: showSpy
++        target: testSupportAPI
++        signalName: "validationMessageShown"
++    }
++
++    TestCase {
++        name: "WebEngineViewFormValidation"
++        when: windowShown
++
++        function init() {
++            webEngineView.url = Qt.resolvedUrl("about:blank")
++            verify(webEngineView.waitForLoadSucceeded())
++            showSpy.clear()
++        }
++
++        function test_urlForm() {
++            webEngineView.url = Qt.resolvedUrl("forms.html#url_empty")
++            verify(webEngineView.waitForLoadSucceeded())
++            keyPress(Qt.Key_Enter)
++            showSpy.wait()
++            compare(showSpy.signalArguments[0][0], "Please fill out this field.")
++
++            webEngineView.url = Qt.resolvedUrl("about:blank")
++            verify(webEngineView.waitForLoadSucceeded())
++
++            webEngineView.url = Qt.resolvedUrl("forms.html#url_invalid")
++            verify(webEngineView.waitForLoadSucceeded())
++            keyPress(Qt.Key_Enter)
++            showSpy.wait()
++            compare(showSpy.signalArguments[1][0], "Please enter a URL.")
++
++            webEngineView.url = Qt.resolvedUrl("about:blank")
++            verify(webEngineView.waitForLoadSucceeded())
++
++            webEngineView.url = Qt.resolvedUrl("forms.html#url_title")
++            verify(webEngineView.waitForLoadSucceeded())
++            keyPress(Qt.Key_Enter)
++            showSpy.wait()
++            compare(showSpy.signalArguments[2][1], "url_title")
++        }
++
++        function test_emailForm() {
++            webEngineView.url = Qt.resolvedUrl("forms.html#email_empty")
++            verify(webEngineView.waitForLoadSucceeded())
++            keyPress(Qt.Key_Enter)
++            showSpy.wait()
++            compare(showSpy.signalArguments[0][0], "Please fill out this field.")
++
++            webEngineView.url = Qt.resolvedUrl("about:blank")
++            verify(webEngineView.waitForLoadSucceeded())
++
++            webEngineView.url = Qt.resolvedUrl("forms.html#email_invalid")
++            verify(webEngineView.waitForLoadSucceeded())
++            keyPress(Qt.Key_Enter)
++            showSpy.wait()
++            compare(showSpy.signalArguments[1][0], "Please include an '@' in the email address. 'invalid' is missing an '@'.")
++
++            webEngineView.url = Qt.resolvedUrl("about:blank")
++            verify(webEngineView.waitForLoadSucceeded())
++
++            webEngineView.url = Qt.resolvedUrl("forms.html#email_title")
++            verify(webEngineView.waitForLoadSucceeded())
++            keyPress(Qt.Key_Enter)
++            showSpy.wait()
++            compare(showSpy.signalArguments[2][1], "email_title")
++        }
++    }
++}
+diff --git a/tests/auto/quick/qmltests/qmltests.pro b/tests/auto/quick/qmltests/qmltests.pro
+index af66009..6776c1a 100644
+--- a/tests/auto/quick/qmltests/qmltests.pro
++++ b/tests/auto/quick/qmltests/qmltests.pro
+@@ -15,6 +15,7 @@ OTHER_FILES += \
+     $$PWD/data/favicon.html \
+     $$PWD/data/favicon.png \
+     $$PWD/data/favicon2.html \
++    $$PWD/data/forms.html \
+     $$PWD/data/javascript.html \
+     $$PWD/data/link.html \
+     $$PWD/data/prompt.html \
+@@ -31,6 +32,7 @@ OTHER_FILES += \
+     $$PWD/data/tst_desktopBehaviorLoadHtml.qml \
+     $$PWD/data/tst_favIconLoad.qml \
+     $$PWD/data/tst_filePicker.qml \
++    $$PWD/data/tst_formValidation.qml \
+     $$PWD/data/tst_javaScriptDialogs.qml \
+     $$PWD/data/tst_linkHovered.qml \
+     $$PWD/data/tst_loadFail.qml \
+-- 
+2.7.4 (Apple Git-66)
+

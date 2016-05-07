@@ -1,0 +1,796 @@
+From 60d8d3dcd2a8337e4038a498f92a97624438b2fb Mon Sep 17 00:00:00 2001
+From: Peter Varga <pvarga@inf.u-szeged.hu>
+Date: Thu, 12 Feb 2015 16:20:39 +0000
+Subject: [PATCH] Support HTML5 form validation feature
+
+HTML5 provides built-in form validation that is supported by chromium.
+The form validation messages should be shown by the browser therefore
+new MessageBubble UI element has been added to Quick and Widget
+implementations.
+This patch implements chromium's form validation events and shows the
+messages in a MessageBubble.
+
+Change-Id: I0c8f4f102823117e2bfb16ff8a4c503635491939
+Reviewed-by: Andras Becsi <andras.becsi@theqtcompany.com>
+---
+ src/core/web_contents_adapter_client.h          |   3 +
+ src/core/web_contents_delegate_qt.cpp           |  18 ++
+ src/core/web_contents_delegate_qt.h             |   3 +
+ src/webengine/api/qquickwebengineview.cpp       |  14 ++
+ src/webengine/api/qquickwebengineview_p_p.h     |   3 +
+ src/webengine/ui/MessageBubble.qml              | 147 ++++++++++++++++
+ src/webengine/ui/ui.pro                         |   4 +-
+ src/webengine/ui_delegates_manager.cpp          |  33 ++++
+ src/webengine/ui_delegates_manager.h            |   8 +-
+ src/webenginewidgets/api/qwebenginepage.cpp     |  25 +++
+ src/webenginewidgets/api/qwebenginepage_p.h     |   3 +
+ src/webenginewidgets/api/qwebengineview.cpp     |   8 +
+ src/webenginewidgets/ui/messagebubblewidget.cpp | 221 ++++++++++++++++++++++++
+ src/webenginewidgets/ui/messagebubblewidget_p.h |  77 +++++++++
+ src/webenginewidgets/webenginewidgets.pro       |   6 +
+ 15 files changed, 571 insertions(+), 2 deletions(-)
+ create mode 100644 src/webengine/ui/MessageBubble.qml
+ create mode 100644 src/webenginewidgets/ui/messagebubblewidget.cpp
+ create mode 100644 src/webenginewidgets/ui/messagebubblewidget_p.h
+
+diff --git a/src/core/web_contents_adapter_client.h b/src/core/web_contents_adapter_client.h
+index d67acce..3ed3ab9 100644
+--- a/src/core/web_contents_adapter_client.h
++++ b/src/core/web_contents_adapter_client.h
+@@ -182,6 +182,9 @@ public:
+     virtual void runMediaAccessPermissionRequest(const QUrl &securityOrigin, MediaRequestFlags requestFlags) = 0;
+     virtual void runMouseLockPermissionRequest(const QUrl &securityOrigin) = 0;
+     virtual WebEngineSettings *webEngineSettings() const = 0;
++    virtual void showValidationMessage(const QRect &anchor, const QString &mainText, const QString &subText) = 0;
++    virtual void hideValidationMessage() = 0;
++    virtual void moveValidationMessage(const QRect &anchor) = 0;
+ 
+     virtual void allowCertificateError(const QSharedPointer<CertificateErrorController> &errorController) = 0;
+ 
+diff --git a/src/core/web_contents_delegate_qt.cpp b/src/core/web_contents_delegate_qt.cpp
+index f69b68a..e0fb3d7 100644
+--- a/src/core/web_contents_delegate_qt.cpp
++++ b/src/core/web_contents_delegate_qt.cpp
+@@ -354,4 +354,22 @@ void WebContentsDelegateQt::geolocationPermissionReply(const QUrl &origin, bool
+     }
+ }
+ 
++void WebContentsDelegateQt::ShowValidationMessage(content::WebContents *web_contents, const gfx::Rect &anchor_in_root_view, const base::string16 &main_text, const base::string16 &sub_text)
++{
++    Q_UNUSED(web_contents);
++    m_viewClient->showValidationMessage(toQt(anchor_in_root_view), toQt(main_text), toQt(sub_text));
++}
++
++void WebContentsDelegateQt::HideValidationMessage(content::WebContents *web_contents)
++{
++    Q_UNUSED(web_contents);
++    m_viewClient->hideValidationMessage();
++}
++
++void WebContentsDelegateQt::MoveValidationMessage(content::WebContents *web_contents, const gfx::Rect &anchor_in_root_view)
++{
++    Q_UNUSED(web_contents);
++    m_viewClient->moveValidationMessage(toQt(anchor_in_root_view));
++}
++
+ } // namespace QtWebEngineCore
+diff --git a/src/core/web_contents_delegate_qt.h b/src/core/web_contents_delegate_qt.h
+index a200ca4..254177d 100644
+--- a/src/core/web_contents_delegate_qt.h
++++ b/src/core/web_contents_delegate_qt.h
+@@ -86,6 +86,9 @@ public:
+     virtual void RequestMediaAccessPermission(content::WebContents* web_contents, const content::MediaStreamRequest& request, const content::MediaResponseCallback& callback) Q_DECL_OVERRIDE;
+     virtual void UpdateTargetURL(content::WebContents* source, const GURL& url) Q_DECL_OVERRIDE;
+     virtual void RequestToLockMouse(content::WebContents *web_contents, bool user_gesture, bool last_unlocked_by_target) Q_DECL_OVERRIDE;
++    virtual void ShowValidationMessage(content::WebContents *web_contents, const gfx::Rect &anchor_in_root_view, const base::string16 &main_text, const base::string16 &sub_text) Q_DECL_OVERRIDE;
++    virtual void HideValidationMessage(content::WebContents *web_contents) Q_DECL_OVERRIDE;
++    virtual void MoveValidationMessage(content::WebContents *web_contents, const gfx::Rect &anchor_in_root_view) Q_DECL_OVERRIDE;
+ 
+     // WebContentsObserver overrides
+     virtual void DidStartProvisionalLoadForFrame(content::RenderFrameHost *render_frame_host, const GURL &validated_url, bool is_error_page, bool is_iframe_srcdoc) Q_DECL_OVERRIDE;
+diff --git a/src/webengine/api/qquickwebengineview.cpp b/src/webengine/api/qquickwebengineview.cpp
+index 4bc6cd0..232d63b 100644
+--- a/src/webengine/api/qquickwebengineview.cpp
++++ b/src/webengine/api/qquickwebengineview.cpp
+@@ -766,6 +766,20 @@ void QQuickWebEngineViewPrivate::didFindText(quint64 requestId, int matchCount)
+     args.append(QJSValue(matchCount));
+     callback.call(args);
+ }
++void QQuickWebEngineViewPrivate::showValidationMessage(const QRect &anchor, const QString &mainText, const QString &subText)
++{
++    ui()->showMessageBubble(anchor, mainText, subText);
++}
++
++void QQuickWebEngineViewPrivate::hideValidationMessage()
++{
++    ui()->hideMessageBubble();
++}
++
++void QQuickWebEngineViewPrivate::moveValidationMessage(const QRect &anchor)
++{
++    ui()->moveMessageBubble(anchor);
++}
+ 
+ bool QQuickWebEngineView::isLoading() const
+ {
+diff --git a/src/webengine/api/qquickwebengineview_p_p.h b/src/webengine/api/qquickwebengineview_p_p.h
+index 36e590b..ec8f834 100644
+--- a/src/webengine/api/qquickwebengineview_p_p.h
++++ b/src/webengine/api/qquickwebengineview_p_p.h
+@@ -165,6 +165,9 @@ public:
+     virtual QtWebEngineCore::WebEngineSettings *webEngineSettings() const Q_DECL_OVERRIDE;
+     virtual void allowCertificateError(const QSharedPointer<CertificateErrorController> &errorController);
+     virtual void runGeolocationPermissionRequest(QUrl const&) Q_DECL_OVERRIDE;
++    virtual void showValidationMessage(const QRect &anchor, const QString &mainText, const QString &subText) Q_DECL_OVERRIDE;
++    virtual void hideValidationMessage() Q_DECL_OVERRIDE;
++    virtual void moveValidationMessage(const QRect &anchor) Q_DECL_OVERRIDE;
+ 
+     virtual QtWebEngineCore::BrowserContextAdapter *browserContextAdapter() Q_DECL_OVERRIDE;
+ 
+diff --git a/src/webengine/ui/MessageBubble.qml b/src/webengine/ui/MessageBubble.qml
+new file mode 100644
+index 0000000..4328eae
+--- /dev/null
++++ b/src/webengine/ui/MessageBubble.qml
+@@ -0,0 +1,147 @@
++/****************************************************************************
++**
++** Copyright (C) 2015 Digia Plc and/or its subsidiary(-ies).
++** Contact: http://www.qt-project.org/legal
++**
++** This file is part of the QtWebEngine module of the Qt Toolkit.
++**
++** $QT_BEGIN_LICENSE:LGPL$
++** Commercial License Usage
++** Licensees holding valid commercial Qt licenses may use this file in
++** accordance with the commercial license agreement provided with the
++** Software or, alternatively, in accordance with the terms contained in
++** a written agreement between you and Digia.  For licensing terms and
++** conditions see http://qt.digia.com/licensing.  For further information
++** use the contact form at http://qt.digia.com/contact-us.
++**
++** GNU Lesser General Public License Usage
++** Alternatively, this file may be used under the terms of the GNU Lesser
++** General Public License version 3 as published by the Free Software
++** Foundation and appearing in the file LICENSE.LGPLv3 included in the
++** packaging of this file.  Please review the following information to
++** ensure the GNU Lesser General Public License version 3 requirements
++** will be met: https://www.gnu.org/licenses/lgpl.html.
++**
++** GNU General Public License Usage
++** Alternatively, this file may be used under the terms of the GNU
++** General Public License version 2.0 or later as published by the Free
++** Software Foundation and appearing in the file LICENSE.GPL included in
++** the packaging of this file.  Please review the following information to
++** ensure the GNU General Public License version 2.0 requirements will be
++** met: http://www.gnu.org/licenses/gpl-2.0.html.
++**
++** $QT_END_LICENSE$
++**
++****************************************************************************/
++
++import QtQuick 2.1
++
++Item {
++    id: bubble
++
++    width: 1
++    height: 1
++
++    property int maxWidth: 0
++    property string mainText: "";
++    property string subText: "";
++
++    property int border: 1
++
++    property int arrowWidth: 18
++    property int arrowHeight: 18
++    property int arrowOffset: 18
++
++    property int marginLeft: border + 8
++    property int marginTop: border + arrowHeight + 6
++    property int marginRight: border + 8
++    property int marginBottom: border + 6
++
++    Column {
++        id: messageColumn
++
++        x: bubble.marginLeft
++        y: bubble.marginTop
++        z: 1
++
++        spacing: 5
++
++        Text {
++            id: message
++            width: bubble.maxWidth
++
++            wrapMode: Text.WordWrap
++            elide: Text.ElideNone
++            clip: true
++
++            font.pointSize: subMessage.font.pointSize + 4
++
++            text: bubble.mainText
++        }
++
++        Text {
++            id: subMessage
++            width: bubble.maxWidth
++
++            wrapMode: Text.WordWrap
++            elide: Text.ElideNone
++            clip: true
++
++            text: bubble.subText
++        }
++    }
++
++    Canvas {
++        id: bubbleCanvas
++
++        property int textWidth: Math.min(bubble.maxWidth, Math.max(message.paintedWidth, subMessage.paintedWidth))
++        property int textHeight: message.paintedHeight + (subMessage.paintedWidth > 0 ? (messageColumn.spacing + subMessage.paintedHeight) : 0)
++
++        width: textWidth + bubble.marginLeft + bubble.marginRight
++        height: textHeight + bubble.marginTop + bubble.marginBottom
++
++        property int cornerRadius: 7
++
++        property int messageBoxLeft: 0
++        property int messageBoxTop: bubble.arrowHeight
++        property int messageBoxRight: width - border
++        property int messageBoxBottom: height - border
++
++        onPaint: {
++            var ctx = getContext("2d")
++
++            ctx.lineWidth = bubble.border
++            ctx.strokeStyle = "#555"
++            ctx.fillStyle = "#ffffe1"
++
++            ctx.beginPath()
++
++            ctx.moveTo(messageBoxLeft + cornerRadius, messageBoxTop)
++
++            // Arrow
++            ctx.lineTo(messageBoxLeft + bubble.arrowOffset, messageBoxTop)
++            ctx.lineTo(messageBoxLeft + bubble.arrowOffset, messageBoxTop - bubble.arrowHeight)
++            ctx.lineTo(messageBoxLeft + bubble.arrowOffset + bubble.arrowWidth, messageBoxTop)
++
++            // Message Box
++            ctx.lineTo(messageBoxRight - cornerRadius, messageBoxTop)
++            ctx.quadraticCurveTo(messageBoxRight, messageBoxTop, messageBoxRight, messageBoxTop + cornerRadius)
++            ctx.lineTo(messageBoxRight, messageBoxBottom - cornerRadius)
++            ctx.quadraticCurveTo(messageBoxRight, messageBoxBottom, messageBoxRight - cornerRadius, messageBoxBottom)
++            ctx.lineTo(messageBoxLeft + cornerRadius, messageBoxBottom)
++            ctx.quadraticCurveTo(messageBoxLeft, messageBoxBottom, messageBoxLeft, messageBoxBottom - cornerRadius)
++            ctx.lineTo(messageBoxLeft, messageBoxTop + cornerRadius)
++            ctx.quadraticCurveTo(messageBoxLeft, messageBoxTop, messageBoxLeft + cornerRadius, messageBoxTop)
++
++            ctx.closePath()
++
++            ctx.fill()
++            ctx.stroke()
++        }
++
++        onPainted: {
++            bubble.width = bubbleCanvas.width
++            bubble.height = bubbleCanvas.height
++        }
++    }
++}
+diff --git a/src/webengine/ui/ui.pro b/src/webengine/ui/ui.pro
+index a5ae648..fdf7a85 100644
+--- a/src/webengine/ui/ui.pro
++++ b/src/webengine/ui/ui.pro
+@@ -9,6 +9,8 @@ QML_FILES += \
+     # Menus. Based on Qt Quick Controls
+     Menu.qml \
+     MenuItem.qml \
+-    MenuSeparator.qml
++    MenuSeparator.qml \
++    # Message Bubble
++    MessageBubble.qml
+ 
+ load(qml_module)
+diff --git a/src/webengine/ui_delegates_manager.cpp b/src/webengine/ui_delegates_manager.cpp
+index 615c602..d22e654 100644
+--- a/src/webengine/ui_delegates_manager.cpp
++++ b/src/webengine/ui_delegates_manager.cpp
+@@ -138,6 +138,7 @@ void NavigateMenuItem::onTriggered()
+ 
+ UIDelegatesManager::UIDelegatesManager(QQuickWebEngineView *view)
+     : m_view(view)
++    , m_messageBubbleItem(0)
+     FOR_EACH_COMPONENT_TYPE(COMPONENT_MEMBER_INIT, NO_SEPARATOR)
+ {
+ }
+@@ -430,6 +431,38 @@ void UIDelegatesManager::showFilePicker(WebContentsAdapterClient::FileChooserMod
+     QMetaObject::invokeMethod(filePicker, "open");
+ }
+ 
++void UIDelegatesManager::showMessageBubble(const QRect &anchor, const QString &mainText, const QString &subText)
++{
++    if (!ensureComponentLoaded(MessageBubble))
++        return;
++
++    Q_ASSERT(m_messageBubbleItem.isNull());
++
++    QQmlContext *context = qmlContext(m_view);
++    m_messageBubbleItem.reset(qobject_cast<QQuickItem *>(messageBubbleComponent->beginCreate(context)));
++    m_messageBubbleItem->setParentItem(m_view);
++    messageBubbleComponent->completeCreate();
++
++    QQmlProperty(m_messageBubbleItem.data(), QStringLiteral("maxWidth")).write(anchor.size().width());
++    QQmlProperty(m_messageBubbleItem.data(), QStringLiteral("mainText")).write(mainText);
++    QQmlProperty(m_messageBubbleItem.data(), QStringLiteral("subText")).write(subText);
++    QQmlProperty(m_messageBubbleItem.data(), QStringLiteral("x")).write(anchor.x());
++    QQmlProperty(m_messageBubbleItem.data(), QStringLiteral("y")).write(anchor.y() + anchor.size().height());
++}
++
++void UIDelegatesManager::hideMessageBubble()
++{
++    m_messageBubbleItem.reset();
++}
++
++void UIDelegatesManager::moveMessageBubble(const QRect &anchor)
++{
++    Q_ASSERT(!m_messageBubbleItem.isNull());
++
++    QQmlProperty(m_messageBubbleItem.data(), QStringLiteral("x")).write(anchor.x());
++    QQmlProperty(m_messageBubbleItem.data(), QStringLiteral("y")).write(anchor.y() + anchor.size().height());
++}
++
+ } // namespace QtWebEngineCore
+ 
+ #include "ui_delegates_manager.moc"
+diff --git a/src/webengine/ui_delegates_manager.h b/src/webengine/ui_delegates_manager.h
+index b430063..f2b78f7 100644
+--- a/src/webengine/ui_delegates_manager.h
++++ b/src/webengine/ui_delegates_manager.h
+@@ -54,7 +54,8 @@
+     F(AlertDialog, alertDialog) SEPARATOR \
+     F(ConfirmDialog, confirmDialog) SEPARATOR \
+     F(PromptDialog, promptDialog) SEPARATOR \
+-    F(FilePicker, filePicker) SEPARATOR
++    F(FilePicker, filePicker) SEPARATOR \
++    F(MessageBubble, messageBubble) SEPARATOR
+ 
+ #define COMMA_SEPARATOR ,
+ #define SEMICOLON_SEPARATOR ;
+@@ -66,6 +67,7 @@
+ QT_BEGIN_NAMESPACE
+ class QObject;
+ class QQmlContext;
++class QQuickItem;
+ class QQuickWebEngineView;
+ QT_END_NAMESPACE
+ 
+@@ -124,11 +126,15 @@ public:
+     void showDialog(QSharedPointer<JavaScriptDialogController>);
+     void showFilePicker(WebContentsAdapterClient::FileChooserMode, const QString &defaultFileName, const QStringList &acceptedMimeTypes
+                         , const QExplicitlySharedDataPointer<WebContentsAdapter> &);
++    void showMessageBubble(const QRect &anchor, const QString &mainText, const QString &subText);
++    void hideMessageBubble();
++    void moveMessageBubble(const QRect &anchor);
+ 
+ private:
+     bool ensureComponentLoaded(ComponentType);
+ 
+     QQuickWebEngineView *m_view;
++    QScopedPointer<QQuickItem> m_messageBubbleItem;
+ 
+     FOR_EACH_COMPONENT_TYPE(MEMBER_DECLARATION, SEMICOLON_SEPARATOR)
+ 
+diff --git a/src/webenginewidgets/api/qwebenginepage.cpp b/src/webenginewidgets/api/qwebenginepage.cpp
+index 7eab1dc..65a0a5b 100644
+--- a/src/webenginewidgets/api/qwebenginepage.cpp
++++ b/src/webenginewidgets/api/qwebenginepage.cpp
+@@ -38,6 +38,10 @@
+ #include "web_contents_adapter.h"
+ #include "web_engine_settings.h"
+ 
++#ifdef QT_UI_DELEGATES
++#include "ui/messagebubblewidget_p.h"
++#endif
++
+ #include <QAction>
+ #include <QApplication>
+ #include <QAuthenticator>
+@@ -778,6 +782,27 @@ void QWebEnginePagePrivate::javaScriptConsoleMessage(JavaScriptConsoleMessageLev
+     q->javaScriptConsoleMessage(static_cast<QWebEnginePage::JavaScriptConsoleMessageLevel>(level), message, lineNumber, sourceID);
+ }
+ 
++void QWebEnginePagePrivate::showValidationMessage(const QRect &anchor, const QString &mainText, const QString &subText)
++{
++#ifdef QT_UI_DELEGATES
++    QtWebEngineWidgetUI::MessageBubbleWidget::showBubble(view, anchor, mainText, subText);
++#endif
++}
++
++void QWebEnginePagePrivate::hideValidationMessage()
++{
++#ifdef QT_UI_DELEGATES
++    QtWebEngineWidgetUI::MessageBubbleWidget::hideBubble();
++#endif
++}
++
++void QWebEnginePagePrivate::moveValidationMessage(const QRect &anchor)
++{
++#ifdef QT_UI_DELEGATES
++    QtWebEngineWidgetUI::MessageBubbleWidget::moveBubble(view, anchor);
++#endif
++}
++
+ namespace {
+ class SaveToClipboardFunctor
+ {
+diff --git a/src/webenginewidgets/api/qwebenginepage_p.h b/src/webenginewidgets/api/qwebenginepage_p.h
+index 087137a..8f45ecd 100644
+--- a/src/webenginewidgets/api/qwebenginepage_p.h
++++ b/src/webenginewidgets/api/qwebenginepage_p.h
+@@ -147,6 +147,9 @@ public:
+ #endif // QT_NO_ACCESSIBILITY
+     virtual QtWebEngineCore::WebEngineSettings *webEngineSettings() const Q_DECL_OVERRIDE;
+     virtual void allowCertificateError(const QSharedPointer<CertificateErrorController> &controller) Q_DECL_OVERRIDE;
++    virtual void showValidationMessage(const QRect &anchor, const QString &mainText, const QString &subText) Q_DECL_OVERRIDE;
++    virtual void hideValidationMessage() Q_DECL_OVERRIDE;
++    virtual void moveValidationMessage(const QRect &anchor) Q_DECL_OVERRIDE;
+ 
+     virtual QtWebEngineCore::BrowserContextAdapter *browserContextAdapter() Q_DECL_OVERRIDE;
+ 
+diff --git a/src/webenginewidgets/api/qwebengineview.cpp b/src/webenginewidgets/api/qwebengineview.cpp
+index 039e18a..a4a8dd7 100644
+--- a/src/webenginewidgets/api/qwebengineview.cpp
++++ b/src/webenginewidgets/api/qwebengineview.cpp
+@@ -40,6 +40,10 @@
+ #include "qwebenginepage_p.h"
+ #include "web_contents_adapter.h"
+ 
++#ifdef QT_UI_DELEGATES
++#include "ui/messagebubblewidget_p.h"
++#endif
++
+ #include <QAction>
+ #include <QMenu>
+ #include <QContextMenuEvent>
+@@ -118,6 +122,10 @@ QWebEngineView::~QWebEngineView()
+ {
+     Q_D(QWebEngineView);
+     QWebEngineViewPrivate::bind(0, d->page);
++
++#ifdef QT_UI_DELEGATES
++    QtWebEngineWidgetUI::MessageBubbleWidget::hideBubble();
++#endif
+ }
+ 
+ QWebEnginePage* QWebEngineView::page() const
+diff --git a/src/webenginewidgets/ui/messagebubblewidget.cpp b/src/webenginewidgets/ui/messagebubblewidget.cpp
+new file mode 100644
+index 0000000..3465f42
+--- /dev/null
++++ b/src/webenginewidgets/ui/messagebubblewidget.cpp
+@@ -0,0 +1,221 @@
++/****************************************************************************
++**
++** Copyright (C) 2015 Digia Plc and/or its subsidiary(-ies).
++** Contact: http://www.qt-project.org/legal
++**
++** This file is part of the QtWebEngine module of the Qt Toolkit.
++**
++** $QT_BEGIN_LICENSE:LGPL$
++** Commercial License Usage
++** Licensees holding valid commercial Qt licenses may use this file in
++** accordance with the commercial license agreement provided with the
++** Software or, alternatively, in accordance with the terms contained in
++** a written agreement between you and Digia.  For licensing terms and
++** conditions see http://qt.digia.com/licensing.  For further information
++** use the contact form at http://qt.digia.com/contact-us.
++**
++** GNU Lesser General Public License Usage
++** Alternatively, this file may be used under the terms of the GNU Lesser
++** General Public License version 3 as published by the Free Software
++** Foundation and appearing in the file LICENSE.LGPLv3 included in the
++** packaging of this file.  Please review the following information to
++** ensure the GNU Lesser General Public License version 3 requirements
++** will be met: https://www.gnu.org/licenses/lgpl.html.
++**
++** GNU General Public License Usage
++** Alternatively, this file may be used under the terms of the GNU
++** General Public License version 2.0 or later as published by the Free
++** Software Foundation and appearing in the file LICENSE.GPL included in
++** the packaging of this file.  Please review the following information to
++** ensure the GNU General Public License version 2.0 requirements will be
++** met: http://www.gnu.org/licenses/gpl-2.0.html.
++**
++** $QT_END_LICENSE$
++**
++****************************************************************************/
++
++#include "messagebubblewidget_p.h"
++
++#include "api/qwebengineview.h"
++
++#include <QBitmap>
++#include <QHBoxLayout>
++#include <QIcon>
++#include <QLabel>
++#include <QStyle>
++
++namespace QtWebEngineWidgetUI {
++
++Q_GLOBAL_STATIC(MessageBubbleWidget, bubbleInstance)
++
++void MessageBubbleWidget::showBubble(QWebEngineView *view, const QRect &anchor, const QString &mainText, const QString &subText)
++{
++    hideBubble();
++    if (mainText.isEmpty())
++        return;
++
++    bubbleInstance->createBubble(anchor.size().width(), mainText, subText);
++    bubbleInstance->moveToAnchor(view, anchor);
++}
++
++void MessageBubbleWidget::hideBubble()
++{
++    bubbleInstance->hide();
++}
++
++void MessageBubbleWidget::moveBubble(QWebEngineView *view, const QRect &anchor)
++{
++    bubbleInstance->moveToAnchor(view, anchor);
++}
++
++MessageBubbleWidget::MessageBubbleWidget()
++   : QWidget(0, Qt::ToolTip)
++   , m_mainLabel(new QLabel)
++   , m_subLabel(new QLabel)
++{
++    QHBoxLayout *hLayout = new QHBoxLayout;
++    hLayout->setAlignment(Qt::AlignTop);
++    hLayout->setSizeConstraint(QLayout::SetFixedSize);
++    hLayout->setMargin(3);
++
++    const int iconSize = 18;
++    QIcon si = style()->standardIcon(QStyle::SP_MessageBoxWarning);
++
++    if (!si.isNull()) {
++        QLabel *iconLabel = new QLabel(this);
++        iconLabel->setPixmap(si.pixmap(iconSize, iconSize));
++        iconLabel->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
++        iconLabel->setMargin(2);
++        hLayout->addWidget(iconLabel, 0, Qt::AlignTop);
++    }
++
++    QVBoxLayout *vLayout = new QVBoxLayout;
++
++    m_mainLabel->installEventFilter(this);
++    m_mainLabel->setWordWrap(true);
++    m_mainLabel->setTextFormat(Qt::PlainText);
++    m_mainLabel->setAlignment(Qt::AlignTop | Qt::AlignLeft);
++    vLayout->addWidget(m_mainLabel.data());
++
++    QFont mainFont = m_mainLabel->font();
++    mainFont.setPointSize(mainFont.pointSize() + 4);
++    m_mainLabel->setFont(mainFont);
++
++    m_subLabel->installEventFilter(this);
++    m_subLabel->setWordWrap(true);
++    m_subLabel->setTextFormat(Qt::PlainText);
++    m_subLabel->setAlignment(Qt::AlignBottom | Qt::AlignLeft);
++    vLayout->addWidget(m_subLabel.data());
++
++    hLayout->addLayout(vLayout);
++    setLayout(hLayout);
++
++    QPalette pal = palette();
++    pal.setColor(QPalette::Window, QColor(0xff, 0xff, 0xe1));
++    pal.setColor(QPalette::WindowText, Qt::black);
++    setPalette(pal);
++}
++
++MessageBubbleWidget::~MessageBubbleWidget()
++{
++}
++
++void MessageBubbleWidget::paintEvent(QPaintEvent *)
++{
++    QPainter painter(this);
++    painter.drawPixmap(rect(), m_pixmap);
++}
++
++void MessageBubbleWidget::createBubble(const int maxWidth, const QString &mainText, const QString &subText)
++{
++    m_mainLabel->setText(mainText);
++    m_mainLabel->setMaximumWidth(maxWidth);
++
++    m_subLabel->setText(subText);
++    m_subLabel->setMaximumWidth(maxWidth);
++    m_subLabel->setVisible(!subText.isEmpty());
++
++    int border = 1;
++    int arrowHeight = 18;
++    bool roundedCorners = true;
++
++#if defined(QT_NO_XSHAPE) && defined(Q_WS_X11)
++    // XShape is required for setting the mask, so we just
++    // draw an ugly square when its not available
++    arrowHeight = 0;
++    roundedCorners = false;
++#endif
++
++    setContentsMargins(border + 3,  border + arrowHeight + 2, border + 3, border + 2);
++    show(); // The widget should be visible for updateGeometry()
++    updateGeometry();
++    m_pixmap = QPixmap(sizeHint());
++
++    QPainterPath path = drawBoxPath(QPoint(0, arrowHeight), border, roundedCorners);
++
++    // Draw border and set background
++    QPainter painter(&m_pixmap);
++    painter.setPen(QPen(palette().color(QPalette::Window).darker(160), border));
++    painter.setBrush(palette().color(QPalette::Window));
++    painter.drawPath(path);
++}
++
++void MessageBubbleWidget::moveToAnchor(QWebEngineView *view, const QRect &anchor)
++{
++    QPoint topLeft = view->mapToGlobal(anchor.topLeft());
++    move(topLeft.x(), topLeft.y() + anchor.height());
++}
++
++QPainterPath MessageBubbleWidget::drawBoxPath(const QPoint &pos, int border, bool roundedCorners)
++{
++    const int arrowHeight = pos.y();
++    const int arrowOffset = 18;
++    const int arrowWidth = 18;
++
++    const int cornerRadius = roundedCorners ? 7 : 0;
++
++    const int messageBoxLeft = pos.x();
++    const int messageBoxTop = arrowHeight;
++    const int messageBoxRight = m_pixmap.width() - 1;
++    const int messageBoxBottom = m_pixmap.height() - 1;
++
++    QPainterPath path;
++    path.moveTo(messageBoxLeft + cornerRadius, messageBoxTop);
++
++    if (arrowHeight) {
++        path.lineTo(messageBoxLeft + arrowOffset, messageBoxTop);
++        path.lineTo(messageBoxLeft + arrowOffset, messageBoxTop - arrowHeight);
++        path.lineTo(messageBoxLeft + arrowOffset + arrowWidth, messageBoxTop);
++    }
++
++    if (roundedCorners) {
++        path.lineTo(messageBoxRight - cornerRadius, messageBoxTop);
++        path.quadTo(messageBoxRight, messageBoxTop, messageBoxRight, messageBoxTop + cornerRadius);
++        path.lineTo(messageBoxRight, messageBoxBottom - cornerRadius);
++        path.quadTo(messageBoxRight, messageBoxBottom, messageBoxRight - cornerRadius, messageBoxBottom);
++        path.lineTo(messageBoxLeft + cornerRadius, messageBoxBottom);
++        path.quadTo(messageBoxLeft, messageBoxBottom, messageBoxLeft, messageBoxBottom - cornerRadius);
++        path.lineTo(messageBoxLeft, messageBoxTop + cornerRadius);
++        path.quadTo(messageBoxLeft, messageBoxTop, messageBoxLeft + cornerRadius, messageBoxTop);
++    } else {
++        path.lineTo(messageBoxRight, messageBoxTop);
++        path.lineTo(messageBoxRight, messageBoxBottom);
++        path.lineTo(messageBoxLeft, messageBoxBottom);
++        path.moveTo(messageBoxLeft, messageBoxTop);
++    }
++
++    // Set mask
++    if (arrowHeight || roundedCorners) {
++        QBitmap bitmap = QBitmap(sizeHint());
++        bitmap.fill(Qt::color0);
++        QPainter painter(&bitmap);
++        painter.setPen(QPen(Qt::color1, border));
++        painter.setBrush(QBrush(Qt::color1));
++        painter.drawPath(path);
++        setMask(bitmap);
++    }
++
++    return path;
++}
++
++} // namespace QtWebEngineWidgetUI
+diff --git a/src/webenginewidgets/ui/messagebubblewidget_p.h b/src/webenginewidgets/ui/messagebubblewidget_p.h
+new file mode 100644
+index 0000000..7b7a9e3
+--- /dev/null
++++ b/src/webenginewidgets/ui/messagebubblewidget_p.h
+@@ -0,0 +1,77 @@
++/****************************************************************************
++**
++** Copyright (C) 2015 Digia Plc and/or its subsidiary(-ies).
++** Contact: http://www.qt-project.org/legal
++**
++** This file is part of the QtWebEngine module of the Qt Toolkit.
++**
++** $QT_BEGIN_LICENSE:LGPL$
++** Commercial License Usage
++** Licensees holding valid commercial Qt licenses may use this file in
++** accordance with the commercial license agreement provided with the
++** Software or, alternatively, in accordance with the terms contained in
++** a written agreement between you and Digia.  For licensing terms and
++** conditions see http://qt.digia.com/licensing.  For further information
++** use the contact form at http://qt.digia.com/contact-us.
++**
++** GNU Lesser General Public License Usage
++** Alternatively, this file may be used under the terms of the GNU Lesser
++** General Public License version 3 as published by the Free Software
++** Foundation and appearing in the file LICENSE.LGPLv3 included in the
++** packaging of this file.  Please review the following information to
++** ensure the GNU Lesser General Public License version 3 requirements
++** will be met: https://www.gnu.org/licenses/lgpl.html.
++**
++** GNU General Public License Usage
++** Alternatively, this file may be used under the terms of the GNU
++** General Public License version 2.0 or later as published by the Free
++** Software Foundation and appearing in the file LICENSE.GPL included in
++** the packaging of this file.  Please review the following information to
++** ensure the GNU General Public License version 2.0 requirements will be
++** met: http://www.gnu.org/licenses/gpl-2.0.html.
++**
++** $QT_END_LICENSE$
++**
++****************************************************************************/
++
++#ifndef MESSAGEBUBBLEWIDGET_P_H
++#define MESSAGEBUBBLEWIDGET_P_H
++
++#include <QWidget>
++#include <QPainterPath>
++
++QT_BEGIN_NAMESPACE
++class QLabel;
++class QWebEngineView;
++QT_END_NAMESPACE
++
++namespace QtWebEngineWidgetUI {
++
++class MessageBubbleWidget : public QWidget
++{
++    Q_OBJECT
++public:
++    MessageBubbleWidget();
++    ~MessageBubbleWidget();
++
++    static void showBubble(QWebEngineView *view, const QRect &anchor, const QString &mainText, const QString &subText = QString());
++    static void hideBubble();
++    static void moveBubble(QWebEngineView *view, const QRect &anchor);
++
++protected:
++    void paintEvent(QPaintEvent *) Q_DECL_OVERRIDE;
++
++private:
++    void createBubble(const int maxWidth, const QString &mainText, const QString &subText);
++    void moveToAnchor(QWebEngineView *view, const QRect &anchor);
++
++    QPainterPath drawBoxPath(const QPoint &pos, int border, bool roundedCorners);
++
++    QScopedPointer<QLabel> m_mainLabel;
++    QScopedPointer<QLabel> m_subLabel;
++    QPixmap m_pixmap;
++};
++
++} // namespace QtWebEngineWidgetUI
++
++#endif // MESSAGEBUBBLEWIDGET_P_H
+diff --git a/src/webenginewidgets/webenginewidgets.pro b/src/webenginewidgets/webenginewidgets.pro
+index 02e687c..1f7974b 100644
+--- a/src/webenginewidgets/webenginewidgets.pro
++++ b/src/webenginewidgets/webenginewidgets.pro
+@@ -45,4 +45,10 @@ HEADERS = \
+         api/qwebengineview_p.h \
+         render_widget_host_view_qt_delegate_widget.h
+ 
++!contains(WEBENGINE_CONFIG, no_ui_delegates) {
++    SOURCES += ui/messagebubblewidget.cpp
++    HEADERS += ui/messagebubblewidget_p.h
++    DEFINES += QT_UI_DELEGATES
++}
++
+ load(qt_module)
+-- 
+2.7.4 (Apple Git-66)
+

@@ -1,7 +1,7 @@
 \documentclass[12pt]{report}
 
 \def\magyarOptions{defaults=hu-min}
-\usepackage[magyar]{babel}
+\usepackage[magyar,english]{babel}
 \usepackage[utf8]{inputenc}
 \usepackage{t1enc}
 
@@ -27,7 +27,7 @@
 
 \usepackage{listings}
 \lstset{
-    basicstyle=\ttfamily\small,
+    basicstyle=\selectlanguage{english}\ttfamily\small,
     rulecolor=\color{gray},
     frame=b,
 }
@@ -1549,19 +1549,33 @@ A Test Support API-t Qt 5.5-ös verziója óta használjuk tesztelésre.
 \end{center}
 
 \noindent
-A \textbf{Form Validation} egy HTML5 funkció, amely HTML-ben írt ``űrlapok'' beviteli
-mezőit ellenőrzi scriptek nélkül: ki lett e töltve a beviteli mező, e-mail vagy URL
-formátumú-e a bevitt adat, stb. A feltételeket az input tag-en belül kell megadni és
-egyéni minták is definiálhatóak. Ha az input mezőbe bevitt adat nem felel meg a
-kívánalmaknak, az űrlap elküldése (\textit{submit}) helyett a böngésző felugró buborékban
-(\textit{Message Bubble}) jelzi a hiba okát.
+A \textbf{Form Validation} egy HTML5 funkció, amely HTML-ben írt űrlapok beviteli
+mezőit ellenőrzi scriptek nélkül: ki lett-e töltve a beviteli mező, e-mail vagy URL
+formátumú-e a bevitt adat, stb. A feltételeket az \texttt{input} tagen belül kell megadni,
+ahol egyéni minták is definiálhatóak. Az alábbi HTML5 példakód szerint, a beviteli mező
+nem lehet üres (\texttt{required}) a bevitt adatnak pedig \textit{email} formátumúnak kell
+lennie (\texttt{type="email"}):
+\begin{lstlisting}[title=form.html]
+ <html>
+ <body>
+    <form>
+        <input type="email" value="invalid" required />
+        <input type="submit" />
+    </form>
+ </body>
+ </html>
+\end{lstlisting}
+Ha az input mezőbe bevitt adat nem felel meg a kívánalmaknak, az űrlap elküldése
+(\textit{submit}) helyett a böngésző felugró buborékban (\textit{Message Bubble}) jelzi a
+hiba okát.
 
 Ez a funkció meg van valósítva a Chromiumban, viszont a hibaüzenet megjelenítését, már
-a beágyazó alkalmazásra bízza. A Qt WebEngine nem támogatta sem a hibaüzenet továbbítását
-API-n keresztül, sem pedig az üzenet megjelenítését egyik modulban sem. A funkció új API
-helyett \texttt{UI Delegate}-el lett megvalósítva Qt WebEngine és Qt WebEngine Widgets
-modulokban. \texttt{UI Delegate} esetén nem a fejlesztőnek kell lekezelni az eseményt és
-megjelenítenie egy UI elemet, hanem annak megvalósítása már a Qt WebEngine része.
+a beágyazó alkalmazásra bízza. A QtWebEngine korábban nem támogatta sem a hibaüzenet
+továbbítását API-n keresztül, sem pedig az üzenet megjelenítését egyik modulban sem.
+A funkció új API helyett \textit{UI Delegate}-tel lett megvalósítva a Qt WebEngine és
+Qt WebEngine Widgets modulokban. UI Delegate használatával nem a fejlesztőnek kell lekezelni
+az eseményt és megjelenítenie egy UI elemet (Widget vagy Quick Item), hanem annak
+megvalósítása már a QtWebEngine része.
 
 A Chromium Content API 3 callback függvénnyel jelzi, hogy ha a megjelenítendő üzenet állapota
 változik:
@@ -1570,85 +1584,100 @@ változik:
     \item[\texttt{HideValidationMessage}] Az üzenetet el kell rejteni
     \item[\texttt{MoveValidationMessage}] Az üzenet pozíciója megváltozott a képernyőn
 \end{description}
-Ezek a függvények a Core modulban meg lettek valósítva úgy, hogy a
+Ezeket a függvényeket úgy valósítottam meg a Core modulban, hogy a
 \texttt{WebContentsAdapterClient} megfelelő függvényeit hívják meg, paraméterben
 a megjelenítéshez szükséges adatokat Qt-s típusokra konvertálva. Mindkét modul
 szövegbuborékot rajzol, benne a hibaüzenettel a hibás input mező alá.
 
 \begin{figure}[h]
     \centering
-    \includegraphics[scale=0.75]{bubi-widget-screenshot}
+    \includegraphics[scale=0.7]{bubi-widget-screenshot}
     \caption{
         \label{fig:bubi-widget-screenshot}
         \texttt{QtWebEngineWidgetUI::MessageBubbleWidget}
     }
 \end{figure}
 
-A Qt WebEngine Widgets modulban új widget lett megvalósítva a szövegbuborék számára:
-\texttt{MessageBubbleWidget}. Az új widget a \texttt{QtWebEngineWidgetUI} névtérből
-elérhető és csak a Qt WebEngine számára. Az új névtér a \texttt{UI Delegate}-ként szolgál
-a Qt WebEngine Widgets modulban. Qt WebEngine-hez tartozó \texttt{UI Delegate}-nek fordítási
-időben letilthatónak kell lennie, ezért az itt implementált funkciók nem lesznek részei
-a Qt WebEngine-nek, ha a projekt a \texttt{WEBENGINE\_CONFIG=no\_ui\_delegates} beállítással
-van konfigurálva.
+A Qt WebEngine Widgets modulban új widgetet valósítottam meg a szövegbuborék számára
+\texttt{MessageBubbleWidget} néven. Ez a widget a \texttt{QtWebEngineWidgetUI} névtérből
+elérhető és nem publikus. Az új névtér valósítja meg a UI Delegate-t a Qt WebEngine Widgets
+modulban. A modulhoz tartozó UI Delegate-nek fordítási időben letilthatónak kell lennie,
+ezért az implementációt \texttt{QT\_UI\_DELEGATES} makróval \textit{guardoltam}. A funkció
+letiltásához a QtWebEngine-t a \texttt{WEBENGINE\_CONFIG=no\_ui\_delegates} beállítással kell
+konfigurálni.
 
-A \texttt{MessageBubbleWidget} singleton-ként van tárolva \texttt{UI Delegate}-en belül,
-így nem kell mind üzenethez újra felépíteni a widget-et, csak újra rajzolni. Hozzáférést
+A \texttt{MessageBubbleWidget} \textit{singletonként} van tárolva UI Delegate-en belül,
+így nem kell mind üzenethez újra felépíteni a widgetet, csupán újra rajzolni. Hozzáférést
 az alábbi belső API szolgáltat:
-\begin{itemize}
-    \item \texttt{QtWebEngineWidgetUI::MessageBubbleWidget::showBubble(} \\
-                    \texttt{view, anchor, mainText, subText)}
-    \item \texttt{QtWebEngineWidgetUI::MessageBubbleWidget::hideBubble()}
-    \item \texttt{QtWebEngineWidgetUI::MessageBubbleWidget::moveBubble(} \\
-                    \texttt{view, anchor)}
-\end{itemize}
-A \texttt{view} (\texttt{QWebEngineView}) paraméterre azért van szükség, hogy a buborék
-pozíciója meghatározható legyen az ablakon belül. Az \texttt{anchor} (\texttt{QRect}) annak
-a HTML elemnek (beviteli mezőnek) ``körvonala'', amelynek a tartalma a hibát kiváltotta.
-Ez arra van használva, hogy a buborék méretét kiszámítsuk. A \texttt{mainText}
-(\texttt{QString}) maga a hibaüzenet, míg a \texttt{subText} (\texttt{QString)} HTML mező
-azonosítója ha az meg van adva. Maga buborék \texttt{QPainter}-el lett megrajzolva, a bal
-felső sarokban található ikon pedig a Qt standard, üzenet mezőhöz tartozó ikonja.
+\newpage
+\begin{lstlisting}[title=src/webenginewidgets/ui/messagebubblewidget\_p.h]
+namespace QtWebEngineWidgetUI {
+class MessageBubbleWidget : public QWidget
+{
+    /* ... */
+    static void showBubble(QWebEngineView *view,
+                           const QRect &anchor,
+                           const QString &mainText,
+                           const QString &subText = QString());
+    static void hideBubble();
+    static void moveBubble(QWebEngineView *view,
+                           const QRect &anchor);
+    /* ... */
+};
+\end{lstlisting}
+A \texttt{view} paraméterre azért van szükség, hogy a buborék pozíciója meghatározható legyen
+az ablakon belül. Az \texttt{anchor} annak a HTML elemnek (beviteli mezőnek) befoglaló
+téglalapja, amelynek a tartalma a hibát kiváltotta. Ez a paraméter a buborék pozíciójának és
+méretének kiszámításához van felhasználva. A \texttt{mainText} paraméter maga a hibaüzenet,
+a \texttt{subText} pedig a HTML input mező címét (\texttt{title} attribútum) tartalmazza, ha
+az meg van adva. A buborékot \texttt{QPainter} segítségével rajzoltam meg. A bal felső
+sarokban található ikon pedig a Qt standard, üzenet mezőhöz használt ikonja
+(\texttt{QStyle::SP\_MessageBoxWarning}).
 
 \begin{figure}[ht]
     \centering
-    \includegraphics[scale=0.75]{bubi-quick-screenshot}
+    \includegraphics[scale=0.7]{bubi-quick-screenshot}
     \caption{
         \label{fig:bubi-quick-screenshot}
         \texttt{MessageBubble} QML típus
     }
 \end{figure}
 
-A Qt WebEngine modul szövegbuborékja mind megvalósítása, mind megjelenítése némileg eltér
-a widget-es szövegbuboréktól. A szövegbuborék tárolásáról és annak eléréséről
+A Qt WebEngine modul szövegbuborékjának mind megvalósítása, mind megjelenése némileg eltér
+a widget szövegbuboréktól. A szövegbuborék tárolásáról és annak eléréséről
 \texttt{UIDelegatesManager} osztály gondoskodik:
-\begin{itemize}
-    \item \texttt{UIDelegatesManager:showMessageBubble(} \\
-                    \texttt{anchor, mainText, subText}
-    \item \texttt{UIDelegatesManager::hideMessageBubble()}
-    \item \texttt{UIDelegatesManager::moveMessageBubble(anchor)}
-\end{itemize}
+\begin{lstlisting}[title=src/webengine/ui\_delegates\_manager.h]
+ class UIDelegatesManager {
+    /* ... */
+    void showMessageBubble(const QRect &anchor,
+                           const QString &mainText,
+                           const QString &subText);
+    void hideMessageBubble();
+    void moveMessageBubble(const QRect &anchor);
+ private:
+    QScopedPointer<QQuickItem> m_messageBubbleItem;
+    /* ... */
+ };
+\end{lstlisting}
 A két API többé kevésbé megegyezik. A legfontosabb különbség, hogy itt nem kell átadni a
-\texttt{view}-t paraméterül, mert az a \texttt{UIDelegatesManager} adattagja. A szövegbuborék
-QML típus QML nyelven lett megvalósítva: \texttt{MessageBubble.qml}. A buborék
-megrajzolás a \texttt{Canvas} QML típus segítségével történik. A \texttt{Canvas} típus
-ugyanolyan JavaScript API-t nyújt a rajzoláshoz, mint a HTML5 \texttt{Canvas} elem.
+\texttt{view}-t paraméterül, mert az a \texttt{UIDelegatesManager} adattagja. A
+szövegbuborékot a \texttt{MessageBubble} belső QML típus valósítja meg. A buborék
+megrajzolása a \texttt{Canvas} QML típus segítségével történik. A \texttt{Canvas} típus
+ugyanolyan JavaScript API-t nyújt a rajzoláshoz, mint a HTML5 \texttt{Canvas} eleme.
 Sajnos ikon használatára nem volt lehetőség, mivel a Qt a QML nyelvben nem nyújt beépített
-ikonokat sem pedig ikon támogatást. A widget-es ikonok használatát kerülni kellett, mert
-a Qt WebEngine modul-nak nem lehet Qt Widgets függősége.
+ikonokat sem pedig ikon támogatást. A widget API-n keresztül elérhető ikonok használatát
+kerülni kellett, mivel a Qt WebEngine modulnak nem lehet Qt Widgets függősége.
 
-Az Form Validation funkció tesztelésére a Test Support API lett felhasználva. Mivel a
-Qt WebEngine-ben a Form Validation-nek nincs publikus API-ja a hiba üzeneteket a
-Test Support API teszi elérhetővé a tesztek számára a
-\texttt{QQuickWebEngineTestSupport::ValidationMessageShown}
-signal-on keresztül. A hibásan kitöltött űrlapok ellenőrzéséhez az elküldés (submit) gomb
-megnyomására is szükség van a tesztekben. A teszt a gomb megnyomására felhasználói interakció
-híján a Qt Test modul \texttt{keyPress()} függvényét használja. A megfelelő gomb
-kiválasztását (``fókuszálását'') JavaScript kód végzi, ahol a megfelelő gomb azonosítóját
-az URL fragment tartalmazza.
+Az Form Validation funkció tesztelésére a Test Support API-t használtam fel. Mivel a
+QtWebEngine-ben a Form Validation funkciónak nincs publikus API-ja, az üzeneteket a Test
+Support API teszi elérhetővé a tesztek számára. Az üzenetek kiváltásához szükség van
+az ``elküldés'' (submit) gomb megnyomására is. Ehhez a teszt URL \textit{fragment}-ek
+segítségével a megfelelő gombra állítja a fókuszt, a billentyű lenyomást pedig a Qt Test
+modul \texttt{keyPress()} függvényével szimulálja.
 
 A Form Validation HTML5 funkció támogatása és a hozzátartozó szöveg buborékok a Qt 5.5-ös
-verzióban jelentek meg. A funkció tesztelése már csak az 5.6-os verzióba került be.
+verzióban jelentek meg. A funkció tesztelése már csak az 5.6-os Qt verzióhoz lett hozzáadva.
+
 
 \section{Localization}
 
