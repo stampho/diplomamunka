@@ -1,0 +1,424 @@
+From 5c89832668288db79ed0c79d3dda68af62285d18 Mon Sep 17 00:00:00 2001
+From: Peter Varga <pvarga@inf.u-szeged.hu>
+Date: Wed, 30 Jul 2014 16:10:26 +0200
+Subject: [PATCH] Add findText to Quick API
+
+Change-Id: Ic0de45c1fe2a5537d61ad446c96fe8fda7c30966
+Reviewed-by: Jocelyn Turcotte <jocelyn.turcotte@digia.com>
+---
+ src/webengine/api/qquickwebengineview.cpp       |  24 +++++
+ src/webengine/api/qquickwebengineview_p_p.h     |  10 +-
+ tests/auto/quick/qmltests/data/test4.html       | 118 ++++++++++++++++++++++
+ tests/auto/quick/qmltests/data/tst_findText.qml | 125 ++++++++++++++++++++++++
+ tests/quicktestbrowser/quickwindow.qml          |  47 +++++++++
+ 5 files changed, 323 insertions(+), 1 deletion(-)
+ create mode 100644 tests/auto/quick/qmltests/data/test4.html
+ create mode 100644 tests/auto/quick/qmltests/data/tst_findText.qml
+
+diff --git a/src/webengine/api/qquickwebengineview.cpp b/src/webengine/api/qquickwebengineview.cpp
+index 2678832..352c3dc 100644
+--- a/src/webengine/api/qquickwebengineview.cpp
++++ b/src/webengine/api/qquickwebengineview.cpp
+@@ -554,6 +554,14 @@ void QQuickWebEngineViewPrivate::didRunJavaScript(quint64 requestId, const QVari
+     callback.call(args);
+ }
+ 
++void QQuickWebEngineViewPrivate::didFindText(quint64 requestId, int matchCount)
++{
++    QJSValue callback = m_callbacks.take(requestId);
++    QJSValueList args;
++    args.append(QJSValue(matchCount));
++    callback.call(args);
++}
++
+ bool QQuickWebEngineView::isLoading() const
+ {
+     Q_D(const QQuickWebEngineView);
+@@ -637,6 +645,22 @@ QQmlComponent *QQuickWebEngineViewExperimental::extraContextMenuEntriesComponent
+     return d_ptr->contextMenuExtraItems;
+ }
+ 
++void QQuickWebEngineViewExperimental::findText(const QString &subString, FindFlags options, const QJSValue &callback)
++{
++    if (subString.isEmpty()) {
++        d_ptr->adapter->stopFinding();
++        if (!callback.isUndefined()) {
++            QJSValueList args;
++            args.append(QJSValue(0));
++            const_cast<QJSValue&>(callback).call(args);
++        }
++    } else {
++        quint64 requestId = d_ptr->adapter->findText(subString, options & FindCaseSensitively, options & FindBackward);
++        if (!callback.isUndefined())
++            d_ptr->m_callbacks.insert(requestId, callback);
++    }
++}
++
+ QQuickWebEngineHistory *QQuickWebEngineViewExperimental::navigationHistory() const
+ {
+     return d_ptr->m_history.data();
+diff --git a/src/webengine/api/qquickwebengineview_p_p.h b/src/webengine/api/qquickwebengineview_p_p.h
+index 2801338..831e91a 100644
+--- a/src/webengine/api/qquickwebengineview_p_p.h
++++ b/src/webengine/api/qquickwebengineview_p_p.h
+@@ -87,6 +87,7 @@ class Q_WEBENGINE_PRIVATE_EXPORT QQuickWebEngineViewExperimental : public QObjec
+     Q_PROPERTY(bool isFullScreen READ isFullScreen WRITE setIsFullScreen NOTIFY isFullScreenChanged)
+     Q_PROPERTY(QQuickWebEngineHistory *navigationHistory READ navigationHistory CONSTANT FINAL)
+     Q_ENUMS(Feature)
++    Q_FLAGS(FindFlags)
+ 
+ public:
+     enum Feature {
+@@ -95,6 +96,12 @@ public:
+         MediaAudioVideoDevices
+     };
+ 
++    enum FindFlag {
++        FindBackward = 1,
++        FindCaseSensitively = 2,
++    };
++    Q_DECLARE_FLAGS(FindFlags, FindFlag)
++
+     bool inspectable() const;
+     void setInspectable(bool);
+     void setIsFullScreen(bool fullscreen);
+@@ -107,6 +114,7 @@ public:
+ public Q_SLOTS:
+     void goBackTo(int index);
+     void goForwardTo(int index);
++    void findText(const QString&, FindFlags, const QJSValue & = QJSValue());
+     void grantFeaturePermission(const QUrl &securityOrigin, Feature, bool granted);
+ 
+ Q_SIGNALS:
+@@ -165,7 +173,7 @@ public:
+     virtual void didRunJavaScript(quint64, const QVariant&) Q_DECL_OVERRIDE;
+     virtual void didFetchDocumentMarkup(quint64, const QString&) Q_DECL_OVERRIDE { }
+     virtual void didFetchDocumentInnerText(quint64, const QString&) Q_DECL_OVERRIDE { }
+-    virtual void didFindText(quint64, int) Q_DECL_OVERRIDE { }
++    virtual void didFindText(quint64, int) Q_DECL_OVERRIDE;
+     virtual void passOnFocus(bool reverse) Q_DECL_OVERRIDE;
+     virtual void javaScriptConsoleMessage(JavaScriptConsoleMessageLevel level, const QString& message, int lineNumber, const QString& sourceID) Q_DECL_OVERRIDE;
+     virtual void authenticationRequired(const QUrl&, const QString&, bool, const QString&, QString*, QString*) Q_DECL_OVERRIDE { }
+diff --git a/tests/auto/quick/qmltests/data/test4.html b/tests/auto/quick/qmltests/data/test4.html
+new file mode 100644
+index 0000000..8f75af6
+--- /dev/null
++++ b/tests/auto/quick/qmltests/data/test4.html
+@@ -0,0 +1,118 @@
++<html>
++    <head>
++        <title>Long Page To Scroll</title>
++        <style>
++            #content {
++                 margin: auto;
++                 width:  100%;
++                 background: #eeeeee;
++                 font-size: 50px;
++            }
++        </style>
++        <meta name="viewport" content="initial-scale=2.0"/>
++    </head>
++    <body>
++        <div id="content">
++            bla00<br/>
++            bla01<br/>
++            bla02<br/>
++            bla03<br/>
++            bla04<br/>
++            bla05<br/>
++            bla06<br/>
++            bla07<br/>
++            bla08<br/>
++            bla09<br/>
++            bla10<br/>
++            bla11<br/>
++            bla12<br/>
++            bla13<br/>
++            bla14<br/>
++            bla15<br/>
++            bla16<br/>
++            bla17<br/>
++            bla18<br/>
++            bla19<br/>
++            bla20<br/>
++            bla21<br/>
++            bla22<br/>
++            bla23<br/>
++            bla24<br/>
++            bla25<br/>
++            bla26<br/>
++            bla27<br/>
++            bla28<br/>
++            bla29<br/>
++            bla30<br/>
++            bla31<br/>
++            bla32<br/>
++            bla33<br/>
++            bla34<br/>
++            bla35<br/>
++            bla36<br/>
++            bla37<br/>
++            bla38<br/>
++            bla39<br/>
++            bla40<br/>
++            bla41<br/>
++            bla42<br/>
++            bla43<br/>
++            bla44<br/>
++            bla45<br/>
++            bla46<br/>
++            bla47<br/>
++            bla48<br/>
++            bla49<br/>
++            bla50<br/>
++            bla51<br/>
++            bla52<br/>
++            bla53<br/>
++            bla54<br/>
++            bla55<br/>
++            bla56<br/>
++            bla57<br/>
++            bla58<br/>
++            bla59<br/>
++            bla60<br/>
++            bla61<br/>
++            bla62<br/>
++            bla63<br/>
++            bla64<br/>
++            bla65<br/>
++            bla66<br/>
++            bla67<br/>
++            bla68<br/>
++            bla69<br/>
++            bla70<br/>
++            bla71<br/>
++            bla72<br/>
++            bla73<br/>
++            bla74<br/>
++            bla75<br/>
++            bla76<br/>
++            bla77<br/>
++            bla78<br/>
++            bla79<br/>
++            bla80<br/>
++            bla81<br/>
++            bla82<br/>
++            bla83<br/>
++            bla84<br/>
++            bla85<br/>
++            bla86<br/>
++            bla87<br/>
++            bla88<br/>
++            bla89<br/>
++            bla90<br/>
++            bla91<br/>
++            bla92<br/>
++            bla93<br/>
++            bla94<br/>
++            bla95<br/>
++            bla96<br/>
++            bla97<br/>
++            bla98<br/>
++            bla99<br/>
++        </div>
++    </body>
++</html>
+diff --git a/tests/auto/quick/qmltests/data/tst_findText.qml b/tests/auto/quick/qmltests/data/tst_findText.qml
+new file mode 100644
+index 0000000..d3a922d
+--- /dev/null
++++ b/tests/auto/quick/qmltests/data/tst_findText.qml
+@@ -0,0 +1,125 @@
++/****************************************************************************
++**
++** Copyright (C) 2014 Digia Plc and/or its subsidiary(-ies).
++** Contact: http://www.qt-project.org/legal
++**
++** This file is part of the Qt Quick Controls module of the Qt Toolkit.
++**
++** $QT_BEGIN_LICENSE:LGPL$
++** Commercial License Usage
++** Licensees holding valid commercial Qt licenses may use this file in
++** accordance with the commercial license agreement provided with the
++** Software or, alternatively, in accordance with the terms contained in
++** a written agreement between you and Digia.  For licensing terms and
++** conditions see http://qt.digia.com/licensing.  For further information
++** use the contact form at http://qt.digia.com/contact-us.
++**
++** GNU Lesser General Public License Usage
++** Alternatively, this file may be used under the terms of the GNU Lesser
++** General Public License version 2.1 as published by the Free Software
++** Foundation and appearing in the file LICENSE.LGPL included in the
++** packaging of this file.  Please review the following information to
++** ensure the GNU Lesser General Public License version 2.1 requirements
++** will be met: http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
++**
++** In addition, as a special exception, Digia gives you certain additional
++** rights.  These rights are described in the Digia Qt LGPL Exception
++** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
++**
++** GNU General Public License Usage
++** Alternatively, this file may be used under the terms of the GNU
++** General Public License version 3.0 as published by the Free Software
++** Foundation and appearing in the file LICENSE.GPL included in the
++** packaging of this file.  Please review the following information to
++** ensure the GNU General Public License version 3.0 requirements will be
++** met: http://www.gnu.org/copyleft/gpl.html.
++**
++**
++** $QT_END_LICENSE$
++**
++****************************************************************************/
++
++import QtQuick 2.0
++import QtTest 1.0
++import QtWebEngine 0.9
++import QtWebEngine.experimental 1.0
++
++TestWebEngineView {
++    id: webEngineView
++    width: 400
++    height: 300
++
++    property int matchCount: 0
++    property bool findFailed: false
++
++    function clear() {
++        findFailed = false
++        matchCount = -1
++    }
++
++    function findTextCallback(matchCount) {
++        webEngineView.matchCount = matchCount
++        findFailed = matchCount == 0
++    }
++
++
++    TestCase {
++        name: "WebViewFindText"
++
++        function test_findText() {
++            var findFlags = WebEngineViewExperimental.FindCaseSensitively
++            webEngineView.url = Qt.resolvedUrl("test1.html")
++            verify(webEngineView.waitForLoadSucceeded())
++
++            webEngineView.clear()
++            webEngineView.experimental.findText("Hello", findFlags, webEngineView.findTextCallback)
++            tryCompare(webEngineView, "matchCount", 1)
++            verify(!findFailed)
++        }
++
++        function test_findTextCaseInsensitive() {
++            var findFlags = 0
++            webEngineView.url = Qt.resolvedUrl("test1.html")
++            verify(webEngineView.waitForLoadSucceeded())
++
++            webEngineView.clear()
++            webEngineView.experimental.findText("heLLo", findFlags, webEngineView.findTextCallback)
++            tryCompare(webEngineView, "matchCount", 1)
++            verify(!findFailed)
++        }
++
++        function test_findTextManyMatches() {
++            var findFlags = 0
++            webEngineView.url = Qt.resolvedUrl("test4.html")
++            verify(webEngineView.waitForLoadSucceeded())
++
++            webEngineView.clear()
++            webEngineView.experimental.findText("bla", findFlags, webEngineView.findTextCallback)
++            tryCompare(webEngineView, "matchCount", 100)
++            verify(!findFailed)
++        }
++
++
++        function test_findTextFailCaseSensitive() {
++            var findFlags = WebEngineViewExperimental.FindCaseSensitively
++            webEngineView.url = Qt.resolvedUrl("test1.html")
++            verify(webEngineView.waitForLoadSucceeded())
++
++            webEngineView.clear()
++            webEngineView.experimental.findText("heLLo", findFlags, webEngineView.findTextCallback)
++            tryCompare(webEngineView, "matchCount", 0)
++            verify(findFailed)
++        }
++
++        function test_findTextNotFound() {
++            var findFlags = 0
++            webEngineView.url = Qt.resolvedUrl("test1.html")
++            verify(webEngineView.waitForLoadSucceeded())
++
++            webEngineView.clear()
++            webEngineView.experimental.findText("string-that-is-not-threre", findFlags, webEngineView.findTextCallback)
++            tryCompare(webEngineView, "matchCount", 0)
++            verify(findFailed)
++        }
++    }
++}
+diff --git a/tests/quicktestbrowser/quickwindow.qml b/tests/quicktestbrowser/quickwindow.qml
+index 1e54bb4..06f18ea 100644
+--- a/tests/quicktestbrowser/quickwindow.qml
++++ b/tests/quicktestbrowser/quickwindow.qml
+@@ -253,6 +253,15 @@ ApplicationWindow {
+             Item {
+                 property alias webView: webEngineView
+                 property alias title: webEngineView.title
++                Action {
++                    shortcut: "Ctrl+F"
++                    onTriggered: {
++                        findBar.visible = !findBar.visible
++                        if (findBar.visible) {
++                            findTextField.forceActiveFocus()
++                        }
++                    }
++                }
+                 FeaturePermissionBar {
+                     id: permBar
+                     view: webEngineView
+@@ -324,6 +333,44 @@ ApplicationWindow {
+                         extraContextMenuEntriesComponent: ContextMenuExtras {}
+                     }
+                 }
++
++                Rectangle {
++                    id: findBar
++                    anchors.top: webEngineView.top
++                    anchors.right: webEngineView.right
++                    width: 240
++                    height: 35
++                    border.color: "lightgray"
++                    border.width: 1
++                    radius: 5
++                    visible: false
++                    color: browserWindow.color
++
++                    RowLayout {
++                        anchors.centerIn: findBar
++                        TextField {
++                            id: findTextField
++                            onAccepted: {
++                                webEngineView.experimental.findText(text, 0)
++                            }
++                        }
++                        ToolButton {
++                            id: findBackwardButton
++                            iconSource: "icons/go-previous.png"
++                            onClicked: webEngineView.experimental.findText(findTextField.text, WebEngineViewExperimental.FindBackward)
++                        }
++                        ToolButton {
++                            id: findForwardButton
++                            iconSource: "icons/go-next.png"
++                            onClicked: webEngineView.experimental.findText(findTextField.text, 0)
++                        }
++                        ToolButton {
++                            id: findCancelButton
++                            iconSource: "icons/process-stop.png"
++                            onClicked: findBar.visible = false
++                        }
++                    }
++                }
+             }
+         }
+     }
+-- 
+2.7.4 (Apple Git-66)
+
