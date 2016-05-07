@@ -1,0 +1,795 @@
+From 42c39d0545ee98feccf6d8059aee082c47a8e730 Mon Sep 17 00:00:00 2001
+From: Peter Varga <pvarga@inf.u-szeged.hu>
+Date: Mon, 22 Dec 2014 17:15:49 +0100
+Subject: [PATCH] Add testsupport QML API and error page signals
+
+The testsupport API is used for test those features that are not
+planned to be accessible via the public API. For example,
+signals of the chromium's error page should not be visible for the
+develepor but it is important to test whether the error page is loaded
+properly.
+
+Change-Id: Ie5b3265a207d05649cabd624a001a6ffe2e45971
+Reviewed-by: Andras Becsi <andras.becsi@theqtcompany.com>
+---
+ src/core/web_contents_adapter_client.h           |  4 +-
+ src/core/web_contents_delegate_qt.cpp            | 12 +++-
+ src/src.pro                                      |  9 ++-
+ src/webengine/api/qquickwebenginetestsupport.cpp | 75 +++++++++++++++++++
+ src/webengine/api/qquickwebenginetestsupport_p.h | 76 ++++++++++++++++++++
+ src/webengine/api/qquickwebengineview.cpp        | 43 ++++++++++-
+ src/webengine/api/qquickwebengineview_p.h        | 15 ++++
+ src/webengine/api/qquickwebengineview_p_p.h      | 11 ++-
+ src/webengine/plugin/testsupport/plugin.cpp      | 63 ++++++++++++++++
+ src/webengine/plugin/testsupport/qmldir          |  3 +
+ src/webengine/plugin/testsupport/testsupport.pro | 13 ++++
+ src/webengine/webengine.pro                      |  7 ++
+ src/webenginewidgets/api/qwebenginepage.cpp      | 14 +++-
+ src/webenginewidgets/api/qwebenginepage_p.h      |  4 +-
+ tests/auto/quick/qmltests/data/tst_loadFail.qml  | 92 ++++++++++++++++++++----
+ tests/auto/quick/qmltests/qmltests.pro           | 19 +++++
+ tools/qmake/mkspecs/features/functions.prf       |  6 ++
+ 17 files changed, 441 insertions(+), 25 deletions(-)
+ create mode 100644 src/webengine/api/qquickwebenginetestsupport.cpp
+ create mode 100644 src/webengine/api/qquickwebenginetestsupport_p.h
+ create mode 100644 src/webengine/plugin/testsupport/plugin.cpp
+ create mode 100644 src/webengine/plugin/testsupport/qmldir
+ create mode 100644 src/webengine/plugin/testsupport/testsupport.pro
+
+diff --git a/src/core/web_contents_adapter_client.h b/src/core/web_contents_adapter_client.h
+index 2efacb4..d67acce 100644
+--- a/src/core/web_contents_adapter_client.h
++++ b/src/core/web_contents_adapter_client.h
+@@ -152,10 +152,10 @@ public:
+     virtual void selectionChanged() = 0;
+     virtual QRectF viewportRect() const = 0;
+     virtual qreal dpiScale() const = 0;
+-    virtual void loadStarted(const QUrl &provisionalUrl) = 0;
++    virtual void loadStarted(const QUrl &provisionalUrl, bool isErrorPage = false) = 0;
+     virtual void loadCommitted() = 0;
+     virtual void loadVisuallyCommitted() = 0;
+-    virtual void loadFinished(bool success, const QUrl &url, int errorCode = 0, const QString &errorDescription = QString()) = 0;
++    virtual void loadFinished(bool success, const QUrl &url, bool isErrorPage = false, int errorCode = 0, const QString &errorDescription = QString()) = 0;
+     virtual void focusContainer() = 0;
+     virtual void unhandledKeyEvent(QKeyEvent *event) = 0;
+     virtual void adoptNewWindow(WebContentsAdapter *newWebContents, WindowOpenDisposition disposition, bool userGesture, const QRect & initialGeometry) = 0;
+diff --git a/src/core/web_contents_delegate_qt.cpp b/src/core/web_contents_delegate_qt.cpp
+index dd56bf2..f69b68a 100644
+--- a/src/core/web_contents_delegate_qt.cpp
++++ b/src/core/web_contents_delegate_qt.cpp
+@@ -144,6 +144,11 @@ void WebContentsDelegateQt::DidStartProvisionalLoadForFrame(content::RenderFrame
+ {
+     if (is_error_page) {
+         m_loadingErrorFrameList.append(render_frame_host->GetRoutingID());
++
++        // Trigger LoadStarted signal for main frame's error page only.
++        if (!render_frame_host->GetParent())
++            m_viewClient->loadStarted(toQt(validated_url), true);
++
+         return;
+     }
+ 
+@@ -173,7 +178,7 @@ void WebContentsDelegateQt::DidFailLoad(content::RenderFrameHost* render_frame_h
+     if (m_loadingErrorFrameList.removeOne(render_frame_host->GetRoutingID()) || render_frame_host->GetParent())
+         return;
+ 
+-    m_viewClient->loadFinished(false, toQt(validated_url), error_code, toQt(error_description));
++    m_viewClient->loadFinished(false /* success */ , toQt(validated_url), false /* isErrorPage */, error_code, toQt(error_description));
+     m_viewClient->loadProgressChanged(0);
+ }
+ 
+@@ -182,6 +187,11 @@ void WebContentsDelegateQt::DidFinishLoad(content::RenderFrameHost* render_frame
+     if (m_loadingErrorFrameList.removeOne(render_frame_host->GetRoutingID())) {
+         Q_ASSERT(validated_url.is_valid() && validated_url.spec() == content::kUnreachableWebDataURL);
+         m_viewClient->iconChanged(QUrl());
++
++        // Trigger LoadFinished signal for main frame's error page only.
++        if (!render_frame_host->GetParent())
++            m_viewClient->loadFinished(true /* success */, toQt(validated_url), true /* isErrorPage */);
++
+         return;
+     }
+ 
+diff --git a/src/src.pro b/src/src.pro
+index ed402c5..2effb70 100644
+--- a/src/src.pro
++++ b/src/src.pro
+@@ -10,13 +10,20 @@ webengine_experimental_plugin.subdir = webengine/plugin/experimental
+ webengine_experimental_plugin.target = sub-webengine-experimental-plugin
+ webengine_experimental_plugin.depends = webengine
+ 
+-
+ SUBDIRS += core \
+            process \
+            webengine \
+            webengine_plugin \
+            webengine_experimental_plugin
+ 
++
++isQMLTestSupportApiEnabled() {
++    webengine_testsupport_plugin.subdir = webengine/plugin/testsupport
++    webengine_testsupport_plugin.target = sub-webengine-testsupport-plugin
++    webengine_testsupport_plugin.depends = webengine
++    SUBDIRS += webengine_testsupport_plugin
++}
++
+ # FIXME: We probably want a bit more control over config options to tweak what to build/ship or not.
+ # Another example of where this could be necessary is to make it easy to build proprietery codecs support.
+ !contains(WEBENGINE_CONFIG, no_ui_delegates): SUBDIRS += webengine/ui
+diff --git a/src/webengine/api/qquickwebenginetestsupport.cpp b/src/webengine/api/qquickwebenginetestsupport.cpp
+new file mode 100644
+index 0000000..d85e56e
+--- /dev/null
++++ b/src/webengine/api/qquickwebenginetestsupport.cpp
+@@ -0,0 +1,75 @@
++/****************************************************************************
++**
++** Copyright (C) 2015 Digia Plc and/or its subsidiary(-ies).
++** Contact: http://www.qt-project.org/legal
++**
++** This file is part of the QtWebEngine module of the Qt Toolkit.
++**
++** $QT_BEGIN_LICENSE:LGPL$
++** Commercial License Usage
++** Licensees holding valid commercial Qt licenses may use this file in
++** accordance with the commercial license agreement provided with the
++** Software or, alternatively, in accordance with the terms contained in
++** a written agreement between you and Digia.  For licensing terms and
++** conditions see http://qt.digia.com/licensing.  For further information
++** use the contact form at http://qt.digia.com/contact-us.
++**
++** GNU Lesser General Public License Usage
++** Alternatively, this file may be used under the terms of the GNU Lesser
++** General Public License version 3 as published by the Free Software
++** Foundation and appearing in the file LICENSE.LGPLv3 included in the
++** packaging of this file.  Please review the following information to
++** ensure the GNU Lesser General Public License version 3 requirements
++** will be met: https://www.gnu.org/licenses/lgpl.html.
++**
++** GNU General Public License Usage
++** Alternatively, this file may be used under the terms of the GNU
++** General Public License version 2.0 or later as published by the Free
++** Software Foundation and appearing in the file LICENSE.GPL included in
++** the packaging of this file.  Please review the following information to
++** ensure the GNU General Public License version 2.0 requirements will be
++** met: http://www.gnu.org/licenses/gpl-2.0.html.
++**
++** $QT_END_LICENSE$
++**
++****************************************************************************/
++
++#include "qquickwebenginetestsupport_p.h"
++
++#include "qquickwebengineloadrequest_p.h"
++
++QT_BEGIN_NAMESPACE
++
++QQuickWebEngineErrorPage::QQuickWebEngineErrorPage()
++{
++}
++
++void QQuickWebEngineErrorPage::loadFinished(bool success, const QUrl &url)
++{
++    // Loading of the error page should not fail.
++    Q_ASSERT(success);
++
++    QQuickWebEngineLoadRequest loadRequest(url, QQuickWebEngineView::LoadSucceededStatus);
++    Q_EMIT loadingChanged(&loadRequest);
++    return;
++}
++
++void QQuickWebEngineErrorPage::loadStarted(const QUrl &provisionalUrl)
++{
++    QQuickWebEngineLoadRequest loadRequest(provisionalUrl, QQuickWebEngineView::LoadStartedStatus);
++    Q_EMIT loadingChanged(&loadRequest);
++}
++
++QQuickWebEngineTestSupport::QQuickWebEngineTestSupport()
++    : m_errorPage(new QQuickWebEngineErrorPage())
++{
++}
++
++QQuickWebEngineErrorPage *QQuickWebEngineTestSupport::errorPage() const
++{
++    return m_errorPage.data();
++}
++
++QT_END_NAMESPACE
++
++#include "moc_qquickwebenginetestsupport_p.cpp"
+diff --git a/src/webengine/api/qquickwebenginetestsupport_p.h b/src/webengine/api/qquickwebenginetestsupport_p.h
+new file mode 100644
+index 0000000..832ac28
+--- /dev/null
++++ b/src/webengine/api/qquickwebenginetestsupport_p.h
+@@ -0,0 +1,76 @@
++/****************************************************************************
++**
++** Copyright (C) 2015 Digia Plc and/or its subsidiary(-ies).
++** Contact: http://www.qt-project.org/legal
++**
++** This file is part of the QtWebEngine module of the Qt Toolkit.
++**
++** $QT_BEGIN_LICENSE:LGPL$
++** Commercial License Usage
++** Licensees holding valid commercial Qt licenses may use this file in
++** accordance with the commercial license agreement provided with the
++** Software or, alternatively, in accordance with the terms contained in
++** a written agreement between you and Digia.  For licensing terms and
++** conditions see http://qt.digia.com/licensing.  For further information
++** use the contact form at http://qt.digia.com/contact-us.
++**
++** GNU Lesser General Public License Usage
++** Alternatively, this file may be used under the terms of the GNU Lesser
++** General Public License version 3 as published by the Free Software
++** Foundation and appearing in the file LICENSE.LGPLv3 included in the
++** packaging of this file.  Please review the following information to
++** ensure the GNU Lesser General Public License version 3 requirements
++** will be met: https://www.gnu.org/licenses/lgpl.html.
++**
++** GNU General Public License Usage
++** Alternatively, this file may be used under the terms of the GNU
++** General Public License version 2.0 or later as published by the Free
++** Software Foundation and appearing in the file LICENSE.GPL included in
++** the packaging of this file.  Please review the following information to
++** ensure the GNU General Public License version 2.0 requirements will be
++** met: http://www.gnu.org/licenses/gpl-2.0.html.
++**
++** $QT_END_LICENSE$
++**
++****************************************************************************/
++
++#ifndef QQUICKWEBENGINETESTSUPPORT_P_H
++#define QQUICKWEBENGINETESTSUPPORT_P_H
++
++#include <private/qtwebengineglobal_p.h>
++
++#include <QObject>
++#include <QUrl>
++
++QT_BEGIN_NAMESPACE
++
++class QQuickWebEngineLoadRequest;
++
++class Q_WEBENGINE_PRIVATE_EXPORT QQuickWebEngineErrorPage : public QObject {
++    Q_OBJECT
++
++public:
++    QQuickWebEngineErrorPage();
++
++    void loadFinished(bool success, const QUrl &url);
++    void loadStarted(const QUrl &provisionalUrl);
++
++Q_SIGNALS:
++    void loadingChanged(QQuickWebEngineLoadRequest *loadRequest);
++};
++
++class Q_WEBENGINE_PRIVATE_EXPORT QQuickWebEngineTestSupport : public QObject {
++    Q_OBJECT
++    Q_PROPERTY(QQuickWebEngineErrorPage *errorPage READ errorPage)
++
++public:
++    QQuickWebEngineTestSupport();
++    QQuickWebEngineErrorPage *errorPage() const;
++
++private:
++    QScopedPointer<QQuickWebEngineErrorPage> m_errorPage;
++};
++
++QT_END_NAMESPACE
++
++#endif // QQUICKWEBENGINETESTSUPPORT_P_H
+diff --git a/src/webengine/api/qquickwebengineview.cpp b/src/webengine/api/qquickwebengineview.cpp
+index 6fa3798..2fbf0ec 100644
+--- a/src/webengine/api/qquickwebengineview.cpp
++++ b/src/webengine/api/qquickwebengineview.cpp
+@@ -49,6 +49,11 @@
+ #include "qquickwebengineprofile_p_p.h"
+ #include "qquickwebenginesettings_p.h"
+ #include "qquickwebenginescript_p_p.h"
++
++#ifdef ENABLE_QML_TESTSUPPORT_API
++#include "qquickwebenginetestsupport_p.h"
++#endif
++
+ #include "render_widget_host_view_qt_delegate_quick.h"
+ #include "render_widget_host_view_qt_delegate_quickwindow.h"
+ #include "ui_delegates_manager.h"
+@@ -90,6 +95,9 @@ QQuickWebEngineViewPrivate::QQuickWebEngineViewPrivate()
+     , m_history(new QQuickWebEngineHistory(this))
+     , m_profile(QQuickWebEngineProfile::defaultProfile())
+     , m_settings(new QQuickWebEngineSettings(m_profile->settings()))
++#ifdef ENABLE_QML_TESTSUPPORT_API
++    , m_testSupport(0)
++#endif
+     , contextMenuExtraItems(0)
+     , loadProgress(0)
+     , m_isFullScreen(false)
+@@ -301,9 +309,17 @@ qreal QQuickWebEngineViewPrivate::dpiScale() const
+     return m_dpiScale;
+ }
+ 
+-void QQuickWebEngineViewPrivate::loadStarted(const QUrl &provisionalUrl)
++void QQuickWebEngineViewPrivate::loadStarted(const QUrl &provisionalUrl, bool isErrorPage)
+ {
+     Q_Q(QQuickWebEngineView);
++    if (isErrorPage) {
++#ifdef ENABLE_QML_TESTSUPPORT_API
++        if (m_testSupport)
++            m_testSupport->errorPage()->loadStarted(provisionalUrl);
++#endif
++        return;
++    }
++
+     isLoading = true;
+     m_history->reset();
+     m_certificateErrorControllers.clear();
+@@ -325,9 +341,18 @@ Q_STATIC_ASSERT(static_cast<int>(WebEngineError::NoErrorDomain) == static_cast<i
+ Q_STATIC_ASSERT(static_cast<int>(WebEngineError::CertificateErrorDomain) == static_cast<int>(QQuickWebEngineView::CertificateErrorDomain));
+ Q_STATIC_ASSERT(static_cast<int>(WebEngineError::DnsErrorDomain) == static_cast<int>(QQuickWebEngineView::DnsErrorDomain));
+ 
+-void QQuickWebEngineViewPrivate::loadFinished(bool success, const QUrl &url, int errorCode, const QString &errorDescription)
++void QQuickWebEngineViewPrivate::loadFinished(bool success, const QUrl &url, bool isErrorPage, int errorCode, const QString &errorDescription)
+ {
+     Q_Q(QQuickWebEngineView);
++
++    if (isErrorPage) {
++#ifdef ENABLE_QML_TESTSUPPORT_API
++        if (m_testSupport)
++            m_testSupport->errorPage()->loadFinished(success, url);
++#endif
++        return;
++    }
++
+     isLoading = false;
+     m_history->reset();
+     if (errorCode == WebEngineError::UserAbortedError) {
+@@ -703,6 +728,20 @@ void QQuickWebEngineViewPrivate::setProfile(QQuickWebEngineProfile *profile)
+     }
+ }
+ 
++#ifdef ENABLE_QML_TESTSUPPORT_API
++QQuickWebEngineTestSupport *QQuickWebEngineView::testSupport() const
++{
++    Q_D(const QQuickWebEngineView);
++    return d->m_testSupport;
++}
++
++void QQuickWebEngineView::setTestSupport(QQuickWebEngineTestSupport *testSupport)
++{
++    Q_D(QQuickWebEngineView);
++    d->m_testSupport = testSupport;
++}
++#endif
++
+ void QQuickWebEngineViewPrivate::didRunJavaScript(quint64 requestId, const QVariant &result)
+ {
+     Q_Q(QQuickWebEngineView);
+diff --git a/src/webengine/api/qquickwebengineview_p.h b/src/webengine/api/qquickwebengineview_p.h
+index 3ff6ab6..d4a492e 100644
+--- a/src/webengine/api/qquickwebengineview_p.h
++++ b/src/webengine/api/qquickwebengineview_p.h
+@@ -54,6 +54,11 @@ class QQuickWebEngineSettings;
+ class QQuickWebEngineViewExperimental;
+ class QQuickWebEngineViewPrivate;
+ 
++#ifdef ENABLE_QML_TESTSUPPORT_API
++class QQuickWebEngineTestSupport;
++#endif
++
++
+ class Q_WEBENGINE_PRIVATE_EXPORT QQuickWebEngineView : public QQuickItem {
+     Q_OBJECT
+     Q_PROPERTY(QUrl url READ url WRITE setUrl NOTIFY urlChanged)
+@@ -69,6 +74,11 @@ class Q_WEBENGINE_PRIVATE_EXPORT QQuickWebEngineView : public QQuickItem {
+     Q_PROPERTY(QQuickWebEngineHistory *navigationHistory READ navigationHistory CONSTANT FINAL REVISION 1)
+     Q_PROPERTY(QQmlWebChannel *webChannel READ webChannel WRITE setWebChannel NOTIFY webChannelChanged REVISION 1)
+     Q_PROPERTY(QQmlListProperty<QQuickWebEngineScript> userScripts READ userScripts FINAL)
++
++#ifdef ENABLE_QML_TESTSUPPORT_API
++    Q_PROPERTY(QQuickWebEngineTestSupport *testSupport READ testSupport WRITE setTestSupport FINAL)
++#endif
++
+     Q_ENUMS(NavigationRequestAction);
+     Q_ENUMS(NavigationType);
+     Q_ENUMS(LoadStatus);
+@@ -161,6 +171,11 @@ public:
+     void setWebChannel(QQmlWebChannel *);
+     QQuickWebEngineHistory *navigationHistory() const;
+ 
++#ifdef ENABLE_QML_TESTSUPPORT_API
++    QQuickWebEngineTestSupport *testSupport() const;
++    void setTestSupport(QQuickWebEngineTestSupport *testSupport);
++#endif
++
+ public Q_SLOTS:
+     void runJavaScript(const QString&, const QJSValue & = QJSValue());
+     void loadHtml(const QString &html, const QUrl &baseUrl = QUrl());
+diff --git a/src/webengine/api/qquickwebengineview_p_p.h b/src/webengine/api/qquickwebengineview_p_p.h
+index 7a33605..6d9b16d 100644
+--- a/src/webengine/api/qquickwebengineview_p_p.h
++++ b/src/webengine/api/qquickwebengineview_p_p.h
+@@ -57,6 +57,10 @@ class QQmlComponent;
+ class QQmlContext;
+ class QQuickWebEngineSettings;
+ 
++#ifdef ENABLE_QML_TESTSUPPORT_API
++class QQuickWebEngineTestSupport;
++#endif
++
+ class Q_WEBENGINE_PRIVATE_EXPORT QQuickWebEngineViewport : public QObject {
+     Q_OBJECT
+     Q_PROPERTY(qreal devicePixelRatio READ devicePixelRatio WRITE setDevicePixelRatio NOTIFY devicePixelRatioChanged)
+@@ -137,10 +141,10 @@ public:
+     virtual void selectionChanged() Q_DECL_OVERRIDE { }
+     virtual QRectF viewportRect() const Q_DECL_OVERRIDE;
+     virtual qreal dpiScale() const Q_DECL_OVERRIDE;
+-    virtual void loadStarted(const QUrl &provisionalUrl) Q_DECL_OVERRIDE;
++    virtual void loadStarted(const QUrl &provisionalUrl, bool isErrorPage = false) Q_DECL_OVERRIDE;
+     virtual void loadCommitted() Q_DECL_OVERRIDE;
+     virtual void loadVisuallyCommitted() Q_DECL_OVERRIDE;
+-    virtual void loadFinished(bool success, const QUrl &url, int errorCode = 0, const QString &errorDescription = QString()) Q_DECL_OVERRIDE;
++    virtual void loadFinished(bool success, const QUrl &url, bool isErrorPage = false, int errorCode = 0, const QString &errorDescription = QString()) Q_DECL_OVERRIDE;
+     virtual void focusContainer() Q_DECL_OVERRIDE;
+     virtual void unhandledKeyEvent(QKeyEvent *event) Q_DECL_OVERRIDE;
+     virtual void adoptNewWindow(QtWebEngineCore::WebContentsAdapter *newWebContents, WindowOpenDisposition disposition, bool userGesture, const QRect &) Q_DECL_OVERRIDE;
+@@ -186,6 +190,9 @@ public:
+     QScopedPointer<QQuickWebEngineHistory> m_history;
+     QQuickWebEngineProfile *m_profile;
+     QScopedPointer<QQuickWebEngineSettings> m_settings;
++#ifdef ENABLE_QML_TESTSUPPORT_API
++    QQuickWebEngineTestSupport *m_testSupport;
++#endif
+     QQmlComponent *contextMenuExtraItems;
+     QUrl explicitUrl;
+     QUrl icon;
+diff --git a/src/webengine/plugin/testsupport/plugin.cpp b/src/webengine/plugin/testsupport/plugin.cpp
+new file mode 100644
+index 0000000..60e5606
+--- /dev/null
++++ b/src/webengine/plugin/testsupport/plugin.cpp
+@@ -0,0 +1,63 @@
++/****************************************************************************
++**
++** Copyright (C) 2015 Digia Plc and/or its subsidiary(-ies).
++** Contact: http://www.qt-project.org/legal
++**
++** This file is part of the QtWebEngine module of the Qt Toolkit.
++**
++** $QT_BEGIN_LICENSE:LGPL$
++** Commercial License Usage
++** Licensees holding valid commercial Qt licenses may use this file in
++** accordance with the commercial license agreement provided with the
++** Software or, alternatively, in accordance with the terms contained in
++** a written agreement between you and Digia.  For licensing terms and
++** conditions see http://qt.digia.com/licensing.  For further information
++** use the contact form at http://qt.digia.com/contact-us.
++**
++** GNU Lesser General Public License Usage
++** Alternatively, this file may be used under the terms of the GNU Lesser
++** General Public License version 3 as published by the Free Software
++** Foundation and appearing in the file LICENSE.LGPLv3 included in the
++** packaging of this file.  Please review the following information to
++** ensure the GNU Lesser General Public License version 3 requirements
++** will be met: https://www.gnu.org/licenses/lgpl.html.
++**
++** GNU General Public License Usage
++** Alternatively, this file may be used under the terms of the GNU
++** General Public License version 2.0 or later as published by the Free
++** Software Foundation and appearing in the file LICENSE.GPL included in
++** the packaging of this file.  Please review the following information to
++** ensure the GNU General Public License version 2.0 requirements will be
++** met: http://www.gnu.org/licenses/gpl-2.0.html.
++**
++** $QT_END_LICENSE$
++**
++****************************************************************************/
++
++#include <QtQml>
++
++#include "qquickwebenginetestsupport_p.h"
++
++QT_BEGIN_NAMESPACE
++
++class QtWebEngineTestSupportPlugin : public QQmlExtensionPlugin
++{
++    Q_OBJECT
++    Q_PLUGIN_METADATA(IID "org.qt-project.Qt.QQmlExtensionInterface/1.0")
++public:
++    virtual void registerTypes(const char *uri)
++    {
++        qWarning("\nWARNING: This project is using the testsupport QML API extensions for QtWebEngine and is therefore tied to a specific QtWebEngine release.\n"
++                 "WARNING: The testsupport API will change from version to version, or even be removed. You have been warned!\n");
++
++        Q_ASSERT(QLatin1String(uri) == QLatin1String("QtWebEngine.testsupport"));
++
++        qmlRegisterType<QQuickWebEngineTestSupport>(uri, 1, 0, "WebEngineTestSupport");
++        qmlRegisterUncreatableType<QQuickWebEngineErrorPage>(uri, 1, 0, "WebEngineErrorPage",
++            QObject::tr("Cannot create a separate instance of WebEngineErrorPage"));
++    }
++};
++
++QT_END_NAMESPACE
++
++#include "plugin.moc"
+diff --git a/src/webengine/plugin/testsupport/qmldir b/src/webengine/plugin/testsupport/qmldir
+new file mode 100644
+index 0000000..588c9d2
+--- /dev/null
++++ b/src/webengine/plugin/testsupport/qmldir
+@@ -0,0 +1,3 @@
++module QtWebEngine.testsupport
++plugin qtwebenginetestsupportplugin
++typeinfo plugins.qmltypes
+diff --git a/src/webengine/plugin/testsupport/testsupport.pro b/src/webengine/plugin/testsupport/testsupport.pro
+new file mode 100644
+index 0000000..1a45ad5
+--- /dev/null
++++ b/src/webengine/plugin/testsupport/testsupport.pro
+@@ -0,0 +1,13 @@
++CXX_MODULE = qml
++TARGET = qtwebenginetestsupportplugin
++TARGETPATH = QtWebEngine/testsupport
++IMPORT_VERSION = 1.0
++
++QT += webengine qml quick
++QT_PRIVATE += webengine-private
++
++INCLUDEPATH += $$QTWEBENGINE_ROOT/src/core $$QTWEBENGINE_ROOT/src/webengine $$QTWEBENGINE_ROOT/src/webengine/api
++
++SOURCES = plugin.cpp
++
++load(qml_plugin)
+diff --git a/src/webengine/webengine.pro b/src/webengine/webengine.pro
+index 154286e..6cba9c5 100644
+--- a/src/webengine/webengine.pro
++++ b/src/webengine/webengine.pro
+@@ -48,4 +48,11 @@ HEADERS = \
+         render_widget_host_view_qt_delegate_quickwindow.h \
+         ui_delegates_manager.h
+ 
++isQMLTestSupportApiEnabled() {
++    SOURCES += api/qquickwebenginetestsupport.cpp
++    HEADERS += api/qquickwebenginetestsupport_p.h
++
++    DEFINES += ENABLE_QML_TESTSUPPORT_API
++}
++
+ load(qt_module)
+diff --git a/src/webenginewidgets/api/qwebenginepage.cpp b/src/webenginewidgets/api/qwebenginepage.cpp
+index f4ec573..7eab1dc 100644
+--- a/src/webenginewidgets/api/qwebenginepage.cpp
++++ b/src/webenginewidgets/api/qwebenginepage.cpp
+@@ -242,10 +242,14 @@ qreal QWebEnginePagePrivate::dpiScale() const
+     return 1.0;
+ }
+ 
+-void QWebEnginePagePrivate::loadStarted(const QUrl &provisionalUrl)
++void QWebEnginePagePrivate::loadStarted(const QUrl &provisionalUrl, bool isErrorPage)
+ {
+-    Q_UNUSED(provisionalUrl)
++    Q_UNUSED(provisionalUrl);
+     Q_Q(QWebEnginePage);
++
++    if (isErrorPage)
++        return;
++
+     isLoading = true;
+     Q_EMIT q->loadStarted();
+     updateNavigationActions();
+@@ -256,12 +260,16 @@ void QWebEnginePagePrivate::loadCommitted()
+     updateNavigationActions();
+ }
+ 
+-void QWebEnginePagePrivate::loadFinished(bool success, const QUrl &url, int errorCode, const QString &errorDescription)
++void QWebEnginePagePrivate::loadFinished(bool success, const QUrl &url, bool isErrorPage, int errorCode, const QString &errorDescription)
+ {
+     Q_Q(QWebEnginePage);
+     Q_UNUSED(url);
+     Q_UNUSED(errorCode);
+     Q_UNUSED(errorDescription);
++
++    if (isErrorPage)
++        return;
++
+     isLoading = false;
+     if (success)
+         explicitUrl = QUrl();
+diff --git a/src/webenginewidgets/api/qwebenginepage_p.h b/src/webenginewidgets/api/qwebenginepage_p.h
+index b6da844..087137a 100644
+--- a/src/webenginewidgets/api/qwebenginepage_p.h
++++ b/src/webenginewidgets/api/qwebenginepage_p.h
+@@ -118,10 +118,10 @@ public:
+     virtual void selectionChanged() Q_DECL_OVERRIDE;
+     virtual QRectF viewportRect() const Q_DECL_OVERRIDE;
+     virtual qreal dpiScale() const Q_DECL_OVERRIDE;
+-    virtual void loadStarted(const QUrl &provisionalUrl) Q_DECL_OVERRIDE;
++    virtual void loadStarted(const QUrl &provisionalUrl, bool isErrorPage = false) Q_DECL_OVERRIDE;
+     virtual void loadCommitted() Q_DECL_OVERRIDE;
+     virtual void loadVisuallyCommitted() Q_DECL_OVERRIDE { }
+-    virtual void loadFinished(bool success, const QUrl &url, int errorCode = 0, const QString &errorDescription = QString()) Q_DECL_OVERRIDE;
++    virtual void loadFinished(bool success, const QUrl &url, bool isErrorPage = false, int errorCode = 0, const QString &errorDescription = QString()) Q_DECL_OVERRIDE;
+     virtual void focusContainer() Q_DECL_OVERRIDE;
+     virtual void unhandledKeyEvent(QKeyEvent *event) Q_DECL_OVERRIDE;
+     virtual void adoptNewWindow(QtWebEngineCore::WebContentsAdapter *newWebContents, WindowOpenDisposition disposition, bool userGesture, const QRect &initialGeometry) Q_DECL_OVERRIDE;
+diff --git a/tests/auto/quick/qmltests/data/tst_loadFail.qml b/tests/auto/quick/qmltests/data/tst_loadFail.qml
+index e88d829..7b5bbe2 100644
+--- a/tests/auto/quick/qmltests/data/tst_loadFail.qml
++++ b/tests/auto/quick/qmltests/data/tst_loadFail.qml
+@@ -43,36 +43,69 @@ import QtQuick 2.0
+ import QtTest 1.0
+ import QtWebEngine 1.1
+ import QtWebEngine.experimental 1.0
++import QtWebEngine.testsupport 1.0
+ 
+ TestWebEngineView {
+     id: webEngineView
+     width: 400
+     height: 300
+ 
+-    property variant unavailableUrl
++    property var unavailableUrl: Qt.resolvedUrl("file_that_does_not_exist.html")
++    property var loadRequestArray: []
++
++    testSupport: WebEngineTestSupport {
++        property var errorPageLoadStatus: null
++
++        function waitForErrorPageLoadSucceeded() {
++            var success = _waitFor(function() { return testSupport.errorPageLoadStatus == WebEngineView.LoadSucceededStatus })
++            testSupport.errorPageLoadStatus = null
++            return success
++        }
++
++        errorPage.onLoadingChanged: {
++            errorPageLoadStatus = loadRequest.status
++
++            loadRequestArray.push({
++               "status": loadRequest.status,
++               "url": loadRequest.url.toString(),
++               "errorDomain": loadRequest.errorDomain,
++               "isErrorPage": true
++            })
++        }
++    }
++
++    onLoadingChanged: {
++        if (loadRequest.status == WebEngineView.LoadFailedStatus) {
++            test.compare(loadRequest.url, unavailableUrl)
++            test.compare(loadRequest.errorDomain, WebEngineView.InternalErrorDomain)
++        }
++
++        loadRequestArray.push({
++           "status": loadRequest.status,
++           "url": loadRequest.url.toString(),
++           "errorDomain": loadRequest.errorDomain,
++           "isErrorPage": false
++        })
++    }
+ 
+     TestCase {
+         id: test
+         name: "WebEngineViewLoadFail"
+ 
+-        function initTestCase() {
+-            WebEngine.settings.errorPageEnabled = false
+-        }
+-
+         function test_fail() {
+-            unavailableUrl = Qt.resolvedUrl("file_that_does_not_exist.html")
++            WebEngine.settings.errorPageEnabled = false
+             webEngineView.url = unavailableUrl
+             verify(webEngineView.waitForLoadFailed())
+         }
+ 
+         function test_fail_url() {
++            WebEngine.settings.errorPageEnabled = false
+             var url = Qt.resolvedUrl("test1.html")
+             webEngineView.url = url
+             compare(webEngineView.url, url)
+             verify(webEngineView.waitForLoadSucceeded())
+             compare(webEngineView.url, url)
+ 
+-            unavailableUrl = Qt.resolvedUrl("file_that_does_not_exist.html")
+             webEngineView.url = unavailableUrl
+             compare(webEngineView.url, unavailableUrl)
+             verify(webEngineView.waitForLoadFailed())
+@@ -80,12 +113,47 @@ TestWebEngineView {
+             // We expect the url of the previously loaded page here.
+             compare(webEngineView.url, url)
+         }
+-    }
+ 
+-    onLoadingChanged: {
+-        if (loadRequest.status == WebEngineView.LoadFailedStatus) {
+-            test.compare(loadRequest.url, unavailableUrl)
+-            test.compare(loadRequest.errorDomain, WebEngineView.InternalErrorDomain)
++        function test_error_page() {
++            WebEngine.settings.errorPageEnabled = true
++            webEngineView.url = unavailableUrl
++
++            // Loading of the error page must be successful
++            verify(webEngineView.testSupport.waitForErrorPageLoadSucceeded())
++
++            var loadRequest = null
++            compare(loadRequestArray.length, 4)
++
++            // Start to load unavailableUrl
++            loadRequest = loadRequestArray[0]
++            compare(loadRequest.status, WebEngineView.LoadStartedStatus)
++            compare(loadRequest.errorDomain, WebEngineView.NoErrorDomain)
++            compare(loadRequest.url, unavailableUrl)
++            verify(!loadRequest.isErrorPage)
++
++            // Loading of the unavailableUrl must fail
++            loadRequest = loadRequestArray[1]
++            compare(loadRequest.status, WebEngineView.LoadFailedStatus)
++            compare(loadRequest.errorDomain, WebEngineView.InternalErrorDomain)
++            compare(loadRequest.url, unavailableUrl)
++            verify(!loadRequest.isErrorPage)
++
++            // Start to load error page
++            loadRequest = loadRequestArray[2]
++            compare(loadRequest.status, WebEngineView.LoadStartedStatus)
++            compare(loadRequest.errorDomain, WebEngineView.NoErrorDomain)
++            compare(loadRequest.url, "data:text/html,chromewebdata")
++            verify(loadRequest.isErrorPage)
++
++            // Loading of the error page must be successful
++            loadRequest = loadRequestArray[3]
++            compare(loadRequest.status, WebEngineView.LoadSucceededStatus)
++            compare(loadRequest.errorDomain, WebEngineView.NoErrorDomain)
++            compare(loadRequest.url, "data:text/html,chromewebdata")
++            verify(loadRequest.isErrorPage)
++
++            compare(webEngineView.url, unavailableUrl)
++            compare(webEngineView.title, unavailableUrl + " is not found")
+         }
+     }
+ }
+diff --git a/tests/auto/quick/qmltests/qmltests.pro b/tests/auto/quick/qmltests/qmltests.pro
+index 6789b71..b71f1be 100644
+--- a/tests/auto/quick/qmltests/qmltests.pro
++++ b/tests/auto/quick/qmltests/qmltests.pro
+@@ -37,3 +37,22 @@ OTHER_FILES += \
+ 
+ load(qt_build_paths)
+ DEFINES += QUICK_TEST_SOURCE_DIR=\"\\\"$$PWD$${QMAKE_DIR_SEP}data\\\"\"
++
++!isQMLTestSupportApiEnabled() {
++    PLUGIN_EXTENSION = .so
++    PLUGIN_PREFIX = lib
++    osx: PLUGIN_PREFIX = .dylib
++    win32 {
++        PLUGIN_EXTENSION = .dll
++        PLUGIN_PREFIX =
++    }
++
++    TESTSUPPORT_MODULE = $$shell_path($$[QT_INSTALL_QML]/QtWebEngine/testsupport/$${PLUGIN_PREFIX}qtwebenginetestsupportplugin$${PLUGIN_EXTENSION})
++    BUILD_DIR = $$shell_path($$clean_path($$OUT_PWD/../../../..))
++    SRC_DIR = $$shell_path($$clean_path($$PWD/../../../..))
++
++    warning("QML Test Support API is disabled. This means some QML tests that use Test Support API will fail.")
++    warning("Use the following command to build Test Support module and rebuild WebEngineView API:")
++    warning("cd $$BUILD_DIR && qmake WEBENGINE_CONFIG+=testsupport -r $$shell_path($$SRC_DIR/qtwebengine.pro) && make -C $$shell_path($$BUILD_DIR/src/webengine) clean && make")
++    warning("After performing the command above make sure QML module \"QtWebEngine.testsupport\" is deployed at $$TESTSUPPORT_MODULE")
++}
+diff --git a/tools/qmake/mkspecs/features/functions.prf b/tools/qmake/mkspecs/features/functions.prf
+index 2e2261c..a34bd23 100644
+--- a/tools/qmake/mkspecs/features/functions.prf
++++ b/tools/qmake/mkspecs/features/functions.prf
+@@ -37,6 +37,12 @@ defineTest(isGCCVersionSupported) {
+   return(false)
+ }
+ 
++defineTest(isQMLTestSupportApiEnabled) {
++    contains(QT_BUILD_PARTS, tests): return(true)
++    contains(WEBENGINE_CONFIG, testsupport): return(true)
++    return(false)
++}
++
+ # Map to the correct target type for gyp
+ defineReplace(toGypTargetType) {
+   equals(TEMPLATE, "app"):return("executable")
+-- 
+2.7.4 (Apple Git-66)
+

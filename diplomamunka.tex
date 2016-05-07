@@ -1336,12 +1336,12 @@ került át a stable API-ba minimális változtatással és dokumentációval.
 \noindent
 A \textbf{Log Level} funkció esetében nem egy új API-ról vagy egy meglévő bővítéséről van
 szó, hanem egy új kapcsoló a \texttt{-{}-log-level=[0123]} hozzáadásáról a Qt WebEngine-hez.
-Az új funkció természetéből adódóan nincs szükség/lehetőség tesztelésre sem.
+Az új funkció természetéből adódóan nincs szükség/lehetőség tesztelésre.
 
-Az új kapcsolóra azért volt szükség, mert a Qt WebEngine-t beépítő alkalmazások rengeteg
+Az új kapcsolóra azért volt szükség, mert a QtWebEngine-t beépítő alkalmazások rengeteg
 üzenetet írtak ki a konzolra, ami a Chromiumtól jött. Ezeknek túlnyomó része lényegtelen
-információ a QtWebEngine-t használó fejlesztő számára, ezért az elsődleges cél ezek
-letiltása volt. Viszont hibakeresés szempontjából fontosak lehetnek a hibaüzenetek a
+információ a QtWebEngine-t használó fejlesztő vagy a felhasználó számára, ezért az elsődleges
+cél ezek letiltása volt. Viszont hibakeresés szempontjából fontosak lehetnek a hibaüzenetek a
 fejlesztés során, ezért egy kapcsolóra volt szükség, ami ezt szabályozza.
 
 Az üzenetek szűrésére a Chromium naplózási szinteket definiál:
@@ -1354,29 +1354,45 @@ Az üzenetek szűrésére a Chromium naplózási szinteket definiál:
     \item[2] \texttt{LOG\_ERROR}
     \item[3] \texttt{LOG\_FATAL}
 \end{description}
-Ezek közül a Qt WebEngine szempontjából csak a \texttt{LOG\_FATAL} szintű üzenetek
-relevánsak, tehát minimum log szintnek ezt kell beállítani.
+Beállításkor minimum szintet kell beállítani, ami azt jelenti, hogy a beállított szint
+feletti üzenetek megjelennek (0-ás szintet kell beállítani, hogy minden üzenet megjelenjen).
+Az üzenetek közül a QtWebEngine számára csak a \texttt{LOG\_FATAL} szintű üzenetek fontosak,
+ezért alapértelmezetten minimum naplózási szintnek ezt kell beállítani.
 Erre szolgál a Chromium \texttt{logging::SetMinLogLevel} függvénye:
-\begin{verbatim}
+\begin{lstlisting}[title=src/core/content\_main\_delegate\_qt.cpp]
+ void ContentMainDelegateQt::PreSandboxStartup()
+ {
+    /* ... */
     int logLevel = logging::LOG_FATAL;
     logging::SetMinLogLevel(logLevel);
-\end{verbatim}
-A \texttt{logging::SetMinLogLevel} függvény, nem a Content API része, hanem a Chromium base
-modulé, továbbá a Qt-s üzenetekre semmilyen hatással nincsen. A \texttt{-{}-log-level}
-kapcsoló segítségével, ezt a minimum szintet lehet parancssorból felüldefiniálni. A kapcsoló
-is a Chromium része, a \texttt{switches::kLoggingLevel} azonosítóval lehet rá hivatkozni:
+    /* ... */
+ }
+\end{lstlisting}
+A \texttt{logging::SetMinLogLevel} függvény nem a Content API része, hanem a Chromium Base
+modulé. Ez a beállítás Qt keretrendszer üzeneteire semmilyen hatással nincsen.
+A \texttt{-{}-log-level} kapcsoló segítségével, ezt a minimum szintet lehet parancssorból
+felüldefiniálni. A kapcsoló is a Chromium része, a \texttt{switches::kLoggingLevel}
+azonosítóval lehet rá hivatkozni:
+\begin{lstlisting}[title=src/core/content\_main\_delegate\_qt.cpp]
+ void ContentMainDelegateQt::PreSandboxStartup()
+ {
+    /* ... */
+    std::string logLevelValue =
+                parsedCommandLine->GetSwitchValueASCII(
+                                        switches::kLoggingLevel);
+    /* ... */
+ }
+\end{lstlisting}
 \begin{verbatim}
-    std::string logLevelValue = parsedCommandLine->
-    GetSwitchValueASCII(switches::kLoggingLevel);
 \end{verbatim}
 
-A megvalósítás során a legnagyobb kihívást a függvény megtalálása jelentette, ahol a minimum
-log szintet mind a browser, mind a render processzekre be lehet állítani.
-A választás a \texttt{ContentMainDelegate::PreSandboxStartup} függvényre esett, mivel
-meghívódik a browser processzben és a render processzben is a sandbox inicializáció előtt,
-továbbá a Chromium Content API-n keresztül felüldefiniálható.
+A megvalósítás során a legnagyobb kihívást a függvény megtalálása jelentette. Olyan helyet
+kellett találni, ahol a minimum naplózási szintet mind a Browser, mind a Render Processekre
+be lehet állítani. A választás a \texttt{ContentMainDelegate::PreSandboxStartup} függvényre
+esett, mivel meghívódik az említett processzekben és felüldefiniálható a Chromium Content
+API-n keresztül
 
-A \texttt{-{}-log-level} kapcsoló a Qt WebEngine-el együtt jelent meg a Qt 5.4-es
+A \texttt{-{}-log-level} kapcsoló a QtWebEngine-nel együtt jelent meg a Qt 5.4-es
 verziójában.
 
 
@@ -1393,43 +1409,66 @@ verziójában.
 
 \noindent
 A \textbf{Test Support API} kimondottan csak tesztelésre lett létrehozva: olyan funkciók
-érhetőek el innen, amit szándékozunk a publikus API részévé tenni, mert a fejlesztőknek
+érhetőek el innen, amit nem szándékozunk a publikus API részévé tenni, mert a fejlesztőknek
 nincs rá szüksége, viszont bizonyos publikus API funkciók teszteléséhez elengedhetetlenek.
-Ebből kifolyólag dokumentálva sincsen. Ez az API csak QML tesztekhez lett megvalósítva,
-mivel a Qt WebEngine az elsődleges API és Widget oldalon könnyebb a tesztelés.
-Másodlagos cél a \texttt{WebEngineViewExperimental} API fokozatos kiváltása volt.
+Mivel használata a fejlesztők számára nem ajánlott, ezért dokumentálva sincsen. Ez az API
+csak QML tesztekhez lett megvalósítva, mert a Qt WebEngine Widgets modul tesztelése
+egyszerűbb. Másodlagos cél a \texttt{WebEngineViewExperimental} API fokozatos kiváltása volt.
 
-A teszt, ami behozta ezt az új API-t az \textit{Error Page}-ket tesztelte.
-Ez a funkció sikertelen oldal betöltés esetén egy beépített oldalt jelenít meg a
-hibaüzenettel, ami maga az \textit{Error Page}. A tesztelés azon alapul, hogy a sikeres és
-sikertelen oldal betöltések befejezése után a WebEngineView signal-t küld:
-\texttt{loadingChanged}. A \textit{Error Page} esetén arra számítunk, hogy ennek a signal-nak
-a paramétere hibás oldal betöltésének adatait tárolja. A gond az, hogy a \textit{Error Page}
-is oldal, tehát küld signal-t, ha sikeresen betöltődött.
+A teszt, ami miatt meg kellett valósítani ezt az új API-t az \textit{Error Page}-eket
+tesztelte. Az a Error Page funkció sikertelen oldal betöltés esetén egy beépített oldalt
+jelenít meg a hibaüzenettel, amit Error Page-nek hívunk. A tesztelés azon alapul, hogy a
+sikeres és sikertelen oldal betöltések befejezése után a \texttt{WebEngineView} signalt küld:
+\texttt{loadingChanged}. Amennyiben az Error Page engedélyezve van, hibás oldal betöltés
+esetén arra számítunk, hogy ennek a signalnak a paramétere a sikertelen betöltés adatait
+tárolja. A probléma az volt, hogy az Error Page is egy weboldal, tehát küld signalt, ha
+sikeresen betöltődött.
 
-Kézenfekvőnek tűnik a megoldás, hogy ne küldjük az \textit{Error Page} töltését jelző
-signal-okat, és akkor csak a hibás oldal betöltésének signal-jait kapjuk meg. Ezzel a gond
-az, hogy a tesztbe új oldalt betöltést csak úgy kezdhetünk, ha az \textit{Error Page}
-betöltése már befejeződött, amit signal-ok nélkül nem tudunk ellenőrizni.
+Kézenfekvőnek tűnik a megoldás, hogy ne küldjük az Error Page töltését jelző signalokat, és
+akkor csak a hibás oldal betöltésének signaljait kapjuk meg. Ezzel a gond az, hogy a tesztben
+új oldalt betöltést csak úgy kezdhetünk, ha az Error Page betöltése már befejeződött, amit
+signalok nélkül nem tudunk ellenőrizni.
 
-Másik lehetőségként merült fel, hogy a hibás oldal, hibát jelző \texttt{loadingChanged}
-signal-ját csak akkor küldjük el, miután az \texttt{Error Page} is betöltődött. Ez további
-problémákat vet fel: nem tudjuk tesztelni, hogy az \texttt{Error Page} betöltése sikeres
-volt e (szélsőséges esetben az \texttt{Error Page} betöltése is meghiúsulhat),
-illetve, ha a felhasználó megszakítja az \texttt{Error Page} betöltését, az API nem értesít
-arról, hogy történt egy hibás oldal betöltés. Továbbá, oldal betöltés során érkeznek más
-signal-ok is (pl.: hány százalékon áll az oldal töltése), aminek lekezelés ebben az esetben
-túl sok hiba lehetőséget hordozna magában.
+Másik lehetőségként merült fel, hogy a hibás oldal hibát jelző \texttt{loadingChanged}
+signalját csak akkor küldjük el, miután az \texttt{Error Page} is betöltődött. Ez további
+problémákat vetett fel: nem tudjuk tesztelni, hogy az \texttt{Error Page} betöltése sikeres
+volt-e (szélsőséges esetekben az Error Page betöltése is meghiúsulhat), illetve, ha a
+felhasználó megszakítja az Error Page betöltését, az API nem értesít arról, hogy történt egy
+hibás oldal betöltés. Tovább bonyolítja a helyzetet, hogy egy weboldal betöltése során
+érkeznek más signalok is (például hány százalékon áll az oldal töltése), aminek lekezelése
+ebben az esetben túl sok hiba lehetőséget hordozna magában.
 
-Végül az első változat lett megvalósítva: a hibás oldal signal-jai változtatás nélkül
-elérhetőek a publikus API-n keresztül, de az \textit{Error Page} signal-jai nem, azt csak
-egy belső, tesztelésre szánt API-n keresztül lehet elérni. Ez lett a
-\textbf{Test Support API}. Az új API-val megoldható lett az, hogy tesztelés során, minden
-\texttt{loadingChanged} signal-t elkapjunk, a hozzátartozó \texttt{LoadRequest}-et egy
-listában tároljuk és a lista elemeit bejárva ellenőrizzük, hogy megfelelő oldal betöltések
-történtek e, a megfelelő sorrendben.
+Végül az első változatot valósítottam meg: a hibás oldal signaljait változtatás nélkül
+kiküldöm a publikus API-n keresztül, de az Error Page signaljait nem, azt csak egy belső,
+tesztelésre szánt API-n keresztül lehet elérni. Ez lett a \textbf{Test Support API}.
+Az új API-val megoldható lett az, hogy tesztelés során, minden \texttt{loadingChanged}
+signalt elkapjunk, a hozzátartozó \texttt{LoadRequest} paramétert pedig egy listában tároljuk
+és a lista elemeit bejárva ellenőrizzük, hogy a megfelelő oldal betöltések történtek-e, a
+megfelelő sorrendben.
 
-\begin{table}[ht]
+Az új Test Support API-t és az Error Page-ek tesztelésére szánt új QML típust az alábbi
+(\ref{tab:test-support-webengine-testsupport}, \ref{tab:test-support-webengine-errorpage})
+táblázatok mutatják be:
+\begin{table}[h]
+    \centering
+    \begin{tabular}{ | l | l | p{195pt} | }
+        \hline
+        \textbf{Property} & \textbf{Típus} & \textbf{Leírás} \\ \hline
+
+        \texttt{errorPage} & \texttt{WebEngineErrorPage} &
+        \makecell[l]{
+            \texttt{WebEngineErrorPage} példány, \\
+            a \texttt{WebEngineView}-ba betöltött \\
+            Error Page \texttt{loadingChanged} \\
+            signaljának elkapására}
+        \\ \hline
+    \end{tabular}
+    \caption{
+        \label{tab:test-support-webengine-testsupport}
+        Az új \texttt{WebEngineTestSupport} QML típus
+    }
+\end{table}
+\begin{table}[h]
     \centering
     \begin{tabular}{ | l | l | p{185pt} | }
         \hline
@@ -1449,46 +1488,25 @@ történtek e, a megfelelő sorrendben.
     }
 \end{table}
 
-\begin{table}[ht]
-    \centering
-    \begin{tabular}{ | l | l | p{195pt} | }
-        \hline
-        \textbf{Property} & \textbf{Típus} & \textbf{Leírás} \\ \hline
-
-        \texttt{errorPage} & \texttt{WebEngineErrorPage} &
-        \makecell[l]{
-            \texttt{WebEngineErrorPage} példány, \\
-            a \texttt{WebEngineView}-ba betöltött \\
-            \textit{Error Page} \texttt{loadingChanged} \\
-            signal-jának elkapására}
-        \\ \hline
-    \end{tabular}
-    \caption{
-        \label{tab:test-support-webengine-testsupport}
-        Az új \texttt{WebEngineTestSupport} QML típus
-    }
-\end{table}
-
-Az API megtervezése után a következő kihívást annak kitalálása jelentette, hogy
-hogyan tegyük elérhetővé, a Test Support API-t. Nyilvánvaló, hogy valamilyen módon,
-a \texttt{WebEngineView}-hoz kell kötni. A legkézenfekvőbb megoldásnak a
-\texttt{WebEngineView} QML típus kiterjesztése tűnt. Erre a
+Az API megtervezése után a következő kihívást annak megoldása jelentette, hogy elérhetővé
+tegyem a Test Support API-t. Nyilvánvaló, hogy valamilyen módon a \texttt{WebEngineView} QML
+típushoz kell kötni. A legkézenfekvőbb megoldásnak a típus kiterjesztése tűnt. Erre a
 \texttt{qmlRegisterExtendedType()} függvény nyújt lehetőséget, ami a Qt QML C++ API része.
-A \texttt{WebEngineView} ugyanezzel a megoldással van kiterjesztve az Experimental
+A \texttt{WebEngineView} ugyanezzel a megoldással van kiterjesztve az experimental
 API-val. Ez viszont nem működött, mivel egy ismert, de még nem javított hiba miatt,
-egy QML típust, csak egy másik típussal lehet kiterjeszteni, mert a rákövetkező típus mindig
-felülírja az előzőt. Ez azt jelenti, hogy az ha az Experimental és a Test Support API is
-kiterjesztésként van beregisztrálva, egy QML programban egyszerre csak az egyik
+egy QML típust, csak egyetlen másik típussal lehet kiterjeszteni, mert a rákövetkező típus
+mindig felülírja az előzőt. Ez azt jelenti, hogy ha az Experimental és a Test Support API is
+kiterjesztésként van beregisztrálva, akkor egy QML programban egyszerre csak az egyik
 használható.
 
-Így Test Support API (az Experimental API-val való ütközést elkerülendő), önálló,
-példányosítható QML típusként lett megvalósítva. Az összeköttetést a
-\texttt{WebEngineView}-al a \texttt{WebEngineView} API kibővítésével lett megoldva:
-a \texttt{testSupport} property-n keresztül beregisztrálható az explicit létrehozott
-\texttt{WebEngineTestSupport} példány, a \texttt{WebEngineView} pedig, ha rendelkezik
-ilyen példánnyal, akkor a megfelelő eseményeket át fogja irányítani neki.
-
-\begin{table}[h!]
+Így a Test Support API-t (az Experimental API-val való ütközést elkerülendő) önálló,
+példányosítható QML típusként valósítottam meg. Az összeköttetést a
+\texttt{WebEngineView}-val az API kibővítésével oldottam meg:
+a \texttt{WebEngineView.testSupport} propertyn keresztül beregisztrálható az expliciten
+létrehozott \texttt{WebEngineTestSupport} példány. Amennyiben a \texttt{WebEngineView}
+QML típus rendelkezik ilyen példánnyal, akkor a megfelelő eseményeket át fogja irányítani
+a Test Support API-nak.
+\begin{table}[h]
     \centering
     \begin{tabular}{ | l | l | p{216pt} | }
         \hline
@@ -1496,26 +1514,26 @@ ilyen példánnyal, akkor a megfelelő eseményeket át fogja irányítani neki.
 
         \texttt{testSupport} & \texttt{WebEngineView} &
         \makecell[l]{
-            Ezen a property-n keresztül regisztrálható \\
-            be az explicit példányosított \\
+            Ezen a propertyn keresztül regisztrálható \\
+            be az expliciten példányosított \\
             \texttt{WebEngineTestSupport} példány}
         \\ \hline
     \end{tabular}
     \caption{
         \label{tab:test-support-webengine-view}
-        Az új \texttt{WebEngineTestSupport} QML típus
+        A \texttt{WebEngineView} QML típus kibővítése
     }
 \end{table}
 
-Az ellenőrzés, hogy van e beregisztrált Test Support API többlet költséggel jár, ráadásul
-egy átlag fejlesztőnek nincs is rá szüksége. Ezért a Test Support-hoz tartozó kódok az
-\texttt{ENABLE\_QML\_TESTSUPPORT\_API} makróval lettek guard-olva. Ha Qt úgy lett
-konfigurálva, hogy ne buildeljen teszteket (ahogy release esetén is), akkor a Test Support
-API le lesz tiltva és nem lesz lebuildelve. Ha a fejlesztő később mégis lebuildelné a
-QML teszteket, akkor a build rendszer figyelmeztet, hogy a Test Support API le van tiltva
-és segítséget nyújt, hogyan lehet engedélyezni és lebuildelni.
+Az ellenőrzés, hogy van-e beregisztrált Test Support API többlet költséggel jár, ráadásul
+egy átlag fejlesztőnek nincs is rá szüksége. Ezért a Test Support funkció az
+\texttt{ENABLE\_QML\_TESTSUPPORT\_API} makró segítségével fordítási időben letiltható.
+Ha a Qt úgy van konfigurálva, hogy ne buildeljen teszteket (ahogy release esetén is), akkor a
+Test Support API le lesz tiltva és nem kerül bele a Qt WebEngine modulba. Ha a fejlesztő
+később mégis lebuildelné a QML teszteket, akkor a build rendszer figyelmezteti, hogy a
+Test Support API le van tiltva és útmutatást nyújt, hogyan lehet azt engedélyezni.
 
-A \textbf{Test Support API} Qt 5.5-ös verziójában jelent meg.
+A Test Support API-t Qt 5.5-ös verziója óta használjuk tesztelésre.
 
 
 \section{Form Validation}
