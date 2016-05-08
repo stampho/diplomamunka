@@ -1,0 +1,134 @@
+From 94254206cd89f57b86f8856436287bbcd5702925 Mon Sep 17 00:00:00 2001
+From: Peter Varga <pvarga@inf.u-szeged.hu>
+Date: Sun, 28 Feb 2016 00:58:58 +0100
+Subject: [PATCH] Fix iconChanged signal in Quick API
+
+Do not emit iconChanged signal twice if icon url does not change.
+This fix implements the same behavior for icon handling in Quick as in
+the Widget API.
+
+Change-Id: I9fcc27c9cec3cbef74fb0a71026065e359a5cbc3
+Task-number: QTBUG-51179
+Reviewed-by: Allan Sandfeld Jensen <allan.jensen@theqtcompany.com>
+---
+ src/webengine/api/qquickwebengineview.cpp      |  6 ++++--
+ src/webengine/api/qquickwebengineview_p_p.h    |  2 +-
+ tests/auto/quick/qmltests/data/tst_favicon.qml | 24 ++++++++----------------
+ 3 files changed, 13 insertions(+), 19 deletions(-)
+
+diff --git a/src/webengine/api/qquickwebengineview.cpp b/src/webengine/api/qquickwebengineview.cpp
+index f1bd817..914b602 100644
+--- a/src/webengine/api/qquickwebengineview.cpp
++++ b/src/webengine/api/qquickwebengineview.cpp
+@@ -401,7 +401,9 @@ void QQuickWebEngineViewPrivate::urlChanged(const QUrl &url)
+ void QQuickWebEngineViewPrivate::iconChanged(const QUrl &url)
+ {
+     Q_Q(QQuickWebEngineView);
+-    icon = url;
++    if (iconUrl == url)
++        return;
++    iconUrl = url;
+     Q_EMIT q->iconChanged();
+ }
+ 
+@@ -846,7 +848,7 @@ void QQuickWebEngineView::setUrl(const QUrl& url)
+ QUrl QQuickWebEngineView::icon() const
+ {
+     Q_D(const QQuickWebEngineView);
+-    return d->icon;
++    return d->iconUrl;
+ }
+ 
+ void QQuickWebEngineView::loadHtml(const QString &html, const QUrl &baseUrl)
+diff --git a/src/webengine/api/qquickwebengineview_p_p.h b/src/webengine/api/qquickwebengineview_p_p.h
+index e4313a4..29fa9e8 100644
+--- a/src/webengine/api/qquickwebengineview_p_p.h
++++ b/src/webengine/api/qquickwebengineview_p_p.h
+@@ -209,7 +209,7 @@ public:
+     QQmlComponent *contextMenuExtraItems;
+     QtWebEngineCore::WebEngineContextMenuData contextMenuData;
+     QUrl explicitUrl;
+-    QUrl icon;
++    QUrl iconUrl;
+     int loadProgress;
+     bool m_fullscreenMode;
+     bool isLoading;
+diff --git a/tests/auto/quick/qmltests/data/tst_favicon.qml b/tests/auto/quick/qmltests/data/tst_favicon.qml
+index fab2e97..052ea3a 100644
+--- a/tests/auto/quick/qmltests/data/tst_favicon.qml
++++ b/tests/auto/quick/qmltests/data/tst_favicon.qml
+@@ -79,8 +79,7 @@ TestWebEngineView {
+             webEngineView.url = url
+             verify(webEngineView.waitForLoadSucceeded())
+ 
+-            iconChangedSpy.wait()
+-            compare(iconChangedSpy.count, 1)
++            compare(iconChangedSpy.count, 0)
+ 
+             var iconUrl = webEngineView.icon
+             compare(iconUrl, Qt.resolvedUrl(""))
+@@ -93,8 +92,7 @@ TestWebEngineView {
+             webEngineView.url = url
+             verify(webEngineView.waitForLoadSucceeded())
+ 
+-            iconChangedSpy.wait()
+-            compare(iconChangedSpy.count, 1)
++            compare(iconChangedSpy.count, 0)
+ 
+             var iconUrl = webEngineView.icon
+             compare(iconUrl, Qt.resolvedUrl(""))
+@@ -107,8 +105,7 @@ TestWebEngineView {
+             webEngineView.url = url
+             verify(webEngineView.waitForLoadSucceeded())
+ 
+-            iconChangedSpy.wait()
+-            compare(iconChangedSpy.count, 1)
++            compare(iconChangedSpy.count, 0)
+ 
+             var iconUrl = webEngineView.icon
+             compare(iconUrl, Qt.resolvedUrl("icons/unavailable.ico"))
+@@ -120,14 +117,11 @@ TestWebEngineView {
+ 
+             compare(iconChangedSpy.count, 0)
+ 
+-            var url = Qt.resolvedUrl("http://non.existent/url")
++            var url = Qt.resolvedUrl("invalid://url")
+             webEngineView.url = url
+             verify(webEngineView.testSupport.waitForErrorPageLoadSucceeded())
+ 
+-            iconChangedSpy.wait()
+-            // Icon is reseted at load start.
+-            // Load is started twice: once for unavailale page then error page
+-            compare(iconChangedSpy.count, 2)
++            compare(iconChangedSpy.count, 0)
+ 
+             var iconUrl = webEngineView.icon
+             compare(iconUrl, Qt.resolvedUrl(""))
+@@ -138,12 +132,11 @@ TestWebEngineView {
+ 
+             compare(iconChangedSpy.count, 0)
+ 
+-            var url = Qt.resolvedUrl("http://non.existent/url")
++            var url = Qt.resolvedUrl("invalid://url")
+             webEngineView.url = url
+             verify(webEngineView.waitForLoadFailed())
+ 
+-            iconChangedSpy.wait()
+-            compare(iconChangedSpy.count, 1)
++            compare(iconChangedSpy.count, 0)
+ 
+             var iconUrl = webEngineView.icon
+             compare(iconUrl, Qt.resolvedUrl(""))
+@@ -156,8 +149,7 @@ TestWebEngineView {
+             webEngineView.url = url
+             verify(webEngineView.waitForLoadSucceeded())
+ 
+-            iconChangedSpy.wait()
+-            compare(iconChangedSpy.count, 1)
++            compare(iconChangedSpy.count, 0)
+ 
+             var iconUrl = webEngineView.icon
+             compare(iconUrl, Qt.resolvedUrl(""))
+-- 
+2.7.4 (Apple Git-66)
+

@@ -1,0 +1,878 @@
+From 0a4b9df53f0ede439435b0408558e1038c619a67 Mon Sep 17 00:00:00 2001
+From: Peter Varga <pvarga@inf.u-szeged.hu>
+Date: Thu, 3 Mar 2016 17:28:52 +0100
+Subject: [PATCH] Add icon property and iconChanged signal to QWebEnginePage
+
+The new API makes possible to access downloaded icons via
+QWebEnginePage. Thus the QNAM usage for downloading favicons and the
+corresponding workaround due to authentication are removed from the
+demobrowser.
+
+Change-Id: I9fdcc7ee7673f7caa239d932f20a51c74b24763f
+Task-number: QTBUG-51179
+Reviewed-by: Leena Miettinen <riitta-leena.miettinen@theqtcompany.com>
+Reviewed-by: Kai Koehne <kai.koehne@theqtcompany.com>
+---
+ .../demobrowser/browserapplication.cpp             |  70 --------------
+ .../demobrowser/browserapplication.h               |  12 ---
+ .../webenginewidgets/demobrowser/tabwidget.cpp     |  10 +-
+ examples/webenginewidgets/demobrowser/tabwidget.h  |   2 +-
+ .../webenginewidgets/demobrowser/urllineedit.cpp   |   9 +-
+ .../webenginewidgets/demobrowser/urllineedit.h     |   2 +-
+ examples/webenginewidgets/demobrowser/webview.cpp  |  45 ++-------
+ examples/webenginewidgets/demobrowser/webview.h    |   8 +-
+ src/webenginewidgets/api/qwebenginepage.cpp        |  48 ++++++++++
+ src/webenginewidgets/api/qwebenginepage.h          |   6 +-
+ .../doc/src/qwebenginepage_lgpl.qdoc               |  22 +----
+ .../tst_qwebenginefaviconmanager.cpp               | 106 +++++++++++++++++++--
+ 12 files changed, 175 insertions(+), 165 deletions(-)
+
+diff --git a/examples/webenginewidgets/demobrowser/browserapplication.cpp b/examples/webenginewidgets/demobrowser/browserapplication.cpp
+index 027a7d1..0d5c541 100644
+--- a/examples/webenginewidgets/demobrowser/browserapplication.cpp
++++ b/examples/webenginewidgets/demobrowser/browserapplication.cpp
+@@ -72,7 +72,6 @@
+ #include <QtNetwork/QLocalServer>
+ #include <QtNetwork/QLocalSocket>
+ #include <QtNetwork/QNetworkProxy>
+-#include <QtNetwork/QNetworkReply>
+ #include <QtNetwork/QSslSocket>
+ 
+ #include <QWebEngineProfile>
+@@ -515,10 +514,6 @@ QNetworkAccessManager *BrowserApplication::networkAccessManager()
+ {
+     if (!s_networkAccessManager) {
+         s_networkAccessManager = new QNetworkAccessManager();
+-        connect(s_networkAccessManager, &QNetworkAccessManager::authenticationRequired,
+-                BrowserApplication::instance(), &BrowserApplication::authenticationRequired);
+-        connect(s_networkAccessManager, &QNetworkAccessManager::proxyAuthenticationRequired,
+-                BrowserApplication::instance(), &BrowserApplication::proxyAuthenticationRequired);
+     }
+     return s_networkAccessManager;
+ }
+@@ -577,68 +572,3 @@ void BrowserApplication::setPrivateBrowsing(bool privateBrowsing)
+     }
+     emit privateBrowsingChanged(privateBrowsing);
+ }
+-
+-void BrowserApplication::setLastAuthenticator(QAuthenticator *authenticator)
+-{
+-    m_lastAuthenticator = QAuthenticator(*authenticator);
+-}
+-
+-void BrowserApplication::setLastProxyAuthenticator(QAuthenticator *authenticator)
+-{
+-    m_lastProxyAuthenticator = QAuthenticator(*authenticator);
+-}
+-
+-void BrowserApplication::authenticationRequired(QNetworkReply *reply, QAuthenticator *authenticator)
+-{
+-    if (m_lastAuthenticator.isNull())
+-        return;
+-
+-
+-    Q_ASSERT(m_lastAuthenticator.option("key").isValid());
+-    QByteArray lastKey = m_lastAuthenticator.option("key").toByteArray();
+-    QByteArray key = BrowserApplication::authenticationKey(reply->url(), authenticator->realm());
+-
+-    if (lastKey == key)
+-        *authenticator = m_lastAuthenticator;
+-}
+-
+-void BrowserApplication::proxyAuthenticationRequired(const QNetworkProxy &proxy, QAuthenticator *authenticator)
+-{
+-    if (m_lastProxyAuthenticator.isNull())
+-        return;
+-
+-    QNetworkProxy::ProxyType proxyType = proxy.type();
+-    if (proxyType != QNetworkProxy::HttpProxy || proxyType != QNetworkProxy::HttpCachingProxy)
+-        return;
+-
+-    Q_ASSERT(m_lastProxyAuthenticator.option("host").isValid());
+-    QByteArray lastKey = m_lastProxyAuthenticator.option("key").toByteArray();
+-    QByteArray key = BrowserApplication::proxyAuthenticationKey(proxy, authenticator->realm());
+-
+-    if (lastKey == key)
+-        *authenticator = m_lastAuthenticator;
+-}
+-
+-// TODO: Remove these functions (QTBUG-47967)
+-QByteArray BrowserApplication::authenticationKey(const QUrl &url, const QString &realm)
+-{
+-    QUrl copy = url;
+-    copy.setFragment(realm);
+-    return "auth:" + copy.toEncoded(QUrl::RemovePassword | QUrl::RemovePath | QUrl::RemoveQuery);
+-}
+-
+-QByteArray BrowserApplication::proxyAuthenticationKey(const QNetworkProxy &proxy, const QString &realm)
+-{
+-    QString host = QString("%1:%2").arg(proxy.hostName()).arg(proxy.port());
+-    return BrowserApplication::proxyAuthenticationKey(proxy.user(), host, realm);
+-}
+-
+-QByteArray BrowserApplication::proxyAuthenticationKey(const QString &user, const QString &host, const QString &realm)
+-{
+-    QUrl key;
+-    key.setScheme(QLatin1String("proxy-http"));
+-    key.setUserName(user);
+-    key.setHost(host);
+-    key.setFragment(realm);
+-    return "auth:" + key.toEncoded();
+-}
+diff --git a/examples/webenginewidgets/demobrowser/browserapplication.h b/examples/webenginewidgets/demobrowser/browserapplication.h
+index a06b8f9..f509c67 100644
+--- a/examples/webenginewidgets/demobrowser/browserapplication.h
++++ b/examples/webenginewidgets/demobrowser/browserapplication.h
+@@ -63,8 +63,6 @@
+ QT_BEGIN_NAMESPACE
+ class QLocalServer;
+ class QNetworkAccessManager;
+-class QNetworkProxy;
+-class QNetworkReply;
+ class QWebEngineProfile;
+ QT_END_NAMESPACE
+ 
+@@ -93,14 +91,6 @@ public:
+     bool canRestoreSession() const;
+     bool privateBrowsing() const { return m_privateBrowsing; }
+ 
+-    void setLastAuthenticator(QAuthenticator *);
+-    void setLastProxyAuthenticator(QAuthenticator *);
+-
+-    // TODO: Remove these functions (QTBUG-47967)
+-    static QByteArray authenticationKey(const QUrl &, const QString &);
+-    static QByteArray proxyAuthenticationKey(const QNetworkProxy &, const QString &);
+-    static QByteArray proxyAuthenticationKey(const QString &, const QString &, const QString &);
+-
+     static HistoryManager *historyManager();
+     static CookieJar *cookieJar();
+     static DownloadManager *downloadManager();
+@@ -117,8 +107,6 @@ public slots:
+     void lastWindowClosed();
+     void quitBrowser();
+     void setPrivateBrowsing(bool);
+-    void authenticationRequired(QNetworkReply *, QAuthenticator *);
+-    void proxyAuthenticationRequired(const QNetworkProxy &, QAuthenticator *);
+ 
+ signals:
+     void privateBrowsingChanged(bool);
+diff --git a/examples/webenginewidgets/demobrowser/tabwidget.cpp b/examples/webenginewidgets/demobrowser/tabwidget.cpp
+index a3352d4..99aecf8 100644
+--- a/examples/webenginewidgets/demobrowser/tabwidget.cpp
++++ b/examples/webenginewidgets/demobrowser/tabwidget.cpp
+@@ -597,8 +597,8 @@ WebView *TabWidget::newTab(bool makeCurrent)
+     urlLineEdit->setWebView(webView);
+     connect(webView, SIGNAL(loadStarted()),
+             this, SLOT(webViewLoadStarted()));
+-    connect(webView, SIGNAL(iconChanged()),
+-            this, SLOT(webViewIconChanged()));
++    connect(webView, SIGNAL(iconChanged(QIcon)),
++            this, SLOT(webViewIconChanged(QIcon)));
+     connect(webView, SIGNAL(titleChanged(QString)),
+             this, SLOT(webViewTitleChanged(QString)));
+     connect(webView->page(), SIGNAL(audioMutedChanged(bool)),
+@@ -736,14 +736,12 @@ void TabWidget::webViewLoadStarted()
+     }
+ }
+ 
+-void TabWidget::webViewIconChanged()
++void TabWidget::webViewIconChanged(const QIcon &icon)
+ {
+     WebView *webView = qobject_cast<WebView*>(sender());
+     int index = webViewIndex(webView);
+-    if (-1 != index) {
+-        QIcon icon = webView->icon();
++    if (-1 != index)
+         setTabIcon(index, icon);
+-    }
+ }
+ 
+ void TabWidget::webViewTitleChanged(const QString &title)
+diff --git a/examples/webenginewidgets/demobrowser/tabwidget.h b/examples/webenginewidgets/demobrowser/tabwidget.h
+index 44fb602..77e7dde 100644
+--- a/examples/webenginewidgets/demobrowser/tabwidget.h
++++ b/examples/webenginewidgets/demobrowser/tabwidget.h
+@@ -227,7 +227,7 @@ private slots:
+     void aboutToShowRecentTriggeredAction(QAction *action);
+     void downloadRequested(QWebEngineDownloadItem *download);
+     void webViewLoadStarted();
+-    void webViewIconChanged();
++    void webViewIconChanged(const QIcon &icon);
+     void webViewTitleChanged(const QString &title);
+     void webViewUrlChanged(const QUrl &url);
+     void lineEditReturnPressed();
+diff --git a/examples/webenginewidgets/demobrowser/urllineedit.cpp b/examples/webenginewidgets/demobrowser/urllineedit.cpp
+index 50e8e24..e56ab63 100644
+--- a/examples/webenginewidgets/demobrowser/urllineedit.cpp
++++ b/examples/webenginewidgets/demobrowser/urllineedit.cpp
+@@ -281,8 +281,8 @@ void UrlLineEdit::setWebView(WebView *webView)
+     m_iconLabel->m_webView = webView;
+     connect(webView, SIGNAL(urlChanged(QUrl)),
+         this, SLOT(webViewUrlChanged(QUrl)));
+-    connect(webView, SIGNAL(iconChanged()),
+-        this, SLOT(webViewIconChanged()));
++    connect(webView, SIGNAL(iconChanged(QIcon)),
++        this, SLOT(webViewIconChanged(QIcon)));
+     connect(webView, SIGNAL(loadProgress(int)),
+         this, SLOT(update()));
+ }
+@@ -293,11 +293,10 @@ void UrlLineEdit::webViewUrlChanged(const QUrl &url)
+     m_lineEdit->setCursorPosition(0);
+ }
+ 
+-void UrlLineEdit::webViewIconChanged()
++void UrlLineEdit::webViewIconChanged(const QIcon &icon)
+ {
+     Q_ASSERT(m_webView);
+-    QPixmap pixmap = m_webView->icon().pixmap(16, 16);
+-    m_iconLabel->setPixmap(pixmap);
++    m_iconLabel->setPixmap(icon.pixmap(16, 16));
+ }
+ 
+ QLinearGradient UrlLineEdit::generateGradient(const QColor &color) const
+diff --git a/examples/webenginewidgets/demobrowser/urllineedit.h b/examples/webenginewidgets/demobrowser/urllineedit.h
+index 6724984..51c5c08 100644
+--- a/examples/webenginewidgets/demobrowser/urllineedit.h
++++ b/examples/webenginewidgets/demobrowser/urllineedit.h
+@@ -109,7 +109,7 @@ protected:
+ 
+ private slots:
+     void webViewUrlChanged(const QUrl &url);
+-    void webViewIconChanged();
++    void webViewIconChanged(const QIcon &icon);
+ 
+ private:
+     QLinearGradient generateGradient(const QColor &color) const;
+diff --git a/examples/webenginewidgets/demobrowser/webview.cpp b/examples/webenginewidgets/demobrowser/webview.cpp
+index cac3457..8033c3f 100644
+--- a/examples/webenginewidgets/demobrowser/webview.cpp
++++ b/examples/webenginewidgets/demobrowser/webview.cpp
+@@ -281,11 +281,8 @@ void WebPage::authenticationRequired(const QUrl &requestUrl, QAuthenticator *aut
+     passwordDialog.introLabel->setWordWrap(true);
+ 
+     if (dialog.exec() == QDialog::Accepted) {
+-        QByteArray key = BrowserApplication::authenticationKey(requestUrl, auth->realm());
+         auth->setUser(passwordDialog.userNameLineEdit->text());
+         auth->setPassword(passwordDialog.passwordLineEdit->text());
+-        auth->setOption("key", key);
+-        BrowserApplication::instance()->setLastAuthenticator(auth);
+     } else {
+         // Set authenticator null if dialog is cancelled
+         *auth = QAuthenticator();
+@@ -312,12 +309,8 @@ void WebPage::proxyAuthenticationRequired(const QUrl &requestUrl, QAuthenticator
+     proxyDialog.introLabel->setWordWrap(true);
+ 
+     if (dialog.exec() == QDialog::Accepted) {
+-        QString user = proxyDialog.userNameLineEdit->text();
+-        QByteArray key = BrowserApplication::proxyAuthenticationKey(user, proxyHost, auth->realm());
+-        auth->setUser(user);
++        auth->setUser(proxyDialog.userNameLineEdit->text());
+         auth->setPassword(proxyDialog.passwordLineEdit->text());
+-        auth->setOption("key", key);
+-        BrowserApplication::instance()->setLastProxyAuthenticator(auth);
+     } else {
+         // Set authenticator null if dialog is cancelled
+         *auth = QAuthenticator();
+@@ -328,7 +321,6 @@ WebView::WebView(QWidget* parent)
+     : QWebEngineView(parent)
+     , m_progress(0)
+     , m_page(0)
+-    , m_iconReply(0)
+ {
+     connect(this, SIGNAL(loadProgress(int)),
+             this, SLOT(setProgress(int)));
+@@ -369,8 +361,8 @@ void WebView::setPage(WebPage *_page)
+ #endif
+     connect(page(), SIGNAL(loadingUrl(QUrl)),
+             this, SIGNAL(urlChanged(QUrl)));
+-    connect(page(), SIGNAL(iconUrlChanged(QUrl)),
+-            this, SLOT(onIconUrlChanged(QUrl)));
++    connect(page(), SIGNAL(iconChanged(QIcon)),
++            this, SLOT(onIconChanged(QIcon)));
+     connect(page(), &WebPage::featurePermissionRequested, this, &WebView::onFeaturePermissionRequested);
+ #if defined(QWEBENGINEPAGE_UNSUPPORTEDCONTENT)
+     page()->setForwardUnsupportedContent(true);
+@@ -457,33 +449,12 @@ QUrl WebView::url() const
+     return m_initialUrl;
+ }
+ 
+-QIcon WebView::icon() const
++void WebView::onIconChanged(const QIcon &icon)
+ {
+-    if (!m_icon.isNull())
+-        return m_icon;
+-    return BrowserApplication::instance()->defaultIcon();
+-}
+-
+-void WebView::onIconUrlChanged(const QUrl &url)
+-{
+-    QNetworkRequest iconRequest(url);
+-    m_iconReply = BrowserApplication::networkAccessManager()->get(iconRequest);
+-    m_iconReply->setParent(this);
+-    connect(m_iconReply, SIGNAL(finished()), this, SLOT(iconLoaded()));
+-}
+-
+-void WebView::iconLoaded()
+-{
+-    m_icon = QIcon();
+-    if (m_iconReply) {
+-        QByteArray data = m_iconReply->readAll();
+-        QPixmap pixmap;
+-        pixmap.loadFromData(data);
+-        m_icon.addPixmap(pixmap);
+-        m_iconReply->deleteLater();
+-        m_iconReply = 0;
+-    }
+-    emit iconChanged();
++    if (icon.isNull())
++        emit iconChanged(BrowserApplication::instance()->defaultIcon());
++    else
++        emit iconChanged(icon);
+ }
+ 
+ void WebView::mousePressEvent(QMouseEvent *event)
+diff --git a/examples/webenginewidgets/demobrowser/webview.h b/examples/webenginewidgets/demobrowser/webview.h
+index ef0c42f..a931d37 100644
+--- a/examples/webenginewidgets/demobrowser/webview.h
++++ b/examples/webenginewidgets/demobrowser/webview.h
+@@ -107,7 +107,6 @@ public:
+ 
+     void loadUrl(const QUrl &url);
+     QUrl url() const;
+-    QIcon icon() const;
+ 
+     QString lastStatusBarText() const;
+     inline int progress() const { return m_progress; }
+@@ -119,7 +118,7 @@ protected:
+     void wheelEvent(QWheelEvent *event);
+ 
+ signals:
+-    void iconChanged();
++    void iconChanged(const QIcon &icon);
+ 
+ private slots:
+     void setProgress(int progress);
+@@ -127,16 +126,13 @@ private slots:
+     void setStatusBarText(const QString &string);
+     void openLinkInNewTab();
+     void onFeaturePermissionRequested(const QUrl &securityOrigin, QWebEnginePage::Feature);
+-    void onIconUrlChanged(const QUrl &url);
+-    void iconLoaded();
++    void onIconChanged(const QIcon &icon);
+ 
+ private:
+     QString m_statusBarText;
+     QUrl m_initialUrl;
+     int m_progress;
+     WebPage *m_page;
+-    QIcon m_icon;
+-    QNetworkReply *m_iconReply;
+ };
+ 
+ #endif
+diff --git a/src/webenginewidgets/api/qwebenginepage.cpp b/src/webenginewidgets/api/qwebenginepage.cpp
+index 184b170..326f1b0 100644
+--- a/src/webenginewidgets/api/qwebenginepage.cpp
++++ b/src/webenginewidgets/api/qwebenginepage.cpp
+@@ -44,6 +44,7 @@
+ #include "browser_context_adapter.h"
+ #include "certificate_error_controller.h"
+ #include "color_chooser_controller.h"
++#include "favicon_manager.h"
+ #include "file_picker_controller.h"
+ #include "javascript_dialog_controller.h"
+ #include "qwebenginefullscreenrequest.h"
+@@ -150,6 +151,7 @@ void QWebEnginePagePrivate::iconChanged(const QUrl &url)
+         return;
+     iconUrl = url;
+     Q_EMIT q->iconUrlChanged(iconUrl);
++    Q_EMIT q->iconChanged(adapter->faviconManager()->getIcon(iconUrl));
+ }
+ 
+ void QWebEnginePagePrivate::loadProgressChanged(int progress)
+@@ -576,6 +578,25 @@ QWebEnginePage::QWebEnginePage(QObject* parent)
+ */
+ 
+ /*!
++    \fn void QWebEnginePage::iconUrlChanged(const QUrl &url)
++
++    This signal is emitted when the URL of the icon ("favicon") associated with the
++    page is changed. The new URL is specified by \a url.
++
++    \sa iconUrl(), icon(), iconChanged()
++*/
++
++/*!
++    \fn void QWebEnginePage::iconChanged(const QIcon &icon)
++    \since 5.7
++
++    This signal is emitted when the icon ("favicon") associated with the
++    page is changed. The new icon is specified by \a icon.
++
++    \sa icon(), iconUrl(), iconUrlChanged()
++*/
++
++/*!
+     Constructs an empty web engine page in the web engine profile \a profile with the parent
+     \a parent.
+ 
+@@ -1480,12 +1501,39 @@ QUrl QWebEnginePage::requestedUrl() const
+     return d->adapter->requestedUrl();
+ }
+ 
++/*!
++    \property QWebEnginePage::iconUrl
++    \brief the URL of the icon associated with the page currently viewed
++
++    By default, this property contains an empty URL.
++
++    \sa iconUrlChanged(), icon(), iconChanged()
++*/
+ QUrl QWebEnginePage::iconUrl() const
+ {
+     Q_D(const QWebEnginePage);
+     return d->iconUrl;
+ }
+ 
++/*!
++    \property QWebEnginePage::icon
++    \brief the icon associated with the page currently viewed
++    \since 5.7
++
++    By default, this property contains a null icon.
++
++    \sa iconChanged(), iconUrl(), iconUrlChanged()
++*/
++QIcon QWebEnginePage::icon() const
++{
++    Q_D(const QWebEnginePage);
++
++    if (d->iconUrl.isEmpty())
++        return QIcon();
++
++    return d->adapter->faviconManager()->getIcon(d->iconUrl);
++}
++
+ qreal QWebEnginePage::zoomFactor() const
+ {
+     Q_D(const QWebEnginePage);
+diff --git a/src/webenginewidgets/api/qwebenginepage.h b/src/webenginewidgets/api/qwebenginepage.h
+index 12e7532..0faa385 100644
+--- a/src/webenginewidgets/api/qwebenginepage.h
++++ b/src/webenginewidgets/api/qwebenginepage.h
+@@ -73,7 +73,8 @@ class QWEBENGINEWIDGETS_EXPORT QWebEnginePage : public QObject {
+     Q_PROPERTY(qreal zoomFactor READ zoomFactor WRITE setZoomFactor)
+     Q_PROPERTY(QString title READ title)
+     Q_PROPERTY(QUrl url READ url WRITE setUrl)
+-    Q_PROPERTY(QUrl iconUrl READ iconUrl)
++    Q_PROPERTY(QUrl iconUrl READ iconUrl NOTIFY iconUrlChanged)
++    Q_PROPERTY(QIcon icon READ icon NOTIFY iconChanged)
+     Q_PROPERTY(QColor backgroundColor READ backgroundColor WRITE setBackgroundColor)
+     Q_PROPERTY(QSizeF contentsSize READ contentsSize NOTIFY contentsSizeChanged)
+     Q_PROPERTY(QPointF scrollPosition READ scrollPosition NOTIFY scrollPositionChanged)
+@@ -240,6 +241,7 @@ public:
+     QUrl url() const;
+     QUrl requestedUrl() const;
+     QUrl iconUrl() const;
++    QIcon icon() const;
+ 
+     qreal zoomFactor() const;
+     void setZoomFactor(qreal factor);
+@@ -300,8 +302,8 @@ Q_SIGNALS:
+     // Ex-QWebFrame signals
+     void titleChanged(const QString &title);
+     void urlChanged(const QUrl &url);
+-    // Was iconChanged() in QWebFrame
+     void iconUrlChanged(const QUrl &url);
++    void iconChanged(const QIcon &icon);
+ 
+     void scrollPositionChanged(const QPointF &position);
+     void contentsSizeChanged(const QSizeF &size);
+diff --git a/src/webenginewidgets/doc/src/qwebenginepage_lgpl.qdoc b/src/webenginewidgets/doc/src/qwebenginepage_lgpl.qdoc
+index 2171d68..f1c678d 100644
+--- a/src/webenginewidgets/doc/src/qwebenginepage_lgpl.qdoc
++++ b/src/webenginewidgets/doc/src/qwebenginepage_lgpl.qdoc
+@@ -50,8 +50,9 @@
+ 
+     The title of an HTML page can be accessed with the title() property.
+     Additionally, a page may also specify an icon, which can be accessed
+-    using the iconUrl() property. If the title or the icon changes, the
+-    corresponding titleChanged() and iconUrlChanged() signals will be emitted.
++    using the icon() or its URL using the iconUrl() property.
++    If the title or the icon changes, the corresponding titleChanged(), iconChanged()
++    and iconUrlChanged() signals will be emitted.
+     The zoomFactor() property can be used to change the overall size
+     of the content displayed in the page.
+ 
+@@ -572,13 +573,6 @@
+ */
+ 
+ /*!
+-    \property QWebEnginePage::iconUrl
+-    \brief the URL of the icon associated with the page currently viewed.
+-
+-    \sa iconUrlChanged()
+-*/
+-
+-/*!
+     \property QWebEnginePage::requestedUrl
+     \brief the URL that was originally requested to be loaded by the page
+     that is currently viewed
+@@ -750,13 +744,3 @@
+ 
+     \sa url()
+ */
+-
+-/*!
+-    \fn void QWebEnginePage::iconUrlChanged(const QUrl &url)
+-
+-    This signal is emitted when the icon ("favicon") associated with the page is
+-    found or changed. The new URL is specified by \a url.
+-
+-
+-    \sa iconUrl()
+-*/
+diff --git a/tests/auto/widgets/qwebenginefaviconmanager/tst_qwebenginefaviconmanager.cpp b/tests/auto/widgets/qwebenginefaviconmanager/tst_qwebenginefaviconmanager.cpp
+index 617ec7b..b9ce0c3 100644
+--- a/tests/auto/widgets/qwebenginefaviconmanager/tst_qwebenginefaviconmanager.cpp
++++ b/tests/auto/widgets/qwebenginefaviconmanager/tst_qwebenginefaviconmanager.cpp
+@@ -94,30 +94,50 @@ void tst_QWebEngineFaviconManager::faviconLoad()
+ 
+     QSignalSpy loadFinishedSpy(m_page, SIGNAL(loadFinished(bool)));
+     QSignalSpy iconUrlChangedSpy(m_page, SIGNAL(iconUrlChanged(QUrl)));
++    QSignalSpy iconChangedSpy(m_page, SIGNAL(iconChanged(QIcon)));
+ 
+     QUrl url = QUrl::fromLocalFile(TESTS_SOURCE_DIR + QLatin1String("qwebenginefaviconmanager/resources/favicon-single.html"));
+     m_page->load(url);
+ 
+     QTRY_COMPARE(loadFinishedSpy.count(), 1);
+     QTRY_COMPARE(iconUrlChangedSpy.count(), 1);
++    QTRY_COMPARE(iconChangedSpy.count(), 1);
+ 
+     QUrl iconUrl = iconUrlChangedSpy.at(0).at(0).toString();
++    QCOMPARE(iconUrl, m_page->iconUrl());
+     QCOMPARE(iconUrl, QUrl::fromLocalFile(TESTS_SOURCE_DIR + QLatin1String("qwebenginefaviconmanager/resources/icons/qt32.ico")));
++
++    const QIcon &icon = m_page->icon();
++    QVERIFY(!icon.isNull());
++
++    QCOMPARE(icon.availableSizes().count(), 1);
++    QSize iconSize = icon.availableSizes().first();
++    QCOMPARE(iconSize, QSize(32, 32));
+ }
+ 
+ void tst_QWebEngineFaviconManager::faviconLoadFromResources()
+ {
+     QSignalSpy loadFinishedSpy(m_page, SIGNAL(loadFinished(bool)));
+     QSignalSpy iconUrlChangedSpy(m_page, SIGNAL(iconUrlChanged(QUrl)));
++    QSignalSpy iconChangedSpy(m_page, SIGNAL(iconChanged(QIcon)));
+ 
+     QUrl url("qrc:/resources/favicon-single.html");
+     m_page->load(url);
+ 
+     QTRY_COMPARE(loadFinishedSpy.count(), 1);
+     QTRY_COMPARE(iconUrlChangedSpy.count(), 1);
++    QTRY_COMPARE(iconChangedSpy.count(), 1);
+ 
+     QUrl iconUrl = iconUrlChangedSpy.at(0).at(0).toString();
++    QCOMPARE(iconUrl, m_page->iconUrl());
+     QCOMPARE(iconUrl, QUrl("qrc:/resources/icons/qt32.ico"));
++
++    const QIcon &icon = m_page->icon();
++    QVERIFY(!icon.isNull());
++
++    QCOMPARE(icon.availableSizes().count(), 1);
++    QSize iconSize = icon.availableSizes().first();
++    QCOMPARE(iconSize, QSize(32, 32));
+ }
+ 
+ void tst_QWebEngineFaviconManager::faviconLoadEncodedUrl()
+@@ -127,6 +147,7 @@ void tst_QWebEngineFaviconManager::faviconLoadEncodedUrl()
+ 
+     QSignalSpy loadFinishedSpy(m_page, SIGNAL(loadFinished(bool)));
+     QSignalSpy iconUrlChangedSpy(m_page, SIGNAL(iconUrlChanged(QUrl)));
++    QSignalSpy iconChangedSpy(m_page, SIGNAL(iconChanged(QIcon)));
+ 
+     QString urlString = QUrl::fromLocalFile(TESTS_SOURCE_DIR + QLatin1String("qwebenginefaviconmanager/resources/favicon-single.html")).toString();
+     QUrl url(urlString + QLatin1String("?favicon=load should work with#whitespace!"));
+@@ -134,10 +155,18 @@ void tst_QWebEngineFaviconManager::faviconLoadEncodedUrl()
+ 
+     QTRY_COMPARE(loadFinishedSpy.count(), 1);
+     QTRY_COMPARE(iconUrlChangedSpy.count(), 1);
++    QTRY_COMPARE(iconChangedSpy.count(), 1);
+ 
+     QUrl iconUrl = iconUrlChangedSpy.at(0).at(0).toString();
+     QCOMPARE(m_page->iconUrl(), iconUrl);
+     QCOMPARE(iconUrl, QUrl::fromLocalFile(TESTS_SOURCE_DIR + QLatin1String("qwebenginefaviconmanager/resources/icons/qt32.ico")));
++
++    const QIcon &icon = m_page->icon();
++    QVERIFY(!icon.isNull());
++
++    QCOMPARE(icon.availableSizes().count(), 1);
++    QSize iconSize = icon.availableSizes().first();
++    QCOMPARE(iconSize, QSize(32, 32));
+ }
+ 
+ void tst_QWebEngineFaviconManager::noFavicon()
+@@ -147,28 +176,34 @@ void tst_QWebEngineFaviconManager::noFavicon()
+ 
+     QSignalSpy loadFinishedSpy(m_page, SIGNAL(loadFinished(bool)));
+     QSignalSpy iconUrlChangedSpy(m_page, SIGNAL(iconUrlChanged(QUrl)));
++    QSignalSpy iconChangedSpy(m_page, SIGNAL(iconChanged(QIcon)));
+ 
+     QUrl url = QUrl::fromLocalFile(TESTS_SOURCE_DIR + QLatin1String("qwebenginefaviconmanager/resources/test1.html"));
+     m_page->load(url);
+ 
+     QTRY_COMPARE(loadFinishedSpy.count(), 1);
+     QCOMPARE(iconUrlChangedSpy.count(), 0);
++    QCOMPARE(iconChangedSpy.count(), 0);
+ 
+     QVERIFY(m_page->iconUrl().isEmpty());
++    QVERIFY(m_page->icon().isNull());
+ }
+ 
+ void tst_QWebEngineFaviconManager::aboutBlank()
+ {
+     QSignalSpy loadFinishedSpy(m_page, SIGNAL(loadFinished(bool)));
+     QSignalSpy iconUrlChangedSpy(m_page, SIGNAL(iconUrlChanged(QUrl)));
++    QSignalSpy iconChangedSpy(m_page, SIGNAL(iconChanged(QIcon)));
+ 
+     QUrl url("about:blank");
+     m_page->load(url);
+ 
+     QTRY_COMPARE(loadFinishedSpy.count(), 1);
+     QCOMPARE(iconUrlChangedSpy.count(), 0);
++    QCOMPARE(iconChangedSpy.count(), 0);
+ 
+     QVERIFY(m_page->iconUrl().isEmpty());
++    QVERIFY(m_page->icon().isNull());
+ }
+ 
+ void tst_QWebEngineFaviconManager::unavailableFavicon()
+@@ -178,14 +213,17 @@ void tst_QWebEngineFaviconManager::unavailableFavicon()
+ 
+     QSignalSpy loadFinishedSpy(m_page, SIGNAL(loadFinished(bool)));
+     QSignalSpy iconUrlChangedSpy(m_page, SIGNAL(iconUrlChanged(QUrl)));
++    QSignalSpy iconChangedSpy(m_page, SIGNAL(iconChanged(QIcon)));
+ 
+     QUrl url = QUrl::fromLocalFile(TESTS_SOURCE_DIR + QLatin1String("qwebenginefaviconmanager/resources/favicon-unavailable.html"));
+     m_page->load(url);
+ 
+     QTRY_COMPARE(loadFinishedSpy.count(), 1);
+     QCOMPARE(iconUrlChangedSpy.count(), 0);
++    QCOMPARE(iconChangedSpy.count(), 0);
+ 
+     QVERIFY(m_page->iconUrl().isEmpty());
++    QVERIFY(m_page->icon().isNull());
+ }
+ 
+ void tst_QWebEngineFaviconManager::errorPageEnabled()
+@@ -194,14 +232,17 @@ void tst_QWebEngineFaviconManager::errorPageEnabled()
+ 
+     QSignalSpy loadFinishedSpy(m_page, SIGNAL(loadFinished(bool)));
+     QSignalSpy iconUrlChangedSpy(m_page, SIGNAL(iconUrlChanged(QUrl)));
++    QSignalSpy iconChangedSpy(m_page, SIGNAL(iconChanged(QIcon)));
+ 
+     QUrl url("invalid://url");
+     m_page->load(url);
+ 
+     QTRY_COMPARE(loadFinishedSpy.count(), 1);
+     QCOMPARE(iconUrlChangedSpy.count(), 0);
++    QCOMPARE(iconChangedSpy.count(), 0);
+ 
+     QVERIFY(m_page->iconUrl().isEmpty());
++    QVERIFY(m_page->icon().isNull());
+ }
+ 
+ void tst_QWebEngineFaviconManager::errorPageDisabled()
+@@ -210,14 +251,17 @@ void tst_QWebEngineFaviconManager::errorPageDisabled()
+ 
+     QSignalSpy loadFinishedSpy(m_page, SIGNAL(loadFinished(bool)));
+     QSignalSpy iconUrlChangedSpy(m_page, SIGNAL(iconUrlChanged(QUrl)));
++    QSignalSpy iconChangedSpy(m_page, SIGNAL(iconChanged(QIcon)));
+ 
+     QUrl url("invalid://url");
+     m_page->load(url);
+ 
+     QTRY_COMPARE(loadFinishedSpy.count(), 1);
+-    QTRY_COMPARE(iconUrlChangedSpy.count(), 0);
++    QCOMPARE(iconUrlChangedSpy.count(), 0);
++    QCOMPARE(iconChangedSpy.count(), 0);
+ 
+     QVERIFY(m_page->iconUrl().isEmpty());
++    QVERIFY(m_page->icon().isNull());
+ }
+ 
+ void tst_QWebEngineFaviconManager::bestFavicon()
+@@ -227,26 +271,41 @@ void tst_QWebEngineFaviconManager::bestFavicon()
+ 
+     QSignalSpy loadFinishedSpy(m_page, SIGNAL(loadFinished(bool)));
+     QSignalSpy iconUrlChangedSpy(m_page, SIGNAL(iconUrlChanged(QUrl)));
++    QSignalSpy iconChangedSpy(m_page, SIGNAL(iconChanged(QIcon)));
++
+     QUrl url, iconUrl;
++    QIcon icon;
++    QSize iconSize;
+ 
+     url = QUrl::fromLocalFile(TESTS_SOURCE_DIR + QLatin1String("qwebenginefaviconmanager/resources/favicon-misc.html"));
+     m_page->load(url);
+ 
+     QTRY_COMPARE(loadFinishedSpy.count(), 1);
+     QTRY_COMPARE(iconUrlChangedSpy.count(), 1);
++    QTRY_COMPARE(iconChangedSpy.count(), 1);
+ 
+     iconUrl = iconUrlChangedSpy.at(0).at(0).toString();
++    QCOMPARE(iconUrl, m_page->iconUrl());
+     // Touch icon is ignored
+     QCOMPARE(iconUrl, QUrl::fromLocalFile(TESTS_SOURCE_DIR + QLatin1String("qwebenginefaviconmanager/resources/icons/qt32.ico")));
+ 
++    icon = m_page->icon();
++    QVERIFY(!icon.isNull());
++
++    QCOMPARE(icon.availableSizes().count(), 1);
++    iconSize = icon.availableSizes().first();
++    QCOMPARE(iconSize, QSize(32, 32));
++
+     loadFinishedSpy.clear();
+     iconUrlChangedSpy.clear();
++    iconChangedSpy.clear();
+ 
+     url = QUrl::fromLocalFile(TESTS_SOURCE_DIR + QLatin1String("qwebenginefaviconmanager/resources/favicon-shortcut.html"));
+     m_page->load(url);
+ 
+     QTRY_COMPARE(loadFinishedSpy.count(), 1);
+     QTRY_VERIFY(iconUrlChangedSpy.count() >= 1);
++    QTRY_VERIFY(iconChangedSpy.count() >= 1);
+ 
+     iconUrl = iconUrlChangedSpy.last().at(0).toString();
+ 
+@@ -254,10 +313,19 @@ void tst_QWebEngineFaviconManager::bestFavicon()
+     // the second iconChanged signal that propagates the expected URL
+     if (iconUrl.isEmpty()) {
+         QTRY_COMPARE(iconUrlChangedSpy.count(), 2);
++        QTRY_COMPARE(iconChangedSpy.count(), 2);
+         iconUrl = iconUrlChangedSpy.last().at(0).toString();
+     }
+ 
++    QCOMPARE(iconUrl, m_page->iconUrl());
+     QCOMPARE(iconUrl, QUrl::fromLocalFile(TESTS_SOURCE_DIR + QLatin1String("qwebenginefaviconmanager/resources/icons/qt144.png")));
++
++    icon = m_page->icon();
++    QVERIFY(!icon.isNull());
++
++    QCOMPARE(icon.availableSizes().count(), 1);
++    iconSize = icon.availableSizes().first();
++    QCOMPARE(iconSize, QSize(144, 144));
+ }
+ 
+ void tst_QWebEngineFaviconManager::touchIcon()
+@@ -267,14 +335,17 @@ void tst_QWebEngineFaviconManager::touchIcon()
+ 
+     QSignalSpy loadFinishedSpy(m_page, SIGNAL(loadFinished(bool)));
+     QSignalSpy iconUrlChangedSpy(m_page, SIGNAL(iconUrlChanged(QUrl)));
++    QSignalSpy iconChangedSpy(m_page, SIGNAL(iconChanged(QIcon)));
+ 
+     QUrl url = QUrl::fromLocalFile(TESTS_SOURCE_DIR + QLatin1String("qwebenginefaviconmanager/resources/favicon-touch.html"));
+     m_page->load(url);
+ 
+     QTRY_COMPARE(loadFinishedSpy.count(), 1);
+     QCOMPARE(iconUrlChangedSpy.count(), 0);
++    QCOMPARE(iconChangedSpy.count(), 0);
+ 
+     QVERIFY(m_page->iconUrl().isEmpty());
++    QVERIFY(m_page->icon().isNull());
+ }
+ 
+ void tst_QWebEngineFaviconManager::multiIcon()
+@@ -284,16 +355,25 @@ void tst_QWebEngineFaviconManager::multiIcon()
+ 
+     QSignalSpy loadFinishedSpy(m_page, SIGNAL(loadFinished(bool)));
+     QSignalSpy iconUrlChangedSpy(m_page, SIGNAL(iconUrlChanged(QUrl)));
++    QSignalSpy iconChangedSpy(m_page, SIGNAL(iconChanged(QIcon)));
+ 
+     QUrl url = QUrl::fromLocalFile(TESTS_SOURCE_DIR + QLatin1String("qwebenginefaviconmanager/resources/favicon-multi.html"));
+     m_page->load(url);
+ 
+     QTRY_COMPARE(loadFinishedSpy.count(), 1);
+     QTRY_COMPARE(iconUrlChangedSpy.count(), 1);
++    QTRY_COMPARE(iconChangedSpy.count(), 1);
+ 
+     QUrl iconUrl = iconUrlChangedSpy.at(0).at(0).toString();
+     QCOMPARE(m_page->iconUrl(), iconUrl);
+     QCOMPARE(iconUrl, QUrl::fromLocalFile(TESTS_SOURCE_DIR + QLatin1String("qwebenginefaviconmanager/resources/icons/qtmulti.ico")));
++
++    const QIcon &icon = m_page->icon();
++    QVERIFY(!icon.isNull());
++    QCOMPARE(icon.availableSizes().count(), 3);
++    QVERIFY(icon.availableSizes().contains(QSize(16, 16)));
++    QVERIFY(icon.availableSizes().contains(QSize(32, 32)));
++    QVERIFY(icon.availableSizes().contains(QSize(64, 64)));
+ }
+ 
+ void tst_QWebEngineFaviconManager::downloadIconsDisabled_data()
+@@ -314,43 +394,57 @@ void tst_QWebEngineFaviconManager::downloadIconsDisabled()
+ 
+     QSignalSpy loadFinishedSpy(m_page, SIGNAL(loadFinished(bool)));
+     QSignalSpy iconUrlChangedSpy(m_page, SIGNAL(iconUrlChanged(QUrl)));
++    QSignalSpy iconChangedSpy(m_page, SIGNAL(iconChanged(QIcon)));
+ 
+     m_page->load(url);
+ 
+     QTRY_COMPARE(loadFinishedSpy.count(), 1);
+     QCOMPARE(iconUrlChangedSpy.count(), 0);
++    QCOMPARE(iconChangedSpy.count(), 0);
+ 
+     QVERIFY(m_page->iconUrl().isEmpty());
++    QVERIFY(m_page->icon().isNull());
+ }
+ 
+ void tst_QWebEngineFaviconManager::downloadTouchIconsEnabled_data()
+ {
+     QTest::addColumn<QUrl>("url");
+     QTest::addColumn<QUrl>("expectedIconUrl");
+-    QTest::newRow("misc") << QUrl("qrc:/resources/favicon-misc.html") << QUrl("qrc:/resources/icons/qt144.png");
+-    QTest::newRow("shortcut") << QUrl("qrc:/resources/favicon-shortcut.html") << QUrl("qrc:/resources/icons/qt144.png");
+-    QTest::newRow("single") << QUrl("qrc:/resources/favicon-single.html") << QUrl("qrc:/resources/icons/qt32.ico");
+-    QTest::newRow("touch") << QUrl("qrc:/resources/favicon-touch.html") << QUrl("qrc:/resources/icons/qt144.png");
++    QTest::addColumn<QSize>("expectedIconSize");
++    QTest::newRow("misc") << QUrl("qrc:/resources/favicon-misc.html") << QUrl("qrc:/resources/icons/qt144.png") << QSize(144, 144);
++    QTest::newRow("shortcut") << QUrl("qrc:/resources/favicon-shortcut.html") << QUrl("qrc:/resources/icons/qt144.png") << QSize(144, 144);
++    QTest::newRow("single") << QUrl("qrc:/resources/favicon-single.html") << QUrl("qrc:/resources/icons/qt32.ico") << QSize(32, 32);
++    QTest::newRow("touch") << QUrl("qrc:/resources/favicon-touch.html") << QUrl("qrc:/resources/icons/qt144.png") << QSize(144, 144);
+ }
+ 
+ void tst_QWebEngineFaviconManager::downloadTouchIconsEnabled()
+ {
+     QFETCH(QUrl, url);
+     QFETCH(QUrl, expectedIconUrl);
++    QFETCH(QSize, expectedIconSize);
+ 
+     m_page->settings()->setAttribute(QWebEngineSettings::TouchIconsEnabled, true);
+ 
+     QSignalSpy loadFinishedSpy(m_page, SIGNAL(loadFinished(bool)));
+     QSignalSpy iconUrlChangedSpy(m_page, SIGNAL(iconUrlChanged(QUrl)));
++    QSignalSpy iconChangedSpy(m_page, SIGNAL(iconChanged(QIcon)));
+ 
+     m_page->load(url);
+ 
+     QTRY_COMPARE(loadFinishedSpy.count(), 1);
+     QTRY_COMPARE(iconUrlChangedSpy.count(), 1);
++    QTRY_COMPARE(iconChangedSpy.count(), 1);
+ 
+-    QUrl iconUrl = iconUrlChangedSpy.at(0).at(0).toString();
++    const QUrl &iconUrl = iconUrlChangedSpy.at(0).at(0).toString();
+     QCOMPARE(m_page->iconUrl(), iconUrl);
+     QCOMPARE(iconUrl, expectedIconUrl);
++
++    const QIcon &icon = m_page->icon();
++    QVERIFY(!icon.isNull());
++
++    QCOMPARE(icon.availableSizes().count(), 1);
++    QSize iconSize = icon.availableSizes().first();
++    QCOMPARE(iconSize, expectedIconSize);
+ }
+ 
+ QTEST_MAIN(tst_QWebEngineFaviconManager)
+-- 
+2.7.4 (Apple Git-66)
+

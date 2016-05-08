@@ -1,0 +1,692 @@
+From f658dcb0893e7869cc0c029bfe0be82838af4bb8 Mon Sep 17 00:00:00 2001
+From: Peter Varga <pvarga@inf.u-szeged.hu>
+Date: Sat, 27 Feb 2016 22:59:51 +0100
+Subject: [PATCH] Clean up FaviconManager and fix icon url in NavigationEntry
+
+Change-Id: I56a109c9071ef581c6a51b5b7b8ce5a2464c6a76
+Task-number: QTBUG-51179
+Reviewed-by: Allan Sandfeld Jensen <allan.jensen@theqtcompany.com>
+---
+ src/core/favicon_manager.cpp                       | 183 ++++++++-------------
+ src/core/favicon_manager.h                         |  14 +-
+ src/core/favicon_manager_p.h                       |   6 +-
+ src/core/web_contents_delegate_qt.cpp              |  20 +--
+ tests/auto/quick/qmltests/data/tst_favicon.qml     |  70 +++++++-
+ .../auto/quick/qmltests/data/tst_faviconImage.qml  | 125 --------------
+ tests/auto/quick/qmltests/qmltests.pro             |   1 -
+ .../tst_qwebenginefaviconmanager.cpp               |   8 +-
+ 8 files changed, 145 insertions(+), 282 deletions(-)
+ delete mode 100644 tests/auto/quick/qmltests/data/tst_faviconImage.qml
+
+diff --git a/src/core/favicon_manager.cpp b/src/core/favicon_manager.cpp
+index 6cbb8bc..8469f05 100644
+--- a/src/core/favicon_manager.cpp
++++ b/src/core/favicon_manager.cpp
+@@ -44,6 +44,8 @@
+ #include "web_contents_adapter_client.h"
+ 
+ #include "base/bind.h"
++#include "content/public/browser/favicon_status.h"
++#include "content/public/browser/navigation_entry.h"
+ #include "content/public/browser/web_contents.h"
+ #include "third_party/skia/include/core/SkBitmap.h"
+ #include "third_party/skia/include/core/SkPixelRef.h"
+@@ -76,12 +78,12 @@ FaviconManagerPrivate::~FaviconManagerPrivate()
+ {
+ }
+ 
+-int FaviconManagerPrivate::downloadIcon(const QUrl &url, bool candidate)
++int FaviconManagerPrivate::downloadIcon(const QUrl &url)
+ {
+     static int fakeId = 0;
+     int id;
+ 
+-    bool cached = candidate && m_icons.contains(url);
++    bool cached = m_icons.contains(url);
+     if (isResourceUrl(url) || cached) {
+         id = --fakeId;
+         m_pendingRequests.insert(id, url);
+@@ -94,13 +96,8 @@ int FaviconManagerPrivate::downloadIcon(const QUrl &url, bool candidate)
+              base::Bind(&FaviconManagerPrivate::iconDownloadFinished, m_weakFactory.GetWeakPtr()));
+     }
+ 
+-    if (candidate) {
+-        Q_ASSERT(!m_inProgressCandidateRequests.contains(id));
+-        m_inProgressCandidateRequests.insert(id, url);
+-    } else {
+-        Q_ASSERT(!m_inProgressCustomRequests.contains(id));
+-        m_inProgressCustomRequests.insert(id, url);
+-    }
++    Q_ASSERT(!m_inProgressRequests.contains(id));
++    m_inProgressRequests.insert(id, url);
+ 
+     return id;
+ }
+@@ -118,12 +115,10 @@ void FaviconManagerPrivate::iconDownloadFinished(int id,
+     storeIcon(id, toQIcon(bitmaps));
+ }
+ 
+-/* Pending requests are used as a workaround for avoiding signal iconChanged when
+- * accessing each cached icons or icons stored in qrc. They don't have to be downloaded
+- * thus the m_inProgressCustomRequests maybe emptied right before the next icon is added to
+- * in-progress-requests queue. The m_pendingRequests stores these requests until all
+- * candidates are added to the queue then pending requests should be cleaned up by this
+- * function.
++/* Pending requests are used to mark icons that are already downloaded (cached icons or icons
++ * stored in qrc). These requests are also stored in the m_inProgressRequests but the corresponding
++ * icons are stored in m_icons explicitly by this function. It is necessary to avoid
++ * m_inProgressRequests being emptied right before the next icon is added by a downloadIcon() call.
+  */
+ void FaviconManagerPrivate::downloadPendingRequests()
+ {
+@@ -143,10 +138,9 @@ void FaviconManagerPrivate::downloadPendingRequests()
+ void FaviconManagerPrivate::storeIcon(int id, const QIcon &icon)
+ {
+     Q_Q(FaviconManager);
++    Q_ASSERT(m_inProgressRequests.contains(id));
+ 
+-    bool candidate = m_inProgressCandidateRequests.contains(id);
+-
+-    QUrl requestUrl = candidate ? m_inProgressCandidateRequests[id] : m_inProgressCustomRequests[id];
++    QUrl requestUrl = m_inProgressRequests[id];
+     FaviconInfo &faviconInfo = q->m_faviconInfoMap[requestUrl];
+ 
+     unsigned iconCount = 0;
+@@ -168,29 +162,46 @@ void FaviconManagerPrivate::storeIcon(int id, const QIcon &icon)
+                 }
+             }
+         }
+-
+-        q->m_hasDownloadedIcon = true;
+-    } else if (id < 0) {
+-        // Icon is cached
+-        q->m_hasDownloadedIcon = true;
+-    } else {
++    } else if (id >= 0) {
+         // Reset size if icon cannot be downloaded
+         faviconInfo.size = QSize(0, 0);
+     }
+ 
+-    if (candidate) {
+-        m_inProgressCandidateRequests.remove(id);
+-        if (m_inProgressCandidateRequests.isEmpty())
+-            m_viewClient->iconChanged(q->getProposedFaviconInfo().url);
+-    } else {
+-        m_inProgressCustomRequests.remove(id);
++    m_inProgressRequests.remove(id);
++    if (m_inProgressRequests.isEmpty())
++        propagateIcon();
++}
++
++void FaviconManagerPrivate::propagateIcon() const
++{
++    Q_Q(const FaviconManager);
++
++    QUrl iconUrl;
++    const QList<FaviconInfo> &faviconInfoList = q->getFaviconInfoList(true /* candidates only */);
++
++    unsigned bestArea = 0;
++    for (auto it = faviconInfoList.cbegin(), end = faviconInfoList.cend(); it != end; ++it) {
++        if (it->type != FaviconInfo::Favicon)
++            continue;
++
++        if (it->isValid() && bestArea < area(it->size)) {
++            iconUrl = it->url;
++            bestArea = area(it->size);
++        }
+     }
+ 
+-    Q_EMIT q->iconDownloaded(requestUrl);
++    content::NavigationEntry *entry = m_webContents->GetController().GetVisibleEntry();
++    if (entry) {
++        content::FaviconStatus &favicon = entry->GetFavicon();
++        favicon.url = toGurl(iconUrl);
++        favicon.valid = true;
++    }
++
++    m_viewClient->iconChanged(iconUrl);
+ }
+ 
+ FaviconManager::FaviconManager(FaviconManagerPrivate *d)
+-    : m_hasDownloadedIcon(false)
++    : m_hasCandidate(false)
+ {
+     Q_ASSERT(d);
+     d_ptr.reset(d);
+@@ -228,121 +239,59 @@ QList<FaviconInfo> FaviconManager::getFaviconInfoList(bool candidatesOnly) const
+     return faviconInfoList;
+ }
+ 
+-
+-void FaviconManager::downloadIcon(const QUrl &url, FaviconInfo::FaviconType iconType)
+-{
+-    Q_D(FaviconManager);
+-
+-    // If the favicon cannot be found in the list that means that it is not a candidate
+-    // for any visited page (including the current one). In this case the type of the icon
+-    // is unknown: it has to be specified explicitly.
+-    if (!m_faviconInfoMap.contains(url)) {
+-        FaviconInfo newFaviconInfo(url, iconType);
+-        m_faviconInfoMap.insert(url, newFaviconInfo);
+-    }
+-
+-    d->downloadIcon(url, false);
+-    d->downloadPendingRequests();
+-}
+-
+-void FaviconManager::removeIcon(const QUrl &url)
+-{
+-    Q_D(FaviconManager);
+-    int removed = d->m_icons.remove(url);
+-
+-    if (removed) {
+-        Q_ASSERT(removed == 1);
+-        Q_ASSERT(m_faviconInfoMap.contains(url));
+-        m_faviconInfoMap[url].size = QSize(0, 0);
+-    }
+-}
+-
+-bool FaviconManager::hasAvailableCandidateIcon() const
+-{
+-    Q_D(const FaviconManager);
+-    return m_hasDownloadedIcon || !d->m_inProgressCandidateRequests.isEmpty();
+-}
+-
+ void FaviconManager::update(const QList<FaviconInfo> &candidates)
+ {
+     Q_D(FaviconManager);
+     updateCandidates(candidates);
+ 
+-    for (auto it = m_faviconInfoMap.cbegin(), end = m_faviconInfoMap.cend(); it != end; ++it) {
+-        const FaviconInfo &faviconInfo = it.value();
+-        if (!faviconInfo.candidate || faviconInfo.type != FaviconInfo::Favicon)
++    const QList<FaviconInfo> &faviconInfoList = getFaviconInfoList(true /* candidates only */);
++    for (auto it = faviconInfoList.cbegin(), end = faviconInfoList.cend(); it != end; ++it) {
++        if (it->type != FaviconInfo::Favicon)
+             continue;
+ 
+-        if (faviconInfo.isValid())
+-            d->downloadIcon(faviconInfo.url, true);
++        if (it->isValid())
++            d->downloadIcon(it->url);
+     }
+ 
+     d->downloadPendingRequests();
++
++    // Reset icon if nothing was downloaded
++    if (d->m_inProgressRequests.isEmpty()) {
++        content::NavigationEntry *entry = d->m_webContents->GetController().GetVisibleEntry();
++        if (entry && !entry->GetFavicon().valid)
++            d->m_viewClient->iconChanged(QUrl());
++    }
+ }
+ 
+ void FaviconManager::updateCandidates(const QList<FaviconInfo> &candidates)
+ {
++    m_hasCandidate = candidates.count();
+     for (FaviconInfo candidateFaviconInfo : candidates) {
+-        QUrl candidateUrl = candidateFaviconInfo.url;
+-        if (m_faviconInfoMap.contains(candidateUrl)) {
+-            m_faviconInfoMap[candidateUrl].candidate = true;
+-            // Update type in case of the icon was downloaded manually
++        const QUrl &candidateUrl = candidateFaviconInfo.url;
++
++        if (!m_faviconInfoMap.contains(candidateUrl))
++            m_faviconInfoMap.insert(candidateUrl, candidateFaviconInfo);
++        else {
++            // The same icon can be used for more than one page with different types.
+             m_faviconInfoMap[candidateUrl].type = candidateFaviconInfo.type;
+-            continue;
+         }
+ 
+-        candidateFaviconInfo.candidate = true;
+-        m_faviconInfoMap.insert(candidateUrl, candidateFaviconInfo);
++        m_faviconInfoMap[candidateUrl].candidate = true;
+     }
+ }
+ 
+ void FaviconManager::resetCandidates()
+ {
+-    m_hasDownloadedIcon = false;
++    m_hasCandidate = false;
+     for (auto it = m_faviconInfoMap.begin(), end = m_faviconInfoMap.end(); it != end; ++it)
+         it->candidate = false;
+ }
+ 
+-
+-FaviconInfo FaviconManager::getProposedFaviconInfo() const
++bool FaviconManager::hasCandidate() const
+ {
+-    FaviconInfo proposedFaviconInfo = getFirstFaviconInfo();
+-
+-    // If nothing has been downloaded yet return the first favicon
+-    // if there is available for dev-tools
+-    if (!m_hasDownloadedIcon)
+-        return proposedFaviconInfo;
+-
+-    unsigned bestArea = area(proposedFaviconInfo.size);
+-    for (auto it = m_faviconInfoMap.cbegin(), end = m_faviconInfoMap.cend(); it != end; ++it) {
+-        const FaviconInfo &faviconInfo = it.value();
+-        if (!faviconInfo.candidate || faviconInfo.type != FaviconInfo::Favicon)
+-            continue;
+-
+-        if (faviconInfo.isValid() && bestArea < area(faviconInfo.size)) {
+-            proposedFaviconInfo = faviconInfo;
+-            bestArea = area(proposedFaviconInfo.size);
+-        }
+-    }
+-
+-    return proposedFaviconInfo;
++    return m_hasCandidate;
+ }
+ 
+-FaviconInfo FaviconManager::getFirstFaviconInfo() const
+-{
+-    for (auto it = m_faviconInfoMap.cbegin(), end = m_faviconInfoMap.cend(); it != end; ++it) {
+-        const FaviconInfo &faviconInfo = it.value();
+-        if (!faviconInfo.candidate || faviconInfo.type != FaviconInfo::Favicon)
+-            continue;
+-
+-        if (faviconInfo.isValid())
+-            return faviconInfo;
+-    }
+-
+-    return FaviconInfo();
+-}
+-
+-
+ 
+ FaviconInfo::FaviconInfo()
+     : url(QUrl())
+diff --git a/src/core/favicon_manager.h b/src/core/favicon_manager.h
+index ff5c76a..dc702a0 100644
+--- a/src/core/favicon_manager.h
++++ b/src/core/favicon_manager.h
+@@ -73,7 +73,7 @@ public:
+ 
+     QUrl url;
+     FaviconType type;
+-    // Stores the size of the highest quality in case of multi-size icon
++    // Stores the largest size in case of multi-size icon
+     QSize size;
+     bool candidate;
+     bool multiSize;
+@@ -88,25 +88,17 @@ public:
+     QIcon getIcon(const QUrl &) const;
+     FaviconInfo getFaviconInfo(const QUrl &) const;
+     QList<FaviconInfo> getFaviconInfoList(bool) const;
+-    void downloadIcon(const QUrl &url, FaviconInfo::FaviconType iconType = FaviconInfo::Favicon);
+-    void removeIcon(const QUrl &);
+-
+-Q_SIGNALS:
+-    void iconDownloaded(const QUrl &url);
+ 
+ private:
+     FaviconManager(FaviconManagerPrivate *);
+ 
+-    bool hasAvailableCandidateIcon() const;
+     void update(const QList<FaviconInfo> &);
+     void updateCandidates(const QList<FaviconInfo> &);
+     void resetCandidates();
+-
+-    FaviconInfo getProposedFaviconInfo() const;
+-    FaviconInfo getFirstFaviconInfo() const;
++    bool hasCandidate() const;
+ 
+     QMap<QUrl, FaviconInfo> m_faviconInfoMap;
+-    bool m_hasDownloadedIcon;
++    bool m_hasCandidate;
+ 
+     Q_DISABLE_COPY(FaviconManager)
+     Q_DECLARE_PRIVATE(FaviconManager)
+diff --git a/src/core/favicon_manager_p.h b/src/core/favicon_manager_p.h
+index 8358245..80a0124 100644
+--- a/src/core/favicon_manager_p.h
++++ b/src/core/favicon_manager_p.h
+@@ -82,19 +82,19 @@ public:
+     FaviconManagerPrivate(content::WebContents *, WebContentsAdapterClient *);
+     ~FaviconManagerPrivate();
+ 
+-    int downloadIcon(const QUrl &, bool);
++    int downloadIcon(const QUrl &);
+ 
+     void iconDownloadFinished(int, int, const GURL &, const std::vector<SkBitmap> &, const std::vector<gfx::Size> &);
+     void storeIcon(int, const QIcon &);
+     void downloadPendingRequests();
++    void propagateIcon() const;
+ 
+     content::WebContents *m_webContents;
+     WebContentsAdapterClient *m_viewClient;
+     base::WeakPtrFactory<FaviconManagerPrivate> m_weakFactory;
+ 
+     QMap<QUrl, QIcon> m_icons;
+-    QMap<int, QUrl> m_inProgressCandidateRequests;
+-    QMap<int, QUrl> m_inProgressCustomRequests;
++    QMap<int, QUrl> m_inProgressRequests;
+     QMap<int, QUrl> m_pendingRequests;
+ 
+     Q_DECLARE_PUBLIC(FaviconManager)
+diff --git a/src/core/web_contents_delegate_qt.cpp b/src/core/web_contents_delegate_qt.cpp
+index a369f95..51b9d5b 100644
+--- a/src/core/web_contents_delegate_qt.cpp
++++ b/src/core/web_contents_delegate_qt.cpp
+@@ -60,7 +60,6 @@
+ 
+ #include "components/web_cache/browser/web_cache_manager.h"
+ #include "content/browser/renderer_host/render_widget_host_impl.h"
+-#include "content/public/browser/favicon_status.h"
+ #include "content/public/browser/invalidate_type.h"
+ #include "content/public/browser/navigation_entry.h"
+ #include "content/public/browser/render_view_host.h"
+@@ -241,16 +240,11 @@ void WebContentsDelegateQt::DidFinishLoad(content::RenderFrameHost* render_frame
+     if (render_frame_host->GetParent())
+         return;
+ 
++    if (!m_faviconManager->hasCandidate())
++        m_viewClient->iconChanged(QUrl());
++
+     m_viewClient->loadProgressChanged(100);
+     m_viewClient->loadFinished(true, toQt(validated_url));
+-
+-    content::NavigationEntry *entry = web_contents()->GetController().GetVisibleEntry();
+-    if (!entry)
+-        return;
+-
+-    // No available icon for the current entry
+-    if (!entry->GetFavicon().valid && !m_faviconManager->hasAvailableCandidateIcon())
+-        m_viewClient->iconChanged(QUrl());
+ }
+ 
+ void WebContentsDelegateQt::DidUpdateFaviconURL(const std::vector<content::FaviconURL> &candidates)
+@@ -263,14 +257,6 @@ void WebContentsDelegateQt::DidUpdateFaviconURL(const std::vector<content::Favic
+     }
+ 
+     m_faviconManager->update(faviconCandidates);
+-
+-    content::NavigationEntry *entry = web_contents()->GetController().GetVisibleEntry();
+-    if (entry) {
+-        FaviconInfo proposedFaviconInfo = m_faviconManager->getProposedFaviconInfo();
+-        content::FaviconStatus &favicon = entry->GetFavicon();
+-        favicon.url = toGurl(proposedFaviconInfo.url);
+-        favicon.valid = proposedFaviconInfo.isValid();
+-    }
+ }
+ 
+ content::ColorChooser *WebContentsDelegateQt::OpenColorChooser(content::WebContents *source, SkColor color, const std::vector<content::ColorSuggestion> &suggestion)
+diff --git a/tests/auto/quick/qmltests/data/tst_favicon.qml b/tests/auto/quick/qmltests/data/tst_favicon.qml
+index 022ed3a..95059fa 100644
+--- a/tests/auto/quick/qmltests/data/tst_favicon.qml
++++ b/tests/auto/quick/qmltests/data/tst_favicon.qml
+@@ -56,6 +56,11 @@ TestWebEngineView {
+         signalName: "iconChanged"
+     }
+ 
++    Image {
++        id: favicon
++        source: webEngineView.icon
++    }
++
+     TestCase {
+         id: test
+         name: "WebEngineFavicon"
+@@ -72,6 +77,34 @@ TestWebEngineView {
+             iconChangedSpy.clear()
+         }
+ 
++        function test_faviconLoad() {
++            compare(iconChangedSpy.count, 0)
++
++            var url = Qt.resolvedUrl("favicon.html")
++            webEngineView.url = url
++            verify(webEngineView.waitForLoadSucceeded())
++
++            iconChangedSpy.wait()
++            compare(iconChangedSpy.count, 1)
++
++            compare(favicon.width, 48)
++            compare(favicon.height, 48)
++        }
++
++        function test_faviconLoadEncodedUrl() {
++            compare(iconChangedSpy.count, 0)
++
++            var url = Qt.resolvedUrl("favicon2.html?favicon=load should work with#whitespace!")
++            webEngineView.url = url
++            verify(webEngineView.waitForLoadSucceeded())
++
++            iconChangedSpy.wait()
++            compare(iconChangedSpy.count, 1)
++
++            compare(favicon.width, 16)
++            compare(favicon.height, 16)
++        }
++
+         function test_noFavicon() {
+             compare(iconChangedSpy.count, 0)
+ 
+@@ -105,11 +138,10 @@ TestWebEngineView {
+             webEngineView.url = url
+             verify(webEngineView.waitForLoadSucceeded())
+ 
+-            iconChangedSpy.wait()
+-            compare(iconChangedSpy.count, 1)
++            compare(iconChangedSpy.count, 0)
+ 
+             var iconUrl = webEngineView.icon
+-            compare(iconUrl, Qt.resolvedUrl("icons/unavailable.ico"))
++            compare(iconUrl, Qt.resolvedUrl(""))
+         }
+ 
+         function test_errorPageEnabled() {
+@@ -142,6 +174,38 @@ TestWebEngineView {
+             compare(iconUrl, Qt.resolvedUrl(""))
+         }
+ 
++        function test_bestFavicon() {
++            compare(iconChangedSpy.count, 0)
++            var url, iconUrl
++
++            url = Qt.resolvedUrl("favicon-misc.html")
++            webEngineView.url = url
++            verify(webEngineView.waitForLoadSucceeded())
++
++            iconChangedSpy.wait()
++            compare(iconChangedSpy.count, 1)
++
++            iconUrl = webEngineView.icon
++            // Touch icon is ignored
++            compare(iconUrl, Qt.resolvedUrl("icons/qt32.ico"))
++            compare(favicon.width, 32)
++            compare(favicon.height, 32)
++
++            iconChangedSpy.clear()
++
++            url = Qt.resolvedUrl("favicon-shortcut.html")
++            webEngineView.url = url
++            verify(webEngineView.waitForLoadSucceeded())
++
++            iconChangedSpy.wait()
++            verify(iconChangedSpy.count >= 1)
++
++            iconUrl = webEngineView.icon
++            compare(iconUrl, Qt.resolvedUrl("icons/qt144.png"))
++            compare(favicon.width, 144)
++            compare(favicon.height, 144)
++        }
++
+         function test_touchIcon() {
+             compare(iconChangedSpy.count, 0)
+ 
+diff --git a/tests/auto/quick/qmltests/data/tst_faviconImage.qml b/tests/auto/quick/qmltests/data/tst_faviconImage.qml
+deleted file mode 100644
+index 8664677..0000000
+--- a/tests/auto/quick/qmltests/data/tst_faviconImage.qml
++++ /dev/null
+@@ -1,125 +0,0 @@
+-/****************************************************************************
+-**
+-** Copyright (C) 2016 The Qt Company Ltd.
+-** Contact: https://www.qt.io/licensing/
+-**
+-** This file is part of the QtWebEngine module of the Qt Toolkit.
+-**
+-** $QT_BEGIN_LICENSE:GPL-EXCEPT$
+-** Commercial License Usage
+-** Licensees holding valid commercial Qt licenses may use this file in
+-** accordance with the commercial license agreement provided with the
+-** Software or, alternatively, in accordance with the terms contained in
+-** a written agreement between you and The Qt Company. For licensing terms
+-** and conditions see https://www.qt.io/terms-conditions. For further
+-** information use the contact form at https://www.qt.io/contact-us.
+-**
+-** GNU General Public License Usage
+-** Alternatively, this file may be used under the terms of the GNU
+-** General Public License version 3 as published by the Free Software
+-** Foundation with exceptions as appearing in the file LICENSE.GPL3-EXCEPT
+-** included in the packaging of this file. Please review the following
+-** information to ensure the GNU General Public License requirements will
+-** be met: https://www.gnu.org/licenses/gpl-3.0.html.
+-**
+-** $QT_END_LICENSE$
+-**
+-****************************************************************************/
+-
+-import QtQuick 2.0
+-import QtTest 1.0
+-import QtWebEngine 1.3
+-
+-TestWebEngineView {
+-    id: webEngineView
+-    width: 200
+-    height: 400
+-
+-    SignalSpy {
+-        id: iconChangedSpy
+-        target: webEngineView
+-        signalName: "iconChanged"
+-    }
+-
+-    Image {
+-        id: faviconImage
+-        source: webEngineView.icon
+-    }
+-
+-    TestCase {
+-        id: test
+-        name: "WebEngineFaviconImage"
+-        when: windowShown
+-
+-        function init() {
+-            if (webEngineView.icon != '') {
+-                // If this is not the first test, then load a blank page without favicon, restoring the initial state.
+-                webEngineView.url = 'about:blank'
+-                verify(webEngineView.waitForLoadSucceeded())
+-                iconChangedSpy.wait()
+-            }
+-
+-            iconChangedSpy.clear()
+-        }
+-
+-        function test_faviconImageLoad() {
+-            compare(iconChangedSpy.count, 0)
+-
+-            var url = Qt.resolvedUrl("favicon.html")
+-            webEngineView.url = url
+-            verify(webEngineView.waitForLoadSucceeded())
+-
+-            iconChangedSpy.wait()
+-            compare(iconChangedSpy.count, 1)
+-
+-            compare(faviconImage.width, 48)
+-            compare(faviconImage.height, 48)
+-        }
+-
+-        function test_faviconImageLoadEncodedUrl() {
+-            compare(iconChangedSpy.count, 0)
+-
+-            var url = Qt.resolvedUrl("favicon2.html?favicon=load should work with#whitespace!")
+-            webEngineView.url = url
+-            verify(webEngineView.waitForLoadSucceeded())
+-
+-            iconChangedSpy.wait()
+-            compare(iconChangedSpy.count, 1)
+-
+-            compare(faviconImage.width, 16)
+-            compare(faviconImage.height, 16)
+-        }
+-
+-        function test_bestFaviconImage() {
+-            compare(iconChangedSpy.count, 0)
+-            var url, iconUrl
+-
+-            url = Qt.resolvedUrl("favicon-misc.html")
+-            webEngineView.url = url
+-            verify(webEngineView.waitForLoadSucceeded())
+-
+-            iconChangedSpy.wait()
+-            compare(iconChangedSpy.count, 1)
+-
+-            iconUrl = webEngineView.icon
+-            // Touch icon is ignored
+-            compare(iconUrl, Qt.resolvedUrl("icons/qt32.ico"))
+-            compare(faviconImage.width, 32)
+-            compare(faviconImage.height, 32)
+-
+-            iconChangedSpy.clear()
+-
+-            url = Qt.resolvedUrl("favicon-shortcut.html")
+-            webEngineView.url = url
+-            verify(webEngineView.waitForLoadSucceeded())
+-
+-            iconChangedSpy.wait()
+-            verify(iconChangedSpy.count >= 1)
+-
+-            iconUrl = webEngineView.icon
+-            compare(iconUrl, Qt.resolvedUrl("icons/qt144.png"))
+-            compare(faviconImage.width, 144)
+-            compare(faviconImage.height, 144)
+-        }
+-    }
+-}
+diff --git a/tests/auto/quick/qmltests/qmltests.pro b/tests/auto/quick/qmltests/qmltests.pro
+index d1849d0..d3307a3 100644
+--- a/tests/auto/quick/qmltests/qmltests.pro
++++ b/tests/auto/quick/qmltests/qmltests.pro
+@@ -39,7 +39,6 @@ OTHER_FILES += \
+     $$PWD/data/tst_desktopBehaviorLoadHtml.qml \
+     $$PWD/data/tst_download.qml \
+     $$PWD/data/tst_favicon.qml \
+-    $$PWD/data/tst_faviconImage.qml \
+     $$PWD/data/tst_filePicker.qml \
+     $$PWD/data/tst_formValidation.qml \
+     $$PWD/data/tst_geopermission.qml \
+diff --git a/tests/auto/widgets/qwebenginefaviconmanager/tst_qwebenginefaviconmanager.cpp b/tests/auto/widgets/qwebenginefaviconmanager/tst_qwebenginefaviconmanager.cpp
+index 0b7a955..89a3313 100644
+--- a/tests/auto/widgets/qwebenginefaviconmanager/tst_qwebenginefaviconmanager.cpp
++++ b/tests/auto/widgets/qwebenginefaviconmanager/tst_qwebenginefaviconmanager.cpp
+@@ -161,7 +161,7 @@ void tst_QWebEngineFaviconManager::aboutBlank()
+     m_page->load(url);
+ 
+     QTRY_COMPARE(loadFinishedSpy.count(), 1);
+-    QTRY_COMPARE(iconUrlChangedSpy.count(), 0);
++    QCOMPARE(iconUrlChangedSpy.count(), 0);
+ 
+     QVERIFY(m_page->iconUrl().isEmpty());
+ }
+@@ -178,11 +178,9 @@ void tst_QWebEngineFaviconManager::unavailableFavicon()
+     m_page->load(url);
+ 
+     QTRY_COMPARE(loadFinishedSpy.count(), 1);
+-    QTRY_COMPARE(iconUrlChangedSpy.count(), 1);
++    QCOMPARE(iconUrlChangedSpy.count(), 0);
+ 
+-    QUrl iconUrl = iconUrlChangedSpy.at(0).at(0).toString();
+-    QCOMPARE(m_page->iconUrl(), iconUrl);
+-    QCOMPARE(iconUrl, QUrl::fromLocalFile(TESTS_SOURCE_DIR + QLatin1String("qwebenginefaviconmanager/resources/icons/unavailable.ico")));
++    QVERIFY(m_page->iconUrl().isEmpty());
+ }
+ 
+ void tst_QWebEngineFaviconManager::errorPageEnabled()
+-- 
+2.7.4 (Apple Git-66)
+

@@ -1,0 +1,106 @@
+From 0cf94ce10d5559ac99b1893abca6ad6bc407528c Mon Sep 17 00:00:00 2001
+From: Peter Varga <pvarga@inf.u-szeged.hu>
+Date: Sun, 17 Apr 2016 12:54:39 +0200
+Subject: [PATCH] Add icon role to WebEngineHistoryListModel
+
+Change-Id: I64a46b810dda8654b8afbec2aeef2e180fbfcd23
+Reviewed-by: Leena Miettinen <riitta-leena.miettinen@qt.io>
+Reviewed-by: Allan Sandfeld Jensen <allan.jensen@theqtcompany.com>
+---
+ src/webengine/api/qquickwebenginehistory.cpp | 19 +++++++++++++++----
+ src/webengine/api/qquickwebenginehistory_p.h |  1 +
+ src/webengine/api/qquickwebengineview.cpp    |  1 +
+ 3 files changed, 17 insertions(+), 4 deletions(-)
+
+diff --git a/src/webengine/api/qquickwebenginehistory.cpp b/src/webengine/api/qquickwebenginehistory.cpp
+index 96a4415..5589f9b 100644
+--- a/src/webengine/api/qquickwebenginehistory.cpp
++++ b/src/webengine/api/qquickwebenginehistory.cpp
+@@ -39,6 +39,8 @@
+ 
+ #include "qquickwebenginehistory_p.h"
+ #include "qquickwebenginehistory_p_p.h"
++
++#include "qquickwebenginefaviconprovider_p_p.h"
+ #include "qquickwebengineloadrequest_p.h"
+ #include "qquickwebengineview_p_p.h"
+ #include "web_contents_adapter.h"
+@@ -133,8 +135,9 @@ int QQuickWebEngineForwardHistoryListModelPrivate::offsetForIndex(int index) con
+ 
+     \brief A data model that represents the history of a web engine page.
+ 
+-    The WebEngineHistoryListModel type exposes the \e title, \e url, and \e offset roles. The
+-    \e title and \e url specify the title and URL of the visited page. The \e offset specifies
++    The WebEngineHistoryListModel type exposes the \e title, \e url, \e icon, and \e offset roles.
++    The \e title, \e url and \e icon specify the title, URL, and favicon of the visited page.
++    The \e offset specifies
+     the position of the page in respect to the current page (0). A positive number indicates that
+     the page was visited after the current page, whereas a negative number indicates that the page
+     was visited before the current page.
+@@ -166,6 +169,7 @@ QHash<int, QByteArray> QQuickWebEngineHistoryListModel::roleNames() const
+     roles[QQuickWebEngineHistory::UrlRole] = "url";
+     roles[QQuickWebEngineHistory::TitleRole] = "title";
+     roles[QQuickWebEngineHistory::OffsetRole] = "offset";
++    roles[QQuickWebEngineHistory::IconUrlRole] = "icon";
+     return roles;
+ }
+ 
+@@ -183,7 +187,7 @@ QVariant QQuickWebEngineHistoryListModel::data(const QModelIndex &index, int rol
+     if (!index.isValid())
+         return QVariant();
+ 
+-    if (role < QQuickWebEngineHistory::UrlRole || role > QQuickWebEngineHistory::OffsetRole)
++    if (role < QQuickWebEngineHistory::UrlRole || role > QQuickWebEngineHistory::IconUrlRole)
+         return QVariant();
+ 
+     if (role == QQuickWebEngineHistory::UrlRole)
+@@ -194,6 +198,12 @@ QVariant QQuickWebEngineHistoryListModel::data(const QModelIndex &index, int rol
+ 
+     if (role == QQuickWebEngineHistory::OffsetRole)
+         return d->offsetForIndex(index.row());
++
++    if (role == QQuickWebEngineHistory::IconUrlRole) {
++        QUrl iconUrl = QUrl(d->adapter()->getNavigationEntryIconUrl(d->index(index.row())));
++        return QQuickWebEngineFaviconProvider::faviconProviderUrl(iconUrl);
++    }
++
+     return QVariant();
+ }
+ 
+@@ -253,7 +263,8 @@ QQuickWebEngineHistoryPrivate::~QQuickWebEngineHistoryPrivate()
+     format of the list items. The appearance of each item of the list in the delegate can be defined
+     separately (it is not web engine specific).
+ 
+-    The model roles \e title and \e url specify the title and URL of the visited page. The \e offset
++    The model roles \e title, \e url, and \e icon specify the title, URL, and favicon of the
++    visited page. The \e offset
+     role specifies the position of the page in respect to the current page (0). A positive number
+     indicates that the page was visited after the current page, whereas a negative number indicates
+     that the page was visited before the current page.
+diff --git a/src/webengine/api/qquickwebenginehistory_p.h b/src/webengine/api/qquickwebenginehistory_p.h
+index 4dedf17..22340e4 100644
+--- a/src/webengine/api/qquickwebenginehistory_p.h
++++ b/src/webengine/api/qquickwebenginehistory_p.h
+@@ -101,6 +101,7 @@ public:
+         UrlRole = Qt::UserRole + 1,
+         TitleRole = Qt::UserRole + 2,
+         OffsetRole = Qt::UserRole + 3,
++        IconUrlRole = Qt::UserRole + 4,
+     };
+ 
+     QQuickWebEngineHistoryListModel *items() const;
+diff --git a/src/webengine/api/qquickwebengineview.cpp b/src/webengine/api/qquickwebengineview.cpp
+index 122ae23..84d7813 100644
+--- a/src/webengine/api/qquickwebengineview.cpp
++++ b/src/webengine/api/qquickwebengineview.cpp
+@@ -404,6 +404,7 @@ void QQuickWebEngineViewPrivate::iconChanged(const QUrl &url)
+     }
+ 
+     iconUrl = faviconProvider->attach(q, url);
++    m_history->reset();
+     Q_EMIT q->iconChanged();
+ }
+ 
+-- 
+2.7.4 (Apple Git-66)
+

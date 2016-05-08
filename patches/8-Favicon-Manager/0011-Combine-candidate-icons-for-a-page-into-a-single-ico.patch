@@ -1,0 +1,605 @@
+From 240efee49a8e4402f2048a05c596605b2feadbd3 Mon Sep 17 00:00:00 2001
+From: Peter Varga <pvarga@inf.u-szeged.hu>
+Date: Tue, 12 Apr 2016 17:35:19 +0200
+Subject: [PATCH] Combine candidate icons for a page into a single icon
+
+For the Widget API the QIcon returned by QWebEnginePage::icon() function
+contains all the candidate icons for the current page.
+
+For the Quick API the QQuickWebEngineFaviconProvider provides the best
+quality icon for the requested size from the candidates.
+
+Task-number: QTBUG-51179
+Change-Id: I42b8427f957e2f2fc745dd0111bedcc71b577216
+Reviewed-by: Allan Sandfeld Jensen <allan.jensen@theqtcompany.com>
+---
+ src/core/favicon_manager.cpp                       | 109 +++++++++++++++------
+ src/core/favicon_manager.h                         |   9 +-
+ src/core/favicon_manager_p.h                       |   2 +-
+ .../api/qquickwebenginefaviconprovider.cpp         |   7 +-
+ src/webengine/doc/src/webengineview.qdoc           |   7 ++
+ src/webenginewidgets/api/qwebenginepage.cpp        |   8 +-
+ .../qmltests/data/favicon-candidates-gray.html     |  29 ++++++
+ .../quick/qmltests/data/favicon-multi-gray.html    |  16 +++
+ tests/auto/quick/qmltests/data/icons/gray128.png   | Bin 0 -> 146 bytes
+ tests/auto/quick/qmltests/data/icons/gray16.png    | Bin 0 -> 72 bytes
+ tests/auto/quick/qmltests/data/icons/gray255.png   | Bin 0 -> 335 bytes
+ tests/auto/quick/qmltests/data/icons/gray32.png    | Bin 0 -> 79 bytes
+ tests/auto/quick/qmltests/data/icons/gray64.png    | Bin 0 -> 99 bytes
+ tests/auto/quick/qmltests/data/tst_favicon.qml     |  33 ++++---
+ tests/auto/quick/qmltests/qmltests.pro             |   6 ++
+ .../tst_qwebenginefaviconmanager.cpp               |  38 +++++--
+ 16 files changed, 208 insertions(+), 56 deletions(-)
+ create mode 100644 tests/auto/quick/qmltests/data/favicon-candidates-gray.html
+ create mode 100644 tests/auto/quick/qmltests/data/icons/gray128.png
+ create mode 100644 tests/auto/quick/qmltests/data/icons/gray16.png
+ create mode 100644 tests/auto/quick/qmltests/data/icons/gray255.png
+ create mode 100644 tests/auto/quick/qmltests/data/icons/gray32.png
+ create mode 100644 tests/auto/quick/qmltests/data/icons/gray64.png
+
+diff --git a/src/core/favicon_manager.cpp b/src/core/favicon_manager.cpp
+index 5568e6e..be8d177 100644
+--- a/src/core/favicon_manager.cpp
++++ b/src/core/favicon_manager.cpp
+@@ -52,9 +52,6 @@
+ #include "third_party/skia/include/core/SkPixelRef.h"
+ #include "ui/gfx/geometry/size.h"
+ 
+-#include <QtCore/QUrl>
+-#include <QtGui/QIcon>
+-
+ namespace QtWebEngineCore {
+ 
+ static inline bool isResourceUrl(const QUrl &url)
+@@ -139,6 +136,11 @@ void FaviconManagerPrivate::downloadPendingRequests()
+ void FaviconManagerPrivate::storeIcon(int id, const QIcon &icon)
+ {
+     Q_Q(FaviconManager);
++
++    // Icon download has been interrupted
++    if (m_inProgressRequests.isEmpty())
++        return;
++
+     Q_ASSERT(m_inProgressRequests.contains(id));
+ 
+     QUrl requestUrl = m_inProgressRequests[id];
+@@ -169,31 +171,18 @@ void FaviconManagerPrivate::storeIcon(int id, const QIcon &icon)
+     }
+ 
+     m_inProgressRequests.remove(id);
+-    if (m_inProgressRequests.isEmpty())
+-        propagateIcon();
+-}
+-
+-void FaviconManagerPrivate::propagateIcon() const
+-{
+-    Q_Q(const FaviconManager);
++    if (m_inProgressRequests.isEmpty()) {
++        WebEngineSettings *settings = m_viewClient->webEngineSettings();
++        bool touchIconsEnabled = settings->testAttribute(WebEngineSettings::TouchIconsEnabled);
+ 
+-    WebEngineSettings *settings = m_viewClient->webEngineSettings();
+-    bool touchIconsEnabled = settings->testAttribute(WebEngineSettings::TouchIconsEnabled);
+-
+-    QUrl iconUrl;
+-    const QList<FaviconInfo> &faviconInfoList = q->getFaviconInfoList(true /* candidates only */);
+-
+-    unsigned bestArea = 0;
+-    for (auto it = faviconInfoList.cbegin(), end = faviconInfoList.cend(); it != end; ++it) {
+-        if (!touchIconsEnabled && it->type != FaviconInfo::Favicon)
+-            continue;
+-
+-        if (it->isValid() && bestArea < area(it->size)) {
+-            iconUrl = it->url;
+-            bestArea = area(it->size);
+-        }
++        q->generateCandidateIcon(touchIconsEnabled);
++        const QUrl &iconUrl = q->candidateIconUrl(touchIconsEnabled);
++        propagateIcon(iconUrl);
+     }
++}
+ 
++void FaviconManagerPrivate::propagateIcon(const QUrl &iconUrl) const
++{
+     content::NavigationEntry *entry = m_webContents->GetController().GetVisibleEntry();
+     if (entry) {
+         content::FaviconStatus &favicon = entry->GetFavicon();
+@@ -205,7 +194,7 @@ void FaviconManagerPrivate::propagateIcon() const
+ }
+ 
+ FaviconManager::FaviconManager(FaviconManagerPrivate *d)
+-    : m_hasCandidate(false)
++    : m_candidateCount(0)
+ {
+     Q_ASSERT(d);
+     d_ptr.reset(d);
+@@ -220,6 +209,10 @@ FaviconManager::~FaviconManager()
+ QIcon FaviconManager::getIcon(const QUrl &url) const
+ {
+     Q_D(const FaviconManager);
++
++    if (url.isEmpty())
++        return m_candidateIcon;
++
+     if (!d->m_icons.contains(url))
+         return QIcon();
+ 
+@@ -281,7 +274,7 @@ void FaviconManager::update(const QList<FaviconInfo> &candidates)
+ 
+ void FaviconManager::updateCandidates(const QList<FaviconInfo> &candidates)
+ {
+-    m_hasCandidate = candidates.count();
++    m_candidateCount = candidates.count();
+     for (FaviconInfo candidateFaviconInfo : candidates) {
+         const QUrl &candidateUrl = candidateFaviconInfo.url;
+ 
+@@ -298,14 +291,71 @@ void FaviconManager::updateCandidates(const QList<FaviconInfo> &candidates)
+ 
+ void FaviconManager::resetCandidates()
+ {
+-    m_hasCandidate = false;
++    Q_D(FaviconManager);
++
++    // Interrupt in progress icon downloads
++    d->m_pendingRequests.clear();
++    d->m_inProgressRequests.clear();
++
++    m_candidateCount = 0;
++    m_candidateIcon = QIcon();
+     for (auto it = m_faviconInfoMap.begin(), end = m_faviconInfoMap.end(); it != end; ++it)
+         it->candidate = false;
+ }
+ 
+ bool FaviconManager::hasCandidate() const
+ {
+-    return m_hasCandidate;
++    return (m_candidateCount > 0);
++}
++
++QUrl FaviconManager::candidateIconUrl(bool touchIconsEnabled) const
++{
++    QUrl iconUrl;
++    const QList<FaviconInfo> &faviconInfoList = getFaviconInfoList(true /* candidates only */);
++
++    unsigned bestArea = 0;
++    for (auto it = faviconInfoList.cbegin(), end = faviconInfoList.cend(); it != end; ++it) {
++        if (!touchIconsEnabled && it->type != FaviconInfo::Favicon)
++            continue;
++
++        if (it->isValid() && bestArea < area(it->size)) {
++            iconUrl = it->url;
++            bestArea = area(it->size);
++        }
++    }
++
++    return iconUrl;
++}
++
++void FaviconManager::generateCandidateIcon(bool touchIconsEnabled)
++{
++    Q_ASSERT(m_candidateCount);
++
++    m_candidateIcon = QIcon();
++    const QList<FaviconInfo> &faviconInfoList = getFaviconInfoList(true /* candidates only */);
++
++    for (auto it = faviconInfoList.cbegin(), end = faviconInfoList.cend(); it != end; ++it) {
++        if (!touchIconsEnabled && it->type != FaviconInfo::Favicon)
++            continue;
++
++        if (!it->isValid() || !it->isDownloaded())
++            continue;
++
++        const QIcon &icon = getIcon(it->url);
++
++        if (!it->multiSize) {
++            if (!m_candidateIcon.availableSizes().contains(it->size))
++                m_candidateIcon.addPixmap(icon.pixmap(it->size));
++
++            continue;
++        }
++
++        const auto sizes = icon.availableSizes();
++        for (const QSize &size : sizes) {
++            if (!m_candidateIcon.availableSizes().contains(size))
++                m_candidateIcon.addPixmap(icon.pixmap(size));
++        }
++    }
+ }
+ 
+ 
+@@ -323,6 +373,7 @@ FaviconInfo::FaviconInfo(const FaviconInfo &other)
+     , type(other.type)
+     , size(other.size)
+     , candidate(other.candidate)
++    , multiSize(other.multiSize)
+ {
+ }
+ 
+diff --git a/src/core/favicon_manager.h b/src/core/favicon_manager.h
+index dc702a0..e351831 100644
+--- a/src/core/favicon_manager.h
++++ b/src/core/favicon_manager.h
+@@ -46,6 +46,7 @@
+ #include <QtCore/QObject>
+ #include <QtCore/QSize>
+ #include <QtCore/QUrl>
++#include <QtGui/QIcon>
+ 
+ #include "web_engine_settings.h"
+ 
+@@ -85,7 +86,7 @@ class QWEBENGINE_EXPORT FaviconManager : public QObject {
+ public:
+     ~FaviconManager();
+ 
+-    QIcon getIcon(const QUrl &) const;
++    QIcon getIcon(const QUrl &url = QUrl()) const;
+     FaviconInfo getFaviconInfo(const QUrl &) const;
+     QList<FaviconInfo> getFaviconInfoList(bool) const;
+ 
+@@ -97,8 +98,12 @@ private:
+     void resetCandidates();
+     bool hasCandidate() const;
+ 
++    QUrl candidateIconUrl(bool touchIconsEnabled) const;
++    void generateCandidateIcon(bool touchIconsEnabled);
++
+     QMap<QUrl, FaviconInfo> m_faviconInfoMap;
+-    bool m_hasCandidate;
++    int m_candidateCount;
++    QIcon m_candidateIcon;
+ 
+     Q_DISABLE_COPY(FaviconManager)
+     Q_DECLARE_PRIVATE(FaviconManager)
+diff --git a/src/core/favicon_manager_p.h b/src/core/favicon_manager_p.h
+index 80a0124..e2a49db 100644
+--- a/src/core/favicon_manager_p.h
++++ b/src/core/favicon_manager_p.h
+@@ -87,7 +87,7 @@ public:
+     void iconDownloadFinished(int, int, const GURL &, const std::vector<SkBitmap> &, const std::vector<gfx::Size> &);
+     void storeIcon(int, const QIcon &);
+     void downloadPendingRequests();
+-    void propagateIcon() const;
++    void propagateIcon(const QUrl &) const;
+ 
+     content::WebContents *m_webContents;
+     WebContentsAdapterClient *m_viewClient;
+diff --git a/src/webengine/api/qquickwebenginefaviconprovider.cpp b/src/webengine/api/qquickwebenginefaviconprovider.cpp
+index c41ec5a..fe8436d 100644
+--- a/src/webengine/api/qquickwebenginefaviconprovider.cpp
++++ b/src/webengine/api/qquickwebenginefaviconprovider.cpp
+@@ -121,12 +121,13 @@ QPixmap QQuickWebEngineFaviconProvider::requestPixmap(const QString &id, QSize *
+         return QPixmap();
+ 
+     FaviconManager *faviconManager = view->d_ptr->adapter->faviconManager();
+-    Q_ASSERT(faviconManager);
+ 
+-    const QIcon &icon = faviconManager->getIcon(iconUrl);
++    Q_ASSERT(faviconManager);
++    const FaviconInfo &faviconInfo = faviconManager->getFaviconInfo(iconUrl);
++    const QIcon &icon = faviconManager->getIcon(faviconInfo.candidate ? QUrl() : iconUrl);
+ 
+     Q_ASSERT(!icon.isNull());
+-    const QSize &bestSize = faviconManager->getFaviconInfo(iconUrl).size;
++    const QSize &bestSize = faviconInfo.size;
+ 
+     // If source size is not specified, use the best quality
+     if (!requestedSize.isValid()) {
+diff --git a/src/webengine/doc/src/webengineview.qdoc b/src/webengine/doc/src/webengineview.qdoc
+index a070140..7c7a228 100644
+--- a/src/webengine/doc/src/webengineview.qdoc
++++ b/src/webengine/doc/src/webengineview.qdoc
+@@ -215,10 +215,17 @@
+     \qml
+     Image {
+         id: appIcon
++        sourceSize: Qt.size(32, 32)
+         source: webView.icon != "" ? webView.icon : "fallbackFavicon.png";
+         // ...
+     }
+     \endqml
++
++    Specifying the \c{sourceSize} property of the \c{Image} element informs
++    the Qt WebEngine's favicon provider about the requested size. The
++    favicon provider tries to find the best fit among the web page candidate
++    icons. If \c{sourceSize} property is not specified, the provider provides
++    the icon with the largest resolution.
+ */
+ 
+ /*!
+diff --git a/src/webenginewidgets/api/qwebenginepage.cpp b/src/webenginewidgets/api/qwebenginepage.cpp
+index 447c53b..e412714 100644
+--- a/src/webenginewidgets/api/qwebenginepage.cpp
++++ b/src/webenginewidgets/api/qwebenginepage.cpp
+@@ -151,7 +151,7 @@ void QWebEnginePagePrivate::iconChanged(const QUrl &url)
+         return;
+     iconUrl = url;
+     Q_EMIT q->iconUrlChanged(iconUrl);
+-    Q_EMIT q->iconChanged(adapter->faviconManager()->getIcon(iconUrl));
++    Q_EMIT q->iconChanged(adapter->faviconManager()->getIcon());
+ }
+ 
+ void QWebEnginePagePrivate::loadProgressChanged(int progress)
+@@ -1506,7 +1506,9 @@ QUrl QWebEnginePage::iconUrl() const
+     \brief the icon associated with the page currently viewed
+     \since 5.7
+ 
+-    By default, this property contains a null icon.
++    By default, this property contains a null icon. If the web page specifies more than one icon,
++    the \c{icon} property encapsulates the available candidate icons in a single,
++    scalable \c{QIcon}.
+ 
+     \sa iconChanged(), iconUrl(), iconUrlChanged()
+ */
+@@ -1517,7 +1519,7 @@ QIcon QWebEnginePage::icon() const
+     if (d->iconUrl.isEmpty())
+         return QIcon();
+ 
+-    return d->adapter->faviconManager()->getIcon(d->iconUrl);
++    return d->adapter->faviconManager()->getIcon();
+ }
+ 
+ qreal QWebEnginePage::zoomFactor() const
+diff --git a/tests/auto/quick/qmltests/data/favicon-candidates-gray.html b/tests/auto/quick/qmltests/data/favicon-candidates-gray.html
+new file mode 100644
+index 0000000..3cbc4a4
+--- /dev/null
++++ b/tests/auto/quick/qmltests/data/favicon-candidates-gray.html
+@@ -0,0 +1,29 @@
++<html>
++    <head>
++        <title>Gray Candidate Favicons Test</title>
++        <link rel="shortcut icon" href="icons/gray16.png" />
++        <link rel="shortcut icon" href="icons/gray32.png" />
++        <link rel="shortcut icon" href="icons/gray64.png" />
++        <link rel="shortcut icon" href="icons/gray128.png" />
++        <link rel="shortcut icon" href="icons/gray255.png" />
++    </head>
++    <body>
++        <h1>Gray Candidate Favicons Test</h1>
++        <table style="width:100%">
++            <tr>
++                <td align="center"><img src="icons/gray16.png" height="16" width="16" /></td>
++                <td align="center"><img src="icons/gray32.png" height="32" width="32" /></td>
++                <td align="center"><img src="icons/gray64.png" height="64" width="64" /></td>
++                <td align="center"><img src="icons/gray128.png" height="128" width="128" /></td>
++                <td align="center"><img src="icons/gray255.png" height="255" width="255" /></td>
++            </tr>
++            <tr>
++                <td align="center">16x16</td>
++                <td align="center">32x32</td>
++                <td align="center">64x64</td>
++                <td align="center">128x128</td>
++                <td align="center">255x255</td>
++            </tr>
++        </table>
++    </body>
++</html>
+diff --git a/tests/auto/quick/qmltests/data/favicon-multi-gray.html b/tests/auto/quick/qmltests/data/favicon-multi-gray.html
+index d6ac090..9b9b743 100644
+--- a/tests/auto/quick/qmltests/data/favicon-multi-gray.html
++++ b/tests/auto/quick/qmltests/data/favicon-multi-gray.html
+@@ -5,5 +5,21 @@
+     </head>
+     <body>
+         <h1>Gray Multi-sized Favicon Test</h1>
++        <table style="width:100%">
++            <tr>
++                <td align="center"><img src="icons/gray16.png" height="16" width="16" /></td>
++                <td align="center"><img src="icons/gray32.png" height="32" width="32" /></td>
++                <td align="center"><img src="icons/gray64.png" height="64" width="64" /></td>
++                <td align="center"><img src="icons/gray128.png" height="128" width="128" /></td>
++                <td align="center"><img src="icons/gray255.png" height="255" width="255" /></td>
++            </tr>
++            <tr>
++                <td align="center">16x16</td>
++                <td align="center">32x32</td>
++                <td align="center">64x64</td>
++                <td align="center">128x128</td>
++                <td align="center">255x255</td>
++            </tr>
++        </table>
+     </body>
+ </html>
+diff --git a/tests/auto/quick/qmltests/data/icons/gray128.png b/tests/auto/quick/qmltests/data/icons/gray128.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..bf1cfaba07a6c06e425a47fb518e88bc2a13cf50
+GIT binary patch
+literal 146
+zcmeAS@N?(olHy`uVBq!ia0vp^4Is<`Bp9BB+KB_HNKY5XkcwMx&nYqjc}xn+t?x>T
+hML1N6F;WB?%M<pnFg}cRy|EW$nWw9t%Q~loCICnL6}bQa
+
+literal 0
+HcmV?d00001
+
+diff --git a/tests/auto/quick/qmltests/data/icons/gray16.png b/tests/auto/quick/qmltests/data/icons/gray16.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..2a1a91a763354e72677ff9479362f573944fd48e
+GIT binary patch
+literal 72
+zcmeAS@N?(olHy`uVBq!ia0vp^0wBx*Bp9q_EZ7UA_&r@5Lo|Yu1ss@pl%p9K8ao6S
+Tr}sNqfs}Z<`njxgN@xNAt_ls$
+
+literal 0
+HcmV?d00001
+
+diff --git a/tests/auto/quick/qmltests/data/icons/gray255.png b/tests/auto/quick/qmltests/data/icons/gray255.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..5491695515c61fa6be4c9e84646b045aa3843849
+GIT binary patch
+literal 335
+zcmeAS@N?(olHy`uVBq!ia0vp^|3R1oNH9nz$BQvAFp7D)IEGZ*dVAiGk%57SN#XbO
+lYw5adydL%4`$sPLFF9LZ@N&|Wbss??<>~6@vd$@?2>=(0(s2L)
+
+literal 0
+HcmV?d00001
+
+diff --git a/tests/auto/quick/qmltests/data/icons/gray32.png b/tests/auto/quick/qmltests/data/icons/gray32.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..b269a528fa55623924ea07ea0eb1ceb1113a6fb2
+GIT binary patch
+literal 79
+zcmeAS@N?(olHy`uVBq!ia0vp^3Lwk@BpAX3RW*Q=n5T<lh{fsT00jmKH_;v~iBN+e
+aQ3eL#84Zjfdp~r7RC>DlxvX<aXaWHER1duX
+
+literal 0
+HcmV?d00001
+
+diff --git a/tests/auto/quick/qmltests/data/icons/gray64.png b/tests/auto/quick/qmltests/data/icons/gray64.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..e02559e5be39883a6425a042f4f8ce5ff37904ec
+GIT binary patch
+literal 99
+zcmeAS@N?(olHy`uVBq!ia0vp^4j{|{BpCXc^q7E@mZytjNW|f{XB-6?7<iZz7T>g=
+rs`%};Bg3V|94t(Y4hjMg>W3W9_wx+4(_@<ILApI%{an^LB{Ts53mzD_
+
+literal 0
+HcmV?d00001
+
+diff --git a/tests/auto/quick/qmltests/data/tst_favicon.qml b/tests/auto/quick/qmltests/data/tst_favicon.qml
+index e959f19..633859a 100644
+--- a/tests/auto/quick/qmltests/data/tst_favicon.qml
++++ b/tests/auto/quick/qmltests/data/tst_favicon.qml
+@@ -261,16 +261,26 @@ TestWebEngineView {
+ 
+         function test_faviconProvider_data() {
+             return [
+-                   { tag: "8x8", size: 8, value: 16 },
+-                   { tag: "16x16", size: 16, value: 16 },
+-                   { tag: "17x17", size: 17, value: 32 },
+-                   { tag: "31x31", size: 31, value: 32 },
+-                   { tag: "32x32", size: 32, value: 32 },
+-                   { tag: "33x33", size: 33, value: 64 },
+-                   { tag: "64x64", size: 64, value: 64 },
+-                   { tag: "128x128", size: 128, value: 128 },
+-                   { tag: "255x255", size: 255, value: 255 },
+-                   { tag: "256x256", size: 256, value: 255 },
++                   { tag: "multi 8x8", url: Qt.resolvedUrl("favicon-multi-gray.html"), size: 8, value: 16 },
++                   { tag: "multi 16x16", url: Qt.resolvedUrl("favicon-multi-gray.html"), size: 16, value: 16 },
++                   { tag: "multi 17x17", url: Qt.resolvedUrl("favicon-multi-gray.html"), size: 17, value: 32 },
++                   { tag: "multi 31x31", url: Qt.resolvedUrl("favicon-multi-gray.html"), size: 31, value: 32 },
++                   { tag: "multi 32x32", url: Qt.resolvedUrl("favicon-multi-gray.html"), size: 32, value: 32 },
++                   { tag: "multi 33x33", url: Qt.resolvedUrl("favicon-multi-gray.html"), size: 33, value: 64 },
++                   { tag: "multi 64x64", url: Qt.resolvedUrl("favicon-multi-gray.html"), size: 64, value: 64 },
++                   { tag: "multi 128x128", url: Qt.resolvedUrl("favicon-multi-gray.html"), size: 128, value: 128 },
++                   { tag: "multi 255x255", url: Qt.resolvedUrl("favicon-multi-gray.html"), size: 255, value: 255 },
++                   { tag: "multi 256x256", url: Qt.resolvedUrl("favicon-multi-gray.html"), size: 256, value: 255 },
++                   { tag: "candidate 8x8", url: Qt.resolvedUrl("favicon-candidates-gray.html"), size: 8, value: 16 },
++                   { tag: "candidate 16x16", url: Qt.resolvedUrl("favicon-candidates-gray.html"), size: 16, value: 16 },
++                   { tag: "candidate 17x17", url: Qt.resolvedUrl("favicon-candidates-gray.html"), size: 17, value: 32 },
++                   { tag: "candidate 31x31", url: Qt.resolvedUrl("favicon-candidates-gray.html"), size: 31, value: 32 },
++                   { tag: "candidate 32x32", url: Qt.resolvedUrl("favicon-candidates-gray.html"), size: 32, value: 32 },
++                   { tag: "candidate 33x33", url: Qt.resolvedUrl("favicon-candidates-gray.html"), size: 33, value: 64 },
++                   { tag: "candidate 64x64", url: Qt.resolvedUrl("favicon-candidates-gray.html"), size: 64, value: 64 },
++                   { tag: "candidate 128x128", url: Qt.resolvedUrl("favicon-candidates-gray.html"), size: 128, value: 128 },
++                   { tag: "candidate 255x255", url: Qt.resolvedUrl("favicon-candidates-gray.html"), size: 255, value: 255 },
++                   { tag: "candidate 256x256", url: Qt.resolvedUrl("favicon-candidates-gray.html"), size: 256, value: 255 },
+             ];
+         }
+ 
+@@ -287,8 +297,7 @@ TestWebEngineView {
+ 
+             compare(iconChangedSpy.count, 0)
+ 
+-            var url = Qt.resolvedUrl("favicon-multi-gray.html")
+-            webEngineView.url = url
++            webEngineView.url = row.url
+             verify(webEngineView.waitForLoadSucceeded())
+ 
+             iconChangedSpy.wait()
+diff --git a/tests/auto/quick/qmltests/qmltests.pro b/tests/auto/quick/qmltests/qmltests.pro
+index b8f0f7d..64f7414 100644
+--- a/tests/auto/quick/qmltests/qmltests.pro
++++ b/tests/auto/quick/qmltests/qmltests.pro
+@@ -16,6 +16,7 @@ OTHER_FILES += \
+     $$PWD/data/directoryupload.html \
+     $$PWD/data/favicon.html \
+     $$PWD/data/favicon2.html \
++    $$PWD/data/favicon-candidates-gray.html \
+     $$PWD/data/favicon-misc.html \
+     $$PWD/data/favicon-multi.html \
+     $$PWD/data/favicon-multi-gray.html \
+@@ -65,6 +66,11 @@ OTHER_FILES += \
+     $$PWD/data/tst_settings.qml \
+     $$PWD/data/tst_keyboardModifierMapping.qml \
+     $$PWD/data/icons/favicon.png \
++    $$PWD/data/icons/gray128.png \
++    $$PWD/data/icons/gray16.png \
++    $$PWD/data/icons/gray255.png \
++    $$PWD/data/icons/gray32.png \
++    $$PWD/data/icons/gray64.png \
+     $$PWD/data/icons/grayicons.ico \
+     $$PWD/data/icons/small-favicon.png \
+     $$PWD/data/icons/qt144.png \
+diff --git a/tests/auto/widgets/qwebenginefaviconmanager/tst_qwebenginefaviconmanager.cpp b/tests/auto/widgets/qwebenginefaviconmanager/tst_qwebenginefaviconmanager.cpp
+index b9ce0c3..38311ca 100644
+--- a/tests/auto/widgets/qwebenginefaviconmanager/tst_qwebenginefaviconmanager.cpp
++++ b/tests/auto/widgets/qwebenginefaviconmanager/tst_qwebenginefaviconmanager.cpp
+@@ -55,6 +55,7 @@ private Q_SLOTS:
+     void bestFavicon();
+     void touchIcon();
+     void multiIcon();
++    void candidateIcon();
+     void downloadIconsDisabled_data();
+     void downloadIconsDisabled();
+     void downloadTouchIconsEnabled_data();
+@@ -323,9 +324,8 @@ void tst_QWebEngineFaviconManager::bestFavicon()
+     icon = m_page->icon();
+     QVERIFY(!icon.isNull());
+ 
+-    QCOMPARE(icon.availableSizes().count(), 1);
+-    iconSize = icon.availableSizes().first();
+-    QCOMPARE(iconSize, QSize(144, 144));
++    QVERIFY(icon.availableSizes().count() >= 1);
++    QVERIFY(icon.availableSizes().contains(QSize(144, 144)));
+ }
+ 
+ void tst_QWebEngineFaviconManager::touchIcon()
+@@ -376,6 +376,33 @@ void tst_QWebEngineFaviconManager::multiIcon()
+     QVERIFY(icon.availableSizes().contains(QSize(64, 64)));
+ }
+ 
++void tst_QWebEngineFaviconManager::candidateIcon()
++{
++    if (!QDir(TESTS_SOURCE_DIR).exists())
++        W_QSKIP(QString("This test requires access to resources found in '%1'").arg(TESTS_SOURCE_DIR).toLatin1().constData(), SkipAll);
++
++    QSignalSpy loadFinishedSpy(m_page, SIGNAL(loadFinished(bool)));
++    QSignalSpy iconUrlChangedSpy(m_page, SIGNAL(iconUrlChanged(QUrl)));
++    QSignalSpy iconChangedSpy(m_page, SIGNAL(iconChanged(QIcon)));
++
++    QUrl url = QUrl::fromLocalFile(TESTS_SOURCE_DIR + QLatin1String("qwebenginefaviconmanager/resources/favicon-shortcut.html"));
++    m_page->load(url);
++
++    QTRY_COMPARE(loadFinishedSpy.count(), 1);
++    QTRY_COMPARE(iconUrlChangedSpy.count(), 1);
++    QTRY_COMPARE(iconChangedSpy.count(), 1);
++
++    QUrl iconUrl = iconUrlChangedSpy.at(0).at(0).toString();
++    QCOMPARE(m_page->iconUrl(), iconUrl);
++    QCOMPARE(iconUrl, QUrl::fromLocalFile(TESTS_SOURCE_DIR + QLatin1String("qwebenginefaviconmanager/resources/icons/qt144.png")));
++
++    const QIcon &icon = m_page->icon();
++    QVERIFY(!icon.isNull());
++    QCOMPARE(icon.availableSizes().count(), 2);
++    QVERIFY(icon.availableSizes().contains(QSize(32, 32)));
++    QVERIFY(icon.availableSizes().contains(QSize(144, 144)));
++}
++
+ void tst_QWebEngineFaviconManager::downloadIconsDisabled_data()
+ {
+     QTest::addColumn<QUrl>("url");
+@@ -442,9 +469,8 @@ void tst_QWebEngineFaviconManager::downloadTouchIconsEnabled()
+     const QIcon &icon = m_page->icon();
+     QVERIFY(!icon.isNull());
+ 
+-    QCOMPARE(icon.availableSizes().count(), 1);
+-    QSize iconSize = icon.availableSizes().first();
+-    QCOMPARE(iconSize, expectedIconSize);
++    QVERIFY(icon.availableSizes().count() >= 1);
++    QVERIFY(icon.availableSizes().contains(expectedIconSize));
+ }
+ 
+ QTEST_MAIN(tst_QWebEngineFaviconManager)
+-- 
+2.7.4 (Apple Git-66)
+

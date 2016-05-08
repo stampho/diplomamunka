@@ -1,0 +1,787 @@
+From bd3d10a4a892166c79563e0ef37b3065420f99d0 Mon Sep 17 00:00:00 2001
+From: Peter Varga <pvarga@inf.u-szeged.hu>
+Date: Wed, 2 Mar 2016 09:51:53 +0100
+Subject: [PATCH] Add settings for FaviconManager's icon download modes
+
+Change-Id: I8e4b11089de29623ed39ec6b13fe30be734baa3e
+Task-number: QTBUG-51179
+Reviewed-by: Kai Koehne <kai.koehne@theqtcompany.com>
+---
+ .../webengine/quicknanobrowser/BrowserWindow.qml   |  17 +++
+ .../demobrowser/browserapplication.cpp             |  15 +++
+ examples/webenginewidgets/demobrowser/settings.cpp |   9 ++
+ examples/webenginewidgets/demobrowser/settings.ui  | 130 +++++++++++++--------
+ src/core/favicon_manager.cpp                       |  16 ++-
+ src/core/web_engine_settings.cpp                   |   2 +
+ src/core/web_engine_settings.h                     |   4 +-
+ src/webengine/api/qquickwebenginesettings.cpp      |  42 +++++++
+ src/webengine/api/qquickwebenginesettings_p.h      |  12 +-
+ src/webenginewidgets/api/qwebenginesettings.cpp    |   4 +
+ src/webenginewidgets/api/qwebenginesettings.h      |   4 +-
+ .../doc/src/qwebenginesettings_lgpl.qdoc           |   5 +
+ .../quick/qmltests/data/tst_faviconDownload.qml    | 117 +++++++++++++++++++
+ tests/auto/quick/qmltests/qmltests.pro             |   1 +
+ .../tst_qwebenginefaviconmanager.cpp               |  63 +++++++++-
+ 15 files changed, 385 insertions(+), 56 deletions(-)
+ create mode 100644 tests/auto/quick/qmltests/data/tst_faviconDownload.qml
+
+diff --git a/examples/webengine/quicknanobrowser/BrowserWindow.qml b/examples/webengine/quicknanobrowser/BrowserWindow.qml
+index 0b95c0d..b468b2a 100644
+--- a/examples/webengine/quicknanobrowser/BrowserWindow.qml
++++ b/examples/webengine/quicknanobrowser/BrowserWindow.qml
+@@ -84,6 +84,8 @@ ApplicationWindow {
+         property alias errorPageEnabled: errorPageEnabled.checked;
+         property alias pluginsEnabled: pluginsEnabled.checked;
+         property alias fullScreenSupportEnabled: fullScreenSupportEnabled.checked;
++        property alias autoLoadIconsForPage: autoLoadIconsForPage.checked;
++        property alias touchIconsEnabled: touchIconsEnabled.checked;
+     }
+ 
+     Action {
+@@ -294,6 +296,19 @@ ApplicationWindow {
+                             checked: (currentWebView.profile.httpCacheType == WebEngineProfile.DiskHttpCache)
+                             onToggled: currentWebView.profile.httpCacheType = checked ? WebEngineProfile.DiskHttpCache : WebEngineProfile.MemoryHttpCache
+                         }
++                        MenuItem {
++                            id: autoLoadIconsForPage
++                            text: "Icons On"
++                            checkable: true
++                            checked: WebEngine.settings.autoLoadIconsForPage
++                        }
++                        MenuItem {
++                            id: touchIconsEnabled
++                            text: "Touch Icons On"
++                            checkable: true
++                            checked: WebEngine.settings.touchIconsEnabled
++                            enabled: autoLoadIconsForPage.checked
++                        }
+                     }
+                 }
+             }
+@@ -365,6 +380,8 @@ ApplicationWindow {
+                 settings.errorPageEnabled: appSettings.errorPageEnabled
+                 settings.pluginsEnabled: appSettings.pluginsEnabled
+                 settings.fullScreenSupportEnabled: appSettings.fullScreenSupportEnabled
++                settings.autoLoadIconsForPage: appSettings.autoLoadIconsForPage
++                settings.touchIconsEnabled: appSettings.touchIconsEnabled
+ 
+                 onCertificateError: {
+                     error.defer()
+diff --git a/examples/webenginewidgets/demobrowser/browserapplication.cpp b/examples/webenginewidgets/demobrowser/browserapplication.cpp
+index a2e47cd..027a7d1 100644
+--- a/examples/webenginewidgets/demobrowser/browserapplication.cpp
++++ b/examples/webenginewidgets/demobrowser/browserapplication.cpp
+@@ -299,6 +299,21 @@ void BrowserApplication::loadSettings()
+ 
+     defaultProfile->setHttpUserAgent(settings.value(QLatin1String("httpUserAgent")).toString());
+     defaultProfile->setHttpAcceptLanguage(settings.value(QLatin1String("httpAcceptLanguage")).toString());
++
++    switch (settings.value(QLatin1String("faviconDownloadMode"), 1).toInt()) {
++    case 0:
++        defaultSettings->setAttribute(QWebEngineSettings::AutoLoadIconsForPage, false);
++        break;
++    case 1:
++        defaultSettings->setAttribute(QWebEngineSettings::AutoLoadIconsForPage, true);
++        defaultSettings->setAttribute(QWebEngineSettings::TouchIconsEnabled, false);
++        break;
++    case 2:
++        defaultSettings->setAttribute(QWebEngineSettings::AutoLoadIconsForPage, true);
++        defaultSettings->setAttribute(QWebEngineSettings::TouchIconsEnabled, true);
++        break;
++    }
++
+     settings.endGroup();
+     settings.beginGroup(QLatin1String("cookies"));
+ 
+diff --git a/examples/webenginewidgets/demobrowser/settings.cpp b/examples/webenginewidgets/demobrowser/settings.cpp
+index 220fafd..aa3110a 100644
+--- a/examples/webenginewidgets/demobrowser/settings.cpp
++++ b/examples/webenginewidgets/demobrowser/settings.cpp
+@@ -114,6 +114,13 @@ void SettingsDialog::loadDefaults()
+     sessionCookiesCombo->setCurrentIndex(QWebEngineProfile::defaultProfile()->persistentCookiesPolicy());
+     httpUserAgent->setText(QWebEngineProfile::defaultProfile()->httpUserAgent());
+     httpAcceptLanguage->setText(defaultAcceptLanguage());
++
++    if (!defaultSettings->testAttribute(QWebEngineSettings::AutoLoadIconsForPage))
++        faviconDownloadMode->setCurrentIndex(0);
++    else if (!defaultSettings->testAttribute(QWebEngineSettings::TouchIconsEnabled))
++        faviconDownloadMode->setCurrentIndex(1);
++    else
++        faviconDownloadMode->setCurrentIndex(2);
+ }
+ 
+ void SettingsDialog::loadFromSettings()
+@@ -164,6 +171,7 @@ void SettingsDialog::loadFromSettings()
+     enableScrollAnimator->setChecked(settings.value(QLatin1String("enableScrollAnimator"), enableScrollAnimator->isChecked()).toBool());
+     httpUserAgent->setText(settings.value(QLatin1String("httpUserAgent"), httpUserAgent->text()).toString());
+     httpAcceptLanguage->setText(settings.value(QLatin1String("httpAcceptLanguage"), httpAcceptLanguage->text()).toString());
++    faviconDownloadMode->setCurrentIndex(settings.value(QLatin1String("faviconDownloadMode"), faviconDownloadMode->currentIndex()).toInt());
+     settings.endGroup();
+ 
+     // Privacy
+@@ -223,6 +231,7 @@ void SettingsDialog::saveToSettings()
+     settings.setValue(QLatin1String("userStyleSheet"), userStyleSheet->toPlainText());
+     settings.setValue(QLatin1String("httpUserAgent"), httpUserAgent->text());
+     settings.setValue(QLatin1String("httpAcceptLanguage"), httpAcceptLanguage->text());
++    settings.setValue(QLatin1String("faviconDownloadMode"), faviconDownloadMode->currentIndex());
+     settings.endGroup();
+ 
+     //Privacy
+diff --git a/examples/webenginewidgets/demobrowser/settings.ui b/examples/webenginewidgets/demobrowser/settings.ui
+index 38a7af3..c78a52d 100644
+--- a/examples/webenginewidgets/demobrowser/settings.ui
++++ b/examples/webenginewidgets/demobrowser/settings.ui
+@@ -27,13 +27,26 @@
+    <item row="1" column="0">
+     <widget class="QTabWidget" name="tabWidget">
+      <property name="currentIndex">
+-      <number>4</number>
++      <number>0</number>
+      </property>
+      <widget class="QWidget" name="tab">
+       <attribute name="title">
+        <string>General</string>
+       </attribute>
+       <layout class="QGridLayout" name="gridLayout_4">
++       <item row="1" column="2">
++        <spacer name="horizontalSpacer">
++         <property name="orientation">
++          <enum>Qt::Horizontal</enum>
++         </property>
++         <property name="sizeHint" stdset="0">
++          <size>
++           <width>280</width>
++           <height>18</height>
++          </size>
++         </property>
++        </spacer>
++       </item>
+        <item row="0" column="0">
+         <widget class="QLabel" name="label_3">
+          <property name="text">
+@@ -47,36 +60,63 @@
+        <item row="0" column="1" colspan="2">
+         <widget class="QLineEdit" name="homeLineEdit"/>
+        </item>
+-       <item row="1" column="1">
+-        <widget class="QPushButton" name="setHomeToCurrentPageButton">
+-         <property name="text">
+-          <string>Set to current page</string>
+-         </property>
+-        </widget>
+-       </item>
+-       <item row="1" column="2">
+-        <spacer name="horizontalSpacer">
++       <item row="7" column="1" colspan="2">
++        <spacer>
+          <property name="orientation">
+-          <enum>Qt::Horizontal</enum>
++          <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+-           <width>280</width>
+-           <height>18</height>
++           <width>391</width>
++           <height>262</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+-       <item row="2" column="0">
+-        <widget class="QLabel" name="label_4">
++       <item row="3" column="0">
++        <widget class="QLabel" name="label_7">
+          <property name="text">
+-          <string>Remove history items:</string>
++          <string>Save downloads to:</string>
++         </property>
++         <property name="alignment">
++          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
++         </property>
++        </widget>
++       </item>
++       <item row="4" column="0">
++        <widget class="QLabel" name="label_8">
++         <property name="text">
++          <string>Open links from applications:</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+          </property>
+         </widget>
+        </item>
++       <item row="6" column="1" colspan="2">
++        <widget class="QCheckBox" name="enableScrollAnimator">
++         <property name="text">
++          <string>Enable Scroll Animator</string>
++         </property>
++         <property name="checked">
++          <bool>true</bool>
++         </property>
++        </widget>
++       </item>
++       <item row="4" column="1" colspan="2">
++        <widget class="QComboBox" name="openLinksIn">
++         <item>
++          <property name="text">
++           <string>In a tab in the current window</string>
++          </property>
++         </item>
++         <item>
++          <property name="text">
++           <string>In a new window</string>
++          </property>
++         </item>
++        </widget>
++       </item>
+        <item row="2" column="1" colspan="2">
+         <widget class="QComboBox" name="expireHistory">
+          <item>
+@@ -111,10 +151,10 @@
+          </item>
+         </widget>
+        </item>
+-       <item row="3" column="0">
+-        <widget class="QLabel" name="label_7">
++       <item row="2" column="0">
++        <widget class="QLabel" name="label_4">
+          <property name="text">
+-          <string>Save downloads to:</string>
++          <string>Remove history items:</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+@@ -124,53 +164,45 @@
+        <item row="3" column="1" colspan="2">
+         <widget class="QLineEdit" name="downloadsLocation"/>
+        </item>
+-       <item row="4" column="0">
+-        <widget class="QLabel" name="label_8">
++       <item row="1" column="1">
++        <widget class="QPushButton" name="setHomeToCurrentPageButton">
+          <property name="text">
+-          <string>Open links from applications:</string>
++          <string>Set to current page</string>
++         </property>
++        </widget>
++       </item>
++       <item row="5" column="0">
++        <widget class="QLabel" name="label_17">
++         <property name="text">
++          <string>Favicon download mode:</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+          </property>
+         </widget>
+        </item>
+-       <item row="4" column="1" colspan="2">
+-        <widget class="QComboBox" name="openLinksIn">
++       <item row="5" column="1" colspan="2">
++        <widget class="QComboBox" name="faviconDownloadMode">
++         <property name="currentIndex">
++          <number>1</number>
++         </property>
+          <item>
+           <property name="text">
+-           <string>In a tab in the current window</string>
++           <string>Disable icons</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+-           <string>In a new window</string>
++           <string>Enable favicons</string>
++          </property>
++         </item>
++         <item>
++          <property name="text">
++           <string>Enable favicons and touch icons</string>
+           </property>
+          </item>
+         </widget>
+        </item>
+-       <item row="5" column="1" colspan="2">
+-        <widget class="QCheckBox" name="enableScrollAnimator">
+-         <property name="text">
+-          <string>Enable Scroll Animator</string>
+-         </property>
+-         <property name="checked">
+-          <bool>true</bool>
+-         </property>
+-        </widget>
+-       </item>
+-       <item row="6" column="1" colspan="2">
+-        <spacer>
+-         <property name="orientation">
+-          <enum>Qt::Vertical</enum>
+-         </property>
+-         <property name="sizeHint" stdset="0">
+-          <size>
+-           <width>391</width>
+-           <height>262</height>
+-          </size>
+-         </property>
+-        </spacer>
+-       </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_3">
+diff --git a/src/core/favicon_manager.cpp b/src/core/favicon_manager.cpp
+index 8469f05..16a087e 100644
+--- a/src/core/favicon_manager.cpp
++++ b/src/core/favicon_manager.cpp
+@@ -42,6 +42,7 @@
+ 
+ #include "type_conversion.h"
+ #include "web_contents_adapter_client.h"
++#include "web_engine_settings.h"
+ 
+ #include "base/bind.h"
+ #include "content/public/browser/favicon_status.h"
+@@ -176,12 +177,15 @@ void FaviconManagerPrivate::propagateIcon() const
+ {
+     Q_Q(const FaviconManager);
+ 
++    WebEngineSettings *settings = m_viewClient->webEngineSettings();
++    bool touchIconsEnabled = settings->testAttribute(WebEngineSettings::TouchIconsEnabled);
++
+     QUrl iconUrl;
+     const QList<FaviconInfo> &faviconInfoList = q->getFaviconInfoList(true /* candidates only */);
+ 
+     unsigned bestArea = 0;
+     for (auto it = faviconInfoList.cbegin(), end = faviconInfoList.cend(); it != end; ++it) {
+-        if (it->type != FaviconInfo::Favicon)
++        if (!touchIconsEnabled && it->type != FaviconInfo::Favicon)
+             continue;
+ 
+         if (it->isValid() && bestArea < area(it->size)) {
+@@ -244,9 +248,17 @@ void FaviconManager::update(const QList<FaviconInfo> &candidates)
+     Q_D(FaviconManager);
+     updateCandidates(candidates);
+ 
++    WebEngineSettings *settings = d->m_viewClient->webEngineSettings();
++    if (!settings->testAttribute(WebEngineSettings::AutoLoadIconsForPage)) {
++        d->m_viewClient->iconChanged(QUrl());
++        return;
++    }
++
++    bool touchIconsEnabled = settings->testAttribute(WebEngineSettings::TouchIconsEnabled);
++
+     const QList<FaviconInfo> &faviconInfoList = getFaviconInfoList(true /* candidates only */);
+     for (auto it = faviconInfoList.cbegin(), end = faviconInfoList.cend(); it != end; ++it) {
+-        if (it->type != FaviconInfo::Favicon)
++        if (!touchIconsEnabled && it->type != FaviconInfo::Favicon)
+             continue;
+ 
+         if (it->isValid())
+diff --git a/src/core/web_engine_settings.cpp b/src/core/web_engine_settings.cpp
+index d650666..54c7f7c 100644
+--- a/src/core/web_engine_settings.cpp
++++ b/src/core/web_engine_settings.cpp
+@@ -236,6 +236,8 @@ void WebEngineSettings::initDefaults(bool offTheRecord)
+         s_defaultAttributes.insert(ScrollAnimatorEnabled, smoothScrolling);
+         s_defaultAttributes.insert(WebGLEnabled, webGL);
+         s_defaultAttributes.insert(Accelerated2dCanvasEnabled, accelerated2dCanvas);
++        s_defaultAttributes.insert(AutoLoadIconsForPage, true);
++        s_defaultAttributes.insert(TouchIconsEnabled, false);
+     }
+     if (offTheRecord)
+         m_attributes.insert(LocalStorageEnabled, false);
+diff --git a/src/core/web_engine_settings.h b/src/core/web_engine_settings.h
+index c2be4f0..3bc1081 100644
+--- a/src/core/web_engine_settings.h
++++ b/src/core/web_engine_settings.h
+@@ -79,7 +79,9 @@ public:
+         ScreenCaptureEnabled,
+         WebGLEnabled,
+         WebAudioEnabled,
+-        Accelerated2dCanvasEnabled
++        Accelerated2dCanvasEnabled,
++        AutoLoadIconsForPage,
++        TouchIconsEnabled
+     };
+ 
+     // Must match the values from the public API in qwebenginesettings.h.
+diff --git a/src/webengine/api/qquickwebenginesettings.cpp b/src/webengine/api/qquickwebenginesettings.cpp
+index 921a318..56d4119 100644
+--- a/src/webengine/api/qquickwebenginesettings.cpp
++++ b/src/webengine/api/qquickwebenginesettings.cpp
+@@ -289,6 +289,32 @@ bool QQuickWebEngineSettings::accelerated2dCanvasEnabled() const
+ }
+ 
+ /*!
++  \qmlproperty bool WebEngineSettings::autoLoadIconsForPage
++  \since QtWebEngine 1.3
++
++  Automatically downloads icons for web pages.
++
++  Enabled by default.
++*/
++bool QQuickWebEngineSettings::autoLoadIconsForPage() const
++{
++    return d_ptr->testAttribute(WebEngineSettings::AutoLoadIconsForPage);
++}
++
++/*!
++  \qmlproperty bool WebEngineSettings::touchIconsEnabled
++  \since QtWebEngine 1.3
++
++  Enables support for touch icons and precomposed touch icons.
++
++  Disabled by default.
++*/
++bool QQuickWebEngineSettings::touchIconsEnabled() const
++{
++    return d_ptr->testAttribute(WebEngineSettings::TouchIconsEnabled);
++}
++
++/*!
+     \qmlproperty QString WebEngineSettings::defaultTextEncoding
+ 
+     Sets the default encoding. The value must be a string describing an encoding such as "utf-8" or
+@@ -440,6 +466,22 @@ void QQuickWebEngineSettings::setAccelerated2dCanvasEnabled(bool on)
+         Q_EMIT accelerated2dCanvasEnabledChanged();
+ }
+ 
++void QQuickWebEngineSettings::setAutoLoadIconsForPage(bool on)
++{
++    bool wasOn = d_ptr->testAttribute(WebEngineSettings::AutoLoadIconsForPage);
++    d_ptr->setAttribute(WebEngineSettings::AutoLoadIconsForPage, on);
++    if (wasOn != on)
++        Q_EMIT autoLoadIconsForPageChanged();
++}
++
++void QQuickWebEngineSettings::setTouchIconsEnabled(bool on)
++{
++    bool wasOn = d_ptr->testAttribute(WebEngineSettings::TouchIconsEnabled);
++    d_ptr->setAttribute(WebEngineSettings::TouchIconsEnabled, on);
++    if (wasOn != on)
++        Q_EMIT touchIconsEnabledChanged();
++}
++
+ void QQuickWebEngineSettings::setDefaultTextEncoding(QString encoding)
+ {
+     const QString oldDefaultTextEncoding = d_ptr->defaultTextEncoding();
+diff --git a/src/webengine/api/qquickwebenginesettings_p.h b/src/webengine/api/qquickwebenginesettings_p.h
+index a870f7b..6a5fd29 100644
+--- a/src/webengine/api/qquickwebenginesettings_p.h
++++ b/src/webengine/api/qquickwebenginesettings_p.h
+@@ -81,6 +81,8 @@ class Q_WEBENGINE_PRIVATE_EXPORT QQuickWebEngineSettings : public QObject {
+     Q_PROPERTY(bool webGLEnabled READ webGLEnabled WRITE setWebGLEnabled NOTIFY webGLEnabledChanged REVISION 2)
+     Q_PROPERTY(bool webAudioEnabled READ webAudioEnabled WRITE setWebAudioEnabled NOTIFY webAudioEnabledChanged REVISION 2)
+     Q_PROPERTY(bool accelerated2dCanvasEnabled READ accelerated2dCanvasEnabled WRITE setAccelerated2dCanvasEnabled NOTIFY accelerated2dCanvasEnabledChanged REVISION 2)
++    Q_PROPERTY(bool autoLoadIconsForPage READ autoLoadIconsForPage WRITE setAutoLoadIconsForPage NOTIFY autoLoadIconsForPageChanged REVISION 2)
++    Q_PROPERTY(bool touchIconsEnabled READ touchIconsEnabled WRITE setTouchIconsEnabled NOTIFY touchIconsEnabledChanged REVISION 2)
+ 
+ public:
+     ~QQuickWebEngineSettings();
+@@ -98,11 +100,13 @@ public:
+     bool errorPageEnabled() const;
+     bool pluginsEnabled() const;
+     bool fullScreenSupportEnabled() const;
++    QString defaultTextEncoding() const;
+     bool screenCaptureEnabled() const;
+     bool webGLEnabled() const;
+     bool webAudioEnabled() const;
+     bool accelerated2dCanvasEnabled() const;
+-    QString defaultTextEncoding() const;
++    bool autoLoadIconsForPage() const;
++    bool touchIconsEnabled() const;
+ 
+     void setAutoLoadImages(bool on);
+     void setJavascriptEnabled(bool on);
+@@ -117,11 +121,13 @@ public:
+     void setErrorPageEnabled(bool on);
+     void setPluginsEnabled(bool on);
+     void setFullScreenSupportEnabled(bool on);
++    void setDefaultTextEncoding(QString encoding);
+     void setScreenCaptureEnabled(bool on);
+     void setWebGLEnabled(bool on);
+     void setWebAudioEnabled(bool on);
+     void setAccelerated2dCanvasEnabled(bool on);
+-    void setDefaultTextEncoding(QString encoding);
++    void setAutoLoadIconsForPage(bool on);
++    void setTouchIconsEnabled(bool on);
+ 
+ signals:
+     void autoLoadImagesChanged();
+@@ -142,6 +148,8 @@ signals:
+     Q_REVISION(2) void webGLEnabledChanged();
+     Q_REVISION(2) void webAudioEnabledChanged();
+     Q_REVISION(2) void accelerated2dCanvasEnabledChanged();
++    Q_REVISION(2) void autoLoadIconsForPageChanged();
++    Q_REVISION(2) void touchIconsEnabledChanged();
+ 
+ private:
+     explicit QQuickWebEngineSettings(QQuickWebEngineSettings *parentSettings = 0);
+diff --git a/src/webenginewidgets/api/qwebenginesettings.cpp b/src/webenginewidgets/api/qwebenginesettings.cpp
+index 3a2f585..d1caa4c 100644
+--- a/src/webenginewidgets/api/qwebenginesettings.cpp
++++ b/src/webenginewidgets/api/qwebenginesettings.cpp
+@@ -87,6 +87,10 @@ static WebEngineSettings::Attribute toWebEngineAttribute(QWebEngineSettings::Web
+         return WebEngineSettings::WebAudioEnabled;
+     case QWebEngineSettings::Accelerated2dCanvasEnabled:
+         return WebEngineSettings::Accelerated2dCanvasEnabled;
++    case QWebEngineSettings::AutoLoadIconsForPage:
++        return WebEngineSettings::AutoLoadIconsForPage;
++    case QWebEngineSettings::TouchIconsEnabled:
++        return WebEngineSettings::TouchIconsEnabled;
+     default:
+         return WebEngineSettings::UnsupportedInCoreSettings;
+     }
+diff --git a/src/webenginewidgets/api/qwebenginesettings.h b/src/webenginewidgets/api/qwebenginesettings.h
+index f236abe..ea18cf0 100644
+--- a/src/webenginewidgets/api/qwebenginesettings.h
++++ b/src/webenginewidgets/api/qwebenginesettings.h
+@@ -65,7 +65,9 @@ public:
+         ScreenCaptureEnabled,
+         WebGLEnabled,
+         WebAudioEnabled,
+-        Accelerated2dCanvasEnabled
++        Accelerated2dCanvasEnabled,
++        AutoLoadIconsForPage,
++        TouchIconsEnabled
+     };
+ 
+     enum FontSize {
+diff --git a/src/webenginewidgets/doc/src/qwebenginesettings_lgpl.qdoc b/src/webenginewidgets/doc/src/qwebenginesettings_lgpl.qdoc
+index 461af08..a19f369 100644
+--- a/src/webenginewidgets/doc/src/qwebenginesettings_lgpl.qdoc
++++ b/src/webenginewidgets/doc/src/qwebenginesettings_lgpl.qdoc
+@@ -141,6 +141,11 @@
+     \value  Accelerated2dCanvasEnabled
+             Specifies whether the HTML5 2D canvas should be a OpenGL framebuffer.
+             This makes many painting operations faster, but slows down pixel access. Enabled by default if available.
++    \value  AutoLoadIconsForPage
++            Automatically downloads icons for web pages. Enabled by default.
++    \value  TouchIconsEnabled
++            Enables support for touch icons and precomposed touch icons.
++            Disabled by default.
+ */
+ 
+ /*!
+diff --git a/tests/auto/quick/qmltests/data/tst_faviconDownload.qml b/tests/auto/quick/qmltests/data/tst_faviconDownload.qml
+new file mode 100644
+index 0000000..4cf0edc
+--- /dev/null
++++ b/tests/auto/quick/qmltests/data/tst_faviconDownload.qml
+@@ -0,0 +1,117 @@
++/****************************************************************************
++**
++** Copyright (C) 2016 The Qt Company Ltd.
++** Contact: https://www.qt.io/licensing/
++**
++** This file is part of the QtWebEngine module of the Qt Toolkit.
++**
++** $QT_BEGIN_LICENSE:GPL-EXCEPT$
++** Commercial License Usage
++** Licensees holding valid commercial Qt licenses may use this file in
++** accordance with the commercial license agreement provided with the
++** Software or, alternatively, in accordance with the terms contained in
++** a written agreement between you and The Qt Company. For licensing terms
++** and conditions see https://www.qt.io/terms-conditions. For further
++** information use the contact form at https://www.qt.io/contact-us.
++**
++** GNU General Public License Usage
++** Alternatively, this file may be used under the terms of the GNU
++** General Public License version 3 as published by the Free Software
++** Foundation with exceptions as appearing in the file LICENSE.GPL3-EXCEPT
++** included in the packaging of this file. Please review the following
++** information to ensure the GNU General Public License requirements will
++** be met: https://www.gnu.org/licenses/gpl-3.0.html.
++**
++** $QT_END_LICENSE$
++**
++****************************************************************************/
++
++import QtQuick 2.0
++import QtTest 1.0
++import QtWebEngine 1.3
++
++TestWebEngineView {
++    id: webEngineView
++    width: 200
++    height: 400
++
++    SignalSpy {
++        id: iconChangedSpy
++        target: webEngineView
++        signalName: "iconChanged"
++    }
++
++    TestCase {
++        id: test
++        name: "WebEngineFaviconDownload"
++        when: windowShown
++
++        function init() {
++            WebEngine.settings.autoLoadIconsForPage = true
++            WebEngine.settings.touchIconsEnabled = false
++
++            if (webEngineView.icon != '') {
++                // If this is not the first test, then load a blank page without favicon, restoring the initial state.
++                webEngineView.url = 'about:blank'
++                verify(webEngineView.waitForLoadSucceeded())
++                iconChangedSpy.wait()
++            }
++
++            iconChangedSpy.clear()
++        }
++
++        function cleanupTestCase() {
++            WebEngine.settings.autoLoadIconsForPage = true
++            WebEngine.settings.touchIconsEnabled = false
++        }
++
++        function test_downloadIconsDisabled_data() {
++            return [
++                   { tag: "misc", url: Qt.resolvedUrl("favicon-misc.html") },
++                   { tag: "shortcut", url: Qt.resolvedUrl("favicon-shortcut.html") },
++                   { tag: "single", url: Qt.resolvedUrl("favicon-single.html") },
++                   { tag: "touch", url: Qt.resolvedUrl("favicon-touch.html") },
++                   { tag: "unavailable", url: Qt.resolvedUrl("favicon-unavailable.html") },
++            ];
++        }
++
++        function test_downloadIconsDisabled(row) {
++            WebEngine.settings.autoLoadIconsForPage = false
++
++            compare(iconChangedSpy.count, 0)
++
++            webEngineView.url = row.url
++            verify(webEngineView.waitForLoadSucceeded())
++
++            compare(iconChangedSpy.count, 0)
++
++            var iconUrl = webEngineView.icon
++            compare(iconUrl, Qt.resolvedUrl(""))
++        }
++
++        function test_downloadTouchIconsEnabled_data() {
++            return [
++                   { tag: "misc", url: Qt.resolvedUrl("favicon-misc.html"), expectedIconUrl: Qt.resolvedUrl("icons/qt144.png") },
++                   { tag: "shortcut", url: Qt.resolvedUrl("favicon-shortcut.html"), expectedIconUrl: Qt.resolvedUrl("icons/qt144.png") },
++                   { tag: "single", url: Qt.resolvedUrl("favicon-single.html"), expectedIconUrl: Qt.resolvedUrl("icons/qt32.ico") },
++                   { tag: "touch", url: Qt.resolvedUrl("favicon-touch.html"), expectedIconUrl: Qt.resolvedUrl("icons/qt144.png") },
++            ];
++        }
++
++        function test_downloadTouchIconsEnabled(row) {
++            WebEngine.settings.touchIconsEnabled = true
++
++            compare(iconChangedSpy.count, 0)
++
++            webEngineView.url = row.url
++            verify(webEngineView.waitForLoadSucceeded())
++
++            iconChangedSpy.wait()
++            compare(iconChangedSpy.count, 1)
++
++            var iconUrl = webEngineView.icon
++            compare(iconUrl, row.expectedIconUrl)
++        }
++    }
++}
++
+diff --git a/tests/auto/quick/qmltests/qmltests.pro b/tests/auto/quick/qmltests/qmltests.pro
+index d3307a3..2086e88 100644
+--- a/tests/auto/quick/qmltests/qmltests.pro
++++ b/tests/auto/quick/qmltests/qmltests.pro
+@@ -39,6 +39,7 @@ OTHER_FILES += \
+     $$PWD/data/tst_desktopBehaviorLoadHtml.qml \
+     $$PWD/data/tst_download.qml \
+     $$PWD/data/tst_favicon.qml \
++    $$PWD/data/tst_faviconDownload.qml \
+     $$PWD/data/tst_filePicker.qml \
+     $$PWD/data/tst_formValidation.qml \
+     $$PWD/data/tst_geopermission.qml \
+diff --git a/tests/auto/widgets/qwebenginefaviconmanager/tst_qwebenginefaviconmanager.cpp b/tests/auto/widgets/qwebenginefaviconmanager/tst_qwebenginefaviconmanager.cpp
+index a0f864a..9f14a42 100644
+--- a/tests/auto/widgets/qwebenginefaviconmanager/tst_qwebenginefaviconmanager.cpp
++++ b/tests/auto/widgets/qwebenginefaviconmanager/tst_qwebenginefaviconmanager.cpp
+@@ -54,6 +54,10 @@ private Q_SLOTS:
+     void errorPageDisabled();
+     void bestFavicon();
+     void touchIcon();
++    void downloadIconsDisabled_data();
++    void downloadIconsDisabled();
++    void downloadTouchIconsEnabled_data();
++    void downloadTouchIconsEnabled();
+ 
+ private:
+     QWebEngineView* m_view;
+@@ -267,11 +271,68 @@ void tst_QWebEngineFaviconManager::touchIcon()
+     m_page->load(url);
+ 
+     QTRY_COMPARE(loadFinishedSpy.count(), 1);
+-    QTRY_COMPARE(iconUrlChangedSpy.count(), 0);
++    QCOMPARE(iconUrlChangedSpy.count(), 0);
++
++    QVERIFY(m_page->iconUrl().isEmpty());
++}
++
++void tst_QWebEngineFaviconManager::downloadIconsDisabled_data()
++{
++    QTest::addColumn<QUrl>("url");
++    QTest::newRow("misc") << QUrl("qrc:/resources/favicon-misc.html");
++    QTest::newRow("shortcut") << QUrl("qrc:/resources/favicon-shortcut.html");
++    QTest::newRow("single") << QUrl("qrc:/resources/favicon-single.html");
++    QTest::newRow("touch") << QUrl("qrc:/resources/favicon-touch.html");
++    QTest::newRow("unavailable") << QUrl("qrc:/resources/favicon-unavailable.html");
++}
++
++void tst_QWebEngineFaviconManager::downloadIconsDisabled()
++{
++    QFETCH(QUrl, url);
++
++    m_page->settings()->setAttribute(QWebEngineSettings::AutoLoadIconsForPage, false);
++
++    QSignalSpy loadFinishedSpy(m_page, SIGNAL(loadFinished(bool)));
++    QSignalSpy iconUrlChangedSpy(m_page, SIGNAL(iconUrlChanged(QUrl)));
++
++    m_page->load(url);
++
++    QTRY_COMPARE(loadFinishedSpy.count(), 1);
++    QCOMPARE(iconUrlChangedSpy.count(), 0);
+ 
+     QVERIFY(m_page->iconUrl().isEmpty());
+ }
+ 
++void tst_QWebEngineFaviconManager::downloadTouchIconsEnabled_data()
++{
++    QTest::addColumn<QUrl>("url");
++    QTest::addColumn<QUrl>("expectedIconUrl");
++    QTest::newRow("misc") << QUrl("qrc:/resources/favicon-misc.html") << QUrl("qrc:/resources/icons/qt144.png");
++    QTest::newRow("shortcut") << QUrl("qrc:/resources/favicon-shortcut.html") << QUrl("qrc:/resources/icons/qt144.png");
++    QTest::newRow("single") << QUrl("qrc:/resources/favicon-single.html") << QUrl("qrc:/resources/icons/qt32.ico");
++    QTest::newRow("touch") << QUrl("qrc:/resources/favicon-touch.html") << QUrl("qrc:/resources/icons/qt144.png");
++}
++
++void tst_QWebEngineFaviconManager::downloadTouchIconsEnabled()
++{
++    QFETCH(QUrl, url);
++    QFETCH(QUrl, expectedIconUrl);
++
++    m_page->settings()->setAttribute(QWebEngineSettings::TouchIconsEnabled, true);
++
++    QSignalSpy loadFinishedSpy(m_page, SIGNAL(loadFinished(bool)));
++    QSignalSpy iconUrlChangedSpy(m_page, SIGNAL(iconUrlChanged(QUrl)));
++
++    m_page->load(url);
++
++    QTRY_COMPARE(loadFinishedSpy.count(), 1);
++    QTRY_COMPARE(iconUrlChangedSpy.count(), 1);
++
++    QUrl iconUrl = iconUrlChangedSpy.at(0).at(0).toString();
++    QCOMPARE(m_page->iconUrl(), iconUrl);
++    QCOMPARE(iconUrl, expectedIconUrl);
++}
++
+ QTEST_MAIN(tst_QWebEngineFaviconManager)
+ 
+ #include "tst_qwebenginefaviconmanager.moc"
+-- 
+2.7.4 (Apple Git-66)
+

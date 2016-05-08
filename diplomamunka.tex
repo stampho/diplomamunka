@@ -1915,7 +1915,7 @@ A javítások és az új Quick Authentication Dialog ablak a Qt 5.6-os verziój�
 
 \noindent
 A \textbf{favicon} a web oldalhoz tartozó ikon, vagy más néven \textit{shortcut icon}. A
-favicon-t web oldal HTML kódjában kell megadni az alábbi módon:
+favicont web oldal HTML kódjában kell megadni az alábbi módon:
 \begin{verbatim}
 <html>
     <head>
@@ -1924,21 +1924,20 @@ favicon-t web oldal HTML kódjában kell megadni az alábbi módon:
 </html>
 \end{verbatim}
 A böngészőalkalmazás ezt az ikont tetszőleges célokra használhatja fel, jellemzően az URL
-bar-on vagy a tab-on jelenítik meg.
-Az oldalhoz rendelt ikon lehet \textit{touch icon} is. A touch icon többnyire nagyobb
-felbontású, mint a favicon és elsősorban érintőképernyős készülékeken használják az
-előzmények és/vagy könyvjelzők megjelenítésére. Egy oldalhoz több favicon és/vagy touch icon
-is tartozhat, böngészőalkalmazás feladata választani közülük.
+baron vagy a tabon jelenítik meg. Az oldalhoz rendelt ikon lehet \textit{touch} ikon is.
+A touch ikon többnyire nagyobb felbontású, mint a favicon és elsősorban érintőképernyős
+készülékeken használják az előzmények és könyvjelzők megjelenítésére. Egy oldalhoz több
+favicon és/vagy touch ikon is tartozhat, a böngészőalkalmazás feladata választani közülük.
 
-A Qt WebEngine-ben megvalósított \textbf{Favicon Manager} ezeket az ikonokat tölti le a
+A QtWebEngine-ben megvalósított \textbf{Favicon Manager} ezeket az ikonokat tölti le a
 Chromium Content API-n keresztül, tárolja azokat és implementál belső API-t az elérésükre.
 Megvalósítását több cél is motiválta:
 \begin{itemize}
-    \item Az jelszóval védett oldalak betöltése esetén ne legyen szükség workaround-ra a
+    \item Az jelszóval védett oldalak betöltése esetén ne legyen szükség workaroundra a
         böngészőalkalmazás kódjában ahhoz, hogy le lehessen tölteni egy ikont
-    \item A Qt WebEngine korábbi verziói nem támogatták a touch icon-ok használatát
-    \item A Qt WebEngine korábbi verziói nem támogatták az ikonok közötti választást
-    \item Bizonyos esetekben a touch icon-ok közül is a legnagyobb felbontásúra van szükség
+    \item A QtWebEngine korábbi verziói nem támogatták a touch ikonok használatát
+    \item A QtWebEngine korábbi verziói nem támogatták az ikonok közötti választást
+    \item Bizonyos esetekben az elérhető ikonok közül a legnagyobb felbontásúra van szükség
 \end{itemize}
 
 Mivel a Favicon Manager megvalósítása sok részfeladatot foglal magában, ezért ezek
@@ -1952,7 +1951,9 @@ rendszerezésére egy gyűjtő issue-t készítettem:
     \end{issuebox}
 \end{center}
 Ebben a fejezetben felsorolt patch-ek egy-egy részfeladatot valósítanak meg. Egy részük
-új funkciót vezetnek meg, míg mások hiba javításokat vagy teszteket tartalmaznak.
+új funkciót valósít meg, míg mások hiba javításokat vagy teszteket tartalmaznak.
+
+\newpage
 
 \begin{center}
     \begin{reviewbox}
@@ -1964,36 +1965,36 @@ Ebben a fejezetben felsorolt patch-ek egy-egy részfeladatot valósítanak meg. 
     \end{reviewbox}
 \end{center}
 
-Az új funkció alapját a WebEngine Core modulban implementált \texttt{FaviconManager} osztály
-valósítja meg. Ez az osztály tölti le a megjelenített oldalhoz tartozó ikonokat,
+Az új funkció alapját a Qt WebEngine Core modulban implementált \texttt{FaviconManager}
+osztály valósítja meg. Ez az osztály tölti le a megjelenített oldalhoz tartozó ikonokat,
 választja ki közülük a megfelelőt, jelez a publikus API-nak ha a view-hoz rendelt ikon
-megváltozott, a publikus API ezen keresztül tudja lekérni az ikont.
+megváltozott. A publikus API ezen keresztül tudja kiválasztani és betölteni a megfelelő ikont.
 A kódban már a C++11 szabvány \textit{range-based for} nyelvi elemét használtam fel az
 iterációkhoz az optimális megvalósítás érdekében.
 
 Az ikonok letöltéséhez a Content API \texttt{WebContents::DownloadImage()} függvényét
-használom, ezáltal nincs szükség külön implementációra az autentikációhoz, azt a Content API
-elvégzi. Abban az esetben, ha az ikon QRC-ben (Qt Resource System)\footnote{A Qt ezen
+használom, ezáltal nincs szükség külön implementációra az autentikációhoz, azt a Content
+Module elvégzi. Abban az esetben, ha az ikon QRC-ben (Qt Resource System)\footnote{A Qt ezen
     funkciójával teszi azt lehetővé, hogy a Qt-s alkalmazáshoz tartozó fájlokat a
     binárison belül tároljuk. A Chromium nem támogatja ezt a protokollt.}
 van tárolva, az ikon betöltése Qt API-n keresztül történik, nincs szükség letöltésre.
 
 A Favicon Manager a web oldalhoz tartozó összes ikont megpróbálja letölteni és azokat egy
-\texttt{QMap}-ben tárolja. A map-ből az ikont az URL-je alapján lehet elérni. A Favicon
-Manager letöltés előtt ellenőrzi, hogy a map-ben benne van e már az ikon, ha benne van,
-nem ismétli meg a letöltést, így gyorsítótárazva (cache) az ikonokat.
+\texttt{QMap}-ben tárolja. A mapből az ikont az URL-je alapján lehet elérni. A Favicon
+Manager letöltés előtt ellenőrzi, hogy a mapben benne van e már az ikon, ha benne van,
+nem ismétli meg a letöltést, így gyorsítótárazva (\textit{caching}) az ikonokat.
 
-Minden tabhoz (WebEngineView-hoz) saját Favicon Manager tartozik, ezért előfordulhat, egy
-bizonyos ikon többször van tárolva a memóriában. Ennek a modellnek az előnye a gyorsabb
-keresés és az egyszerűbb implementáció. A publikus WebEngineView API a
-\texttt{iconChanged()} signal-al jelzi, hogy ha megváltozott a view-hoz tartozó ikon.
-Ez az ikon a publikus API-n keresztül lekérhető (\texttt{icon} és \texttt{iconUrl}
-property-k), az API pedig a Favicon Manager-től kéri el.
-A Favicon Manager a letöltött ikonok közül a legnagyobb felbontásút fogja felajánlani.
+Minden tabhoz (\texttt{WebEngineView}-hoz) saját Favicon Manager tartozik, ezért
+előfordulhat, hogy egy ikon többször van tárolva a memóriában. Ennek a modellnek az előnye
+a gyorsabb keresés és az egyszerűbb implementáció. A view API az \texttt{iconChanged()}
+signallal jelzi, hogy ha megváltozott a view-hoz tartozó ikon. Ez az ikon a publikus API-n
+keresztül elérhető (\texttt{icon} és \texttt{iconUrl} propertyk), amit pedig az API a
+Favicon Managertől kér el. A Favicon Manager a letöltött ikonok közül a legnagyobb
+felbontásút fogja felajánlani.
 
 A publikus API-k közvetlenül nem változtak, viszont működésük némileg igen. Így indokolttá
 vált a Quick és Widget API-k favicon tesztjeinek kibővítése és lefedettségük növelése, ami
-az első Favicon Manager-t megvalósító patch jelentős részét teszi ki.
+az első Favicon Managert megvalósító patch jelentős részét teszi ki.
 
 \begin{center}
     \begin{reviewbox}
@@ -2006,12 +2007,12 @@ az első Favicon Manager-t megvalósító patch jelentős részét teszi ki.
     \end{reviewbox}
 \end{center}
 
-A publikus Favicon Manager publikus API-jának fejlesztése során több változat is született.
-Végül úgy döntöttünk, hogy az 5.7-es verzióban nem lesz a Favicon Manager-nek publikus
+A Favicon Manager publikus API-jának fejlesztése során több változat is készült.
+Végül úgy döntöttünk, hogy az 5.7-es verzióban nem lesz a Favicon Managernek publikus
 API-ja, hanem a már meglévő ikon API-k lesznek tovább fejlesztve. Habár a tervezett
 funkcionalitások még bevezetésre kerülhetnek a Qt 5.8-as verziójában, karbantarthatóság
-miatt az ezt támogató WebEngine Core-ban implementált funkciókat eltávolítottam.
-A Favicon Manager implementációjának karbantartása mellett, a fejlesztés közben megtalált
+miatt az ezt támogató Qt WebEngine Core-ban implementált funkciókat eltávolítottam.
+A Favicon Manager megvalósításának karbantartása mellett, a fejlesztés közben megtalált
 hibákat is javítottam.
 
 \begin{center}
@@ -2023,18 +2024,19 @@ hibákat is javítottam.
     \end{reviewbox}
 \end{center}
 
-Habár új publikus API-t nem vezettünk be a Favicon Manager-hez, mindenképpen szerettem volna,
+Habár új publikus API-t nem vezettünk be a Favicon Managerhez, mindenképpen szerettem volna,
 hogy ha a fejlesztőnek van kontrollja az ikonok letöltése felett. Ennek megvalósításához
 a \texttt{WebEngineSettings}-hez adtam hozzá új beállításokat:
 \begin{description}
     \item[\texttt{AutoLoadIconsForPage}] Az ikonok automatikusan legyenek letöltve
-    \item[\texttt{TouchIconsEnabled}] Legyenek letiltva a touch ikonok is
+    \item[\texttt{TouchIconsEnabled}] Legyenek letöltve a touch ikonok is
 \end{description}
 
 A \texttt{AutoLoadIconsForPage} beállítás alapértelmezetten engedélyezve van, letiltásával
-a Qt WebEngine nem tölti le az ikonokat, ezáltal a böngészőalkalmazás gyorsabb lehet,
-spórolhat a sávszélességen, továbbá a fejlesztőnek van lehetősége saját ikon manager-t
-implementálni úgy, hogy ne kelljen törődnie a Qt WebEngine API ikon signal-jaival.
+a QtWebEngine nem tölti le az ikonokat, ezáltal a böngészőalkalmazás gyorsabb lehet,
+spórolhat a sávszélességen, továbbá a fejlesztőnek van lehetősége saját ikon managert
+implementálni úgy, hogy ne kelljen törődnie a QtWebEngine ikon signaljaival
+(\texttt{iconChanged}, \texttt{iconUrlChanged}).
 
 A \texttt{TouchIconsEnabled} beállítás desktop környezetben alapértelmezetten le van tiltva.
 Egy klasszikus desktop böngészőalkalmazásnak nincs szüksége touch ikonokra.
@@ -2050,32 +2052,33 @@ Egy klasszikus desktop böngészőalkalmazásnak nincs szüksége touch ikonokra
     \end{reviewbox}
 \end{center}
 
-Önmagában a Favicon Manager megvalósítása a WebEngine Core modulban nem sok előnyt nyújt.
+Önmagában a Favicon Manager megvalósítása a Qt WebEngine Core modulban nem sok előnyt nyújt.
 Szükséges a publikus API-k módosítása is, hogy kihasználják a Favicon Manager által nyújtott
 lehetőségeket. Az API-k bővítését a Widget API-val kezdtem, mivel annak megvalósítása
-egyszerűbb és a WebEngine Widgets modulra épülő demobrowser-ben a Favicon Manager haszna
-jól demonstrálható.
+egyszerűbb és a Qt WebEngine Widgets modulra épülő \textit{demobrowser}-ben a Favicon Manager
+haszna jól demonstrálható.
 
-A WebEngineWidgets module két API-t is nyújt az ikonok elérésére. Az egyik a
+A Qt WebEngine Widgets modul két API-t is nyújt az ikonok elérésére. Az egyik a
 \texttt{QWebEnginePage}, a másik a \texttt{QWebEngineView}. A kettő lényegében ugyanaz:
-a \texttt{QWebEnginePage} \texttt{iconUrl} property-jén keresztül elérhető a page-hez
+a \texttt{QWebEnginePage} \texttt{iconUrl} propertyjén keresztül elérhető a page-hez
 tartozó ikon URL-je, amennyiben ez az URL megváltozik akkor egy \texttt{iconUrlChanged}
-signal-t küld. A \texttt{QWebEngineView} ugyanezt a property-t és a hozzátartozó signal-t
-valósítja meg, csak az éppen megjelenített page-hez tartozó URL-t adja vissza.
+signalt küld a \texttt{QWebEnginePage}. A \texttt{QWebEngineView} ugyanezt a propertyt és a
+hozzátartozó signalt valósítja meg, ami éppen a view-ban megjelenített page-hez tartozó URL-t
+adja vissza.
 
-Az API-k egy új \texttt{icon} property-vel és a hozzátartozó \texttt{iconChanged} signal-al
-lettek bővítve. Az új property a már meglévő \texttt{iconUrl} property-hez hasonlóan működik,
+Az API-k egy új \texttt{icon} propertyvel és a hozzátartozó \texttt{iconChanged} signallal
+lettek bővítve. Az új property a már meglévő \texttt{iconUrl} propertyhez hasonlóan működik,
 azzal az eltéréssel, hogy nem az ikon URL-jét tartalmazza, hanem az URL-ről letöltött ikont
-egy \texttt{QIcon} példányban tárolva. Az új property-nek hála a böngészőalkalmazásnak nem
-kell megvalósítania a letöltést, így a demobrowser példa böngészőalkalmazásból is
+egy \texttt{QIcon} példányban tárolva. Az új propertynek hála a böngészőalkalmazásnak nem
+kell megvalósítania a letöltést, így a demobrowser példa böngészőalkalmazásból
 eltávolítottam a \texttt{QNetworkAccessManager} használatát és az autentikációhoz szükséges
-workaround-ot is.
+workaroundot is.
 
-Az bővített API-val most már a WebEngine Widgets modul támogatja az olyan ikonok használatát
-is, amelyek több különböző méretű ikont ágyaznak magukba (\textit{multi-size icon}).
-Ezekhez, és az új \texttt{icon} property-hez teszteket is készítettem,
-a \texttt{QWebEnginePage} és \texttt{QWebEngineView} API-k dokumentációit bővítettem és
-naprakésszé tettem.
+Az bővített API-val most már a Qt WebEngine Widgets modul támogatja az olyan ikonok
+használatát is, amelyek több különböző méretű ikont ágyaznak magukba
+(\textit{multi-size icon}). Ezekhez, és az új \texttt{icon} propertyhez teszteket is
+készítettem, a \texttt{QWebEnginePage} és \texttt{QWebEngineView} API-k dokumentációit
+bővítettem és naprakésszé tettem.
 
 \begin{center}
     \begin{reviewbox}
@@ -2087,46 +2090,48 @@ naprakésszé tettem.
     \end{reviewbox}
 \end{center}
 
-A WebEngine QML API esetében a Widget-hez hasonló bővítés megvalósítás sokkal bonyolultabb
-volt, mivel sem a QML, sem a Quick nem nyújt ikon támogatást. Az ikon megjelenítésére az
-\texttt{Image} QML típus használható, viszont annak az API-ja csak URL alapján tud képet
-betölteni. A Favicon Manager a letöltött ikont a memóriában tárolja és nem érhető el URL-el.
+A WebEngine QML/Quick API esetében a Widgethez hasonló bővítés megvalósítása sokkal
+bonyolultabb feladat volt, mivel sem a QML, sem a Quick nem nyújt ikon támogatást. Az ikon
+megjelenítésére az \texttt{Image} QML típus használható, viszont annak API-ja csak URL
+alapján tud képet betölteni. A Favicon Manager a letöltött ikont a memóriában tárolja és nem
+érhető el URL-lel.
 
-Erre a problémára megoldást a Quick API \texttt{QQuickImageProvider} interface-e nyújt
-megoldást. A QML contextben beregisztrált image provider egy speciális URL-el rendelkezik,
-ha az \texttt{Image} QML típus egy ilyen URL-t kap forrásként, akkor a kérést a provider-hez
-irányítja, amely betölti az \texttt{Image}-be a megfelelő képet.
+Erre a problémára megoldást a Quick API \texttt{QQuickImageProvider} interfésze nyújtott
+megoldást. A QML contextben beregisztrált \textit{image provider} egy speciális URL-lel
+rendelkezik, ha az \texttt{Image} QML típus egy ilyen URL-t kap forrásként, akkor a kérést
+a providerhez irányítja, amely betölti az \texttt{Image}-be a megfelelő képet.
 
-Az új \texttt{QQuickWebEngineFaviconProvider} osztály ezt az osztályt valósítja meg.
+Az új \texttt{QQuickWebEngineFaviconProvider} osztály ezt az interfészt valósítja meg.
 Amennyiben az \texttt{Image} forrás URL-je \texttt{image://favicon/url} alakú, akkor a
 kérést a \texttt{QQuickWebEngineFaviconProvider}-hez irányítja, amely elkéri a
-Favicon Manager-től a \texttt{url}-hez bejegyzett ikont. A \texttt{Image} rendelkezik
-egy \texttt{sourceSize} property-vel is, amelynek értékét a provider megkapja, így ezt a
-multi-size ikonok támogatására használtam fel. Amennyiben az URL-ben hivatkozott ikon
-multi-size és a \texttt{sourceSize} be van állítva, akkor a \texttt{sourceSize}-ban definiált
-mérethez legjobban illeszkedő ikont tölti be a \texttt{QQuickWebEngineFaviconProvider}.
+Favicon Managertől az \texttt{url} propertyben bejegyzett ikont. Az \texttt{Image} QML típus
+rendelkezik egy \texttt{sourceSize} propertyvel is, amelynek értékét a provider megkapja,
+így ezt a multi-size ikonok támogatására használtam fel. Amennyiben az URL-ben hivatkozott
+ikon multi-size és a \texttt{sourceSize} be van állítva, akkor a \texttt{sourceSize}-ban
+definiált mérethez legjobban illeszkedő ikont tölti be a
+\texttt{QQuickWebEngineFaviconProvider}.
 
 Az új provider használatához módosítani kellett a \texttt{WebEngineView} QML típus
-\texttt{icon} property-jét. Ez a property korábban az ikon eredeti URL-jét tárolta,
-az új módosítással a property-ben tárolt URL a \texttt{QQuickWebEngineFaviconProvider}
-speciális URL-je, amelyen keresztül elérhető a Favicon Manager-ben tárolt ikon.
+\texttt{icon} propertyjét is. Ez a property korábban az ikon eredeti URL-jét tárolta,
+az új módosítással a propertyben tárolt URL a \texttt{QQuickWebEngineFaviconProvider}
+speciális URL-je, amelyen keresztül elérhető a Favicon Managerben tárolt ikon.
 
 A \texttt{QQuickWebEngineFaviconProvider} tesztelése külön kihívást jelentett számomra.
 Mindenképpen azt szerettem volna tesztelni, hogy a provider a \texttt{sourceSize}-nak
 megfelelő ikont tölti-e be. A teszt stratégiám az volt, hogy minden tesztelni kívánt mérethez
 egy szürke árnyalatos ikont készítek, és ezekből egy multi-size ikont generálok. Az egyes
 szürke árnyalatos ikonok az RGB színcsatornáikban a saját méretüket kódolják. Például, a
-32x32-es méretű ikonnak minden pixelének RGB értéke (32, 32, 32). Teszt betöltött ikon
+32x32-es méretű ikonnak minden pixelének RGB értéke (32, 32, 32). A teszt a betöltött ikon
 egy pixelének, egyik színcsatornájának értékét vizsgálja meg, hogy megegyezik-e
-a \texttt{Image} QML típus \texttt{sourceSize} property-jénék értékével.
+az \texttt{Image} QML típus \texttt{sourceSize} propertyjénék értékével.
 
-A teszt megvalósításánál a legnagyobb problémát az okozta, hogy a \texttt{Image} QML
+A teszt megvalósításánál a legnagyobb problémát az okozta, hogy az \texttt{Image} QML
 típus nem nyújt API-t a pixelek lekérdezésére. QML-ben erre a \texttt{Canvas} típusban
-van lehetőség, amely ugyan tud képet betölteni provider-ből, viszont támogat
-\texttt{sourceSize} vagy ahhoz hasonló property. Ennek a problémának a megoldására egy
-sor workaround-ra volt szükség, de végül sikerült a betöltött ikon egy pixelét QML és
+van lehetőség, amely ugyan tud képet betölteni providerből, viszont nem nyújt
+\texttt{sourceSize} vagy ahhoz hasonló propertyt. Ennek a problémának a megoldására egy
+sor workaroundra volt szükség, de végül sikerült a betöltött ikon egy pixelét QML és
 JavaScript kóddal lekérdezni. Ezen speciális teszt megvalósítása során sikerült a
-Qt Declarative komponens Quick moduljában is hibát találni, amit ki is javítottam.
+QtDeclarative komponens Qt Quick moduljában is hibát találni, amit szintén javítottam.
 
 \begin{center}
     \begin{reviewbox}
@@ -2171,8 +2176,8 @@ A fejezetben bemutatott Favicon Manager és az ahhoz kapcsolódó API fejleszté
 verziójában fognak megjelenni. A Favicon Manager publikus API-jának elkészítése tervben van,
 az leghamarabb a Qt 5.8-as verziójában jelenhet meg, ha úgy döntünk, hogy szükség van rá.
 További terv az 5.8-as verzióba, egy ikon adatbázis megvalósítása, ami a QtWebKitnek is
-része. Az adatbázis segítségével az ikonok lemezre menthetőek lennének és ezáltal offline
-módban is hozzáférhetőek. A tervről issue is készült:
+része volt. Az adatbázis segítségével az ikonok lemezre menthetőek lennének és ezáltal offline
+módban is lehetne őket használni. A tervről issue is készült:
 \begin{center}
     \begin{issuebox}
         \begin{itemize}
@@ -2228,7 +2233,7 @@ megvalósította. A hangsúly a megjelenés megtervezésén van, ezért könnyű
 programozni, a fejlesztőnek csak a GUI elemek testre szabására és az azok közötti
 interakciókra kell figyelni. Lényegében a \texttt{WebEngineView} QML típus is egy GUI elem,
 ami a web oldal tartalmát rajzolja egy téglalap alakú felületre és küld értesítést
-(signal-okat) a nézetben történt változásokról.
+(signalokat) a nézetben történt változásokról.
 
 A GUI megtervezésénél legfőbb szempontnak tartottam, hogy a böngészőalkalmazás desktop-ra
 készül, ahol a megjelenítő szélessége nagyobb, mint a magassága. Ezzel szemben a web oldalak
@@ -2380,7 +2385,7 @@ a \texttt{Checkbox} és \texttt{TextField} QML típusokhoz.
 \subsection{QtWebEngine specifikus QML típusok}
 Az alábbi típusok a nézetekhez hasonlóak, de nem általánosan újra felhasználhatóak.
 Tartalmuk rögzített, melyek felhasználják a \texttt{WebEngineView} QML típus valamely
-property-jét.
+propertyjét.
 
 Az \texttt{AddressBar} típus a betölteni kívánt weboldal URL-jének megadására használatos.
 Ez a GUI eleme interaktív, mutatja az oldal betöltésének állapotát és az oldal favicon-ját
@@ -2474,7 +2479,7 @@ implicit az új méretnek megfelelő ikont tölti be.
 A \texttt{source} property értékének egy, a Favicon Provider-re hivatkozó URL-nek kell lennie.
 Ezt az URL-t a \texttt{WebEngineView::icon} property tárolja. Azért, hogy az
 \texttt{AddressBar} típusnak ne kelljen beimportálnia a Qt WebEngine modult, ezért a saját
-\texttt{iconUrl} property-jén keresztül éri el az URL-t. Az \texttt{iconUrl} property-nek az
+\texttt{iconUrl} propertyjén keresztül éri el az URL-t. Az \texttt{iconUrl} propertynek az
 \texttt{AddressBar} létrehozásakor kell értéket adni:
 \begin{lstlisting}[title=main.qml]
  AddressBar {
@@ -2487,8 +2492,8 @@ Ezt az URL-t a \texttt{WebEngineView::icon} property tárolja. Azért, hogy az
  }
 \end{lstlisting}
 Az ellenőrzésre azért van szükség, hogy az alkalmazás ne küldjön hiba üzenetet, ha nincs
-megnyitva tab. Ha a \texttt{WebEngineView} példány \texttt{icon} property-je megváltozik
-(új ikon töltődik be), akkor az \texttt{AddressBar} \texttt{iconUrl} property-je is
+megnyitva tab. Ha a \texttt{WebEngineView} példány \texttt{icon} propertyje megváltozik
+(új ikon töltődik be), akkor az \texttt{AddressBar} \texttt{iconUrl} propertyje is
 automatikusan változni fog. Ez a QML nyelv \textit{property binding} támogatása miatt
 lehetséges, így a példa alkalmazásban nincs is szükség a \texttt{iconChanged} signal
 használatára.
@@ -2510,7 +2515,7 @@ ikonokat nem}. A beállítások tartós tárolására \texttt{Settings} QML típ
 \end{lstlisting}
 A \texttt{Settings}-ben a \texttt{autoLoadIconsForPage} és \texttt{touchIconsEnabled}
 azonosítójú \texttt{Checkbox}-ok állapotát tárolom. A \texttt{WebEngineSettings} megfelelő
-property-jeit ezek szerint a beállítások szerint inicializálom, amikor létre jön egy új
+propertyjeit ezek szerint a beállítások szerint inicializálom, amikor létre jön egy új
 \texttt{WebEngineView}:
 \begin{lstlisting}[title=main.qml]
  WebEngineViewListModel {
@@ -2533,9 +2538,9 @@ property-jeit ezek szerint a beállítások szerint inicializálom, amikor létr
 \end{lstlisting}
 Ezzel a megoldással a böngésző alkalmazás a legutóbbi kilépéskori beállításokkal indul. A
 \texttt{Qt.binding()} JavaScript függvény hívásra azért van szükség, hogy kikényszerítsem
-a \texttt{QML} property binding-ot: amikor a checkbox-ok állapota változik és azzal együtt
+a \texttt{QML} property bindingot: amikor a checkboxok állapota változik és azzal együtt
 a \texttt{appSetttings}-é is, úgy automatikusan változnak a \texttt{WebEngineSettings}
-bekötött property-jei is.
+bekötött propertyjei is.
 
 
 \subsection{Navigation History}
@@ -2602,7 +2607,7 @@ megoldás az oldal betöltésének változását figyelni:
  }
 \end{lstlisting}
 A fent kódrészlet minden újonnan létrehozott \texttt{WebEngineView} példány
-\texttt{loadingChanged(loadRequest)} signal-jához egy slot-ot kapcsol, amely minden oldal
+\texttt{loadingChanged(loadRequest)} signaljához egy slotot kapcsol, amely minden oldal
 betöltés befejeztével (legyen az sikeres vagy sikertelen) frissíti az előzmény lista
 aktuális indexét.
 

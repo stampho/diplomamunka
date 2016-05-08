@@ -1,0 +1,2627 @@
+From 41d69eb0fa2375f0da6ba9b35136f5598be4b3a4 Mon Sep 17 00:00:00 2001
+From: Peter Varga <pvarga@inf.u-szeged.hu>
+Date: Tue, 1 Dec 2015 10:50:02 +0100
+Subject: [PATCH] Add FaviconManager to core
+
+The new icon manager uses the WebContents::DownloadImage() API for
+downloading icons. It proposes the best quality among the available
+favicons via the iconChanged signal.
+
+Change-Id: I66a014365b6f6560ff34d40ee870aee84e4e70e4
+Reviewed-by: Allan Sandfeld Jensen <allan.jensen@theqtcompany.com>
+---
+ src/core/core_gyp_generator.pro                    |   3 +
+ src/core/favicon_manager.cpp                       | 390 +++++++++++++++++++++
+ src/core/favicon_manager.h                         | 120 +++++++
+ src/core/favicon_manager_p.h                       | 106 ++++++
+ src/core/type_conversion.cpp                       |  45 +++
+ src/core/type_conversion.h                         |   6 +
+ src/core/web_contents_adapter.cpp                  |   6 +
+ src/core/web_contents_adapter.h                    |   2 +
+ src/core/web_contents_delegate_qt.cpp              |  47 ++-
+ src/core/web_contents_delegate_qt.h                |   3 +
+ .../tst_qwebengineurlrequestinterceptor.cpp        |   3 +
+ tests/auto/quick/qmltests/data/favicon-misc.html   |  11 +
+ .../auto/quick/qmltests/data/favicon-shortcut.html |  10 +
+ tests/auto/quick/qmltests/data/favicon-single.html |   9 +
+ tests/auto/quick/qmltests/data/favicon-touch.html  |  10 +
+ .../quick/qmltests/data/favicon-unavailable.html   |   9 +
+ tests/auto/quick/qmltests/data/favicon.html        |   4 +-
+ tests/auto/quick/qmltests/data/favicon.png         | Bin 3961 -> 0 bytes
+ tests/auto/quick/qmltests/data/favicon2.html       |   4 +-
+ tests/auto/quick/qmltests/data/icons/favicon.png   | Bin 0 -> 3961 bytes
+ tests/auto/quick/qmltests/data/icons/qt144.png     | Bin 0 -> 8315 bytes
+ tests/auto/quick/qmltests/data/icons/qt32.ico      | Bin 0 -> 4286 bytes
+ .../quick/qmltests/data/icons/small-favicon.png    | Bin 0 -> 891 bytes
+ tests/auto/quick/qmltests/data/small-favicon.png   | Bin 891 -> 0 bytes
+ tests/auto/quick/qmltests/data/tst_favIconLoad.qml |  92 -----
+ tests/auto/quick/qmltests/data/tst_favicon.qml     | 166 +++++++++
+ .../auto/quick/qmltests/data/tst_faviconImage.qml  | 125 +++++++
+ tests/auto/quick/qmltests/qmltests.pro             |  13 +-
+ .../qwebenginefaviconmanager.pro                   |   2 +
+ .../resources/favicon-misc.html                    |  11 +
+ .../resources/favicon-shortcut.html                |  10 +
+ .../resources/favicon-single.html                  |   9 +
+ .../resources/favicon-touch.html                   |  10 +
+ .../resources/favicon-unavailable.html             |   9 +
+ .../resources/icons/qt144.png                      | Bin 0 -> 8315 bytes
+ .../resources/icons/qt32.ico                       | Bin 0 -> 4286 bytes
+ .../qwebenginefaviconmanager/resources/test1.html  |   1 +
+ .../tst_qwebenginefaviconmanager.cpp               | 279 +++++++++++++++
+ .../tst_qwebenginefaviconmanager.qrc               |  12 +
+ tests/auto/widgets/widgets.pro                     |   1 +
+ 40 files changed, 1414 insertions(+), 114 deletions(-)
+ create mode 100644 src/core/favicon_manager.cpp
+ create mode 100644 src/core/favicon_manager.h
+ create mode 100644 src/core/favicon_manager_p.h
+ create mode 100644 tests/auto/quick/qmltests/data/favicon-misc.html
+ create mode 100644 tests/auto/quick/qmltests/data/favicon-shortcut.html
+ create mode 100644 tests/auto/quick/qmltests/data/favicon-single.html
+ create mode 100644 tests/auto/quick/qmltests/data/favicon-touch.html
+ create mode 100644 tests/auto/quick/qmltests/data/favicon-unavailable.html
+ delete mode 100644 tests/auto/quick/qmltests/data/favicon.png
+ create mode 100644 tests/auto/quick/qmltests/data/icons/favicon.png
+ create mode 100644 tests/auto/quick/qmltests/data/icons/qt144.png
+ create mode 100644 tests/auto/quick/qmltests/data/icons/qt32.ico
+ create mode 100644 tests/auto/quick/qmltests/data/icons/small-favicon.png
+ delete mode 100644 tests/auto/quick/qmltests/data/small-favicon.png
+ delete mode 100644 tests/auto/quick/qmltests/data/tst_favIconLoad.qml
+ create mode 100644 tests/auto/quick/qmltests/data/tst_favicon.qml
+ create mode 100644 tests/auto/quick/qmltests/data/tst_faviconImage.qml
+ create mode 100644 tests/auto/widgets/qwebenginefaviconmanager/qwebenginefaviconmanager.pro
+ create mode 100644 tests/auto/widgets/qwebenginefaviconmanager/resources/favicon-misc.html
+ create mode 100644 tests/auto/widgets/qwebenginefaviconmanager/resources/favicon-shortcut.html
+ create mode 100644 tests/auto/widgets/qwebenginefaviconmanager/resources/favicon-single.html
+ create mode 100644 tests/auto/widgets/qwebenginefaviconmanager/resources/favicon-touch.html
+ create mode 100644 tests/auto/widgets/qwebenginefaviconmanager/resources/favicon-unavailable.html
+ create mode 100644 tests/auto/widgets/qwebenginefaviconmanager/resources/icons/qt144.png
+ create mode 100644 tests/auto/widgets/qwebenginefaviconmanager/resources/icons/qt32.ico
+ create mode 100644 tests/auto/widgets/qwebenginefaviconmanager/resources/test1.html
+ create mode 100644 tests/auto/widgets/qwebenginefaviconmanager/tst_qwebenginefaviconmanager.cpp
+ create mode 100644 tests/auto/widgets/qwebenginefaviconmanager/tst_qwebenginefaviconmanager.qrc
+
+diff --git a/src/core/core_gyp_generator.pro b/src/core/core_gyp_generator.pro
+index 80bf662..5e6641d 100644
+--- a/src/core/core_gyp_generator.pro
++++ b/src/core/core_gyp_generator.pro
+@@ -53,6 +53,7 @@ SOURCES = \
+         desktop_screen_qt.cpp \
+         dev_tools_http_handler_delegate_qt.cpp \
+         download_manager_delegate_qt.cpp \
++        favicon_manager.cpp \
+         file_picker_controller.cpp \
+         gl_context_qt.cpp \
+         gl_surface_qt.cpp \
+@@ -130,6 +131,8 @@ HEADERS = \
+         dev_tools_http_handler_delegate_qt.h \
+         download_manager_delegate_qt.h \
+         chromium_gpu_helper.h \
++        favicon_manager_p.h \
++        favicon_manager.h \
+         file_picker_controller.h \
+         gl_context_qt.h \
+         gl_surface_qt.h \
+diff --git a/src/core/favicon_manager.cpp b/src/core/favicon_manager.cpp
+new file mode 100644
+index 0000000..f3260b3
+--- /dev/null
++++ b/src/core/favicon_manager.cpp
+@@ -0,0 +1,390 @@
++/****************************************************************************
++**
++** Copyright (C) 2016 The Qt Company Ltd.
++** Contact: https://www.qt.io/licensing/
++**
++** This file is part of the QtWebEngine module of the Qt Toolkit.
++**
++** $QT_BEGIN_LICENSE:LGPL$
++** Commercial License Usage
++** Licensees holding valid commercial Qt licenses may use this file in
++** accordance with the commercial license agreement provided with the
++** Software or, alternatively, in accordance with the terms contained in
++** a written agreement between you and The Qt Company. For licensing terms
++** and conditions see https://www.qt.io/terms-conditions. For further
++** information use the contact form at https://www.qt.io/contact-us.
++**
++** GNU Lesser General Public License Usage
++** Alternatively, this file may be used under the terms of the GNU Lesser
++** General Public License version 3 as published by the Free Software
++** Foundation and appearing in the file LICENSE.LGPL3 included in the
++** packaging of this file. Please review the following information to
++** ensure the GNU Lesser General Public License version 3 requirements
++** will be met: https://www.gnu.org/licenses/lgpl-3.0.html.
++**
++** GNU General Public License Usage
++** Alternatively, this file may be used under the terms of the GNU
++** General Public License version 2.0 or (at your option) the GNU General
++** Public license version 3 or any later version approved by the KDE Free
++** Qt Foundation. The licenses are as published by the Free Software
++** Foundation and appearing in the file LICENSE.GPL2 and LICENSE.GPL3
++** included in the packaging of this file. Please review the following
++** information to ensure the GNU General Public License requirements will
++** be met: https://www.gnu.org/licenses/gpl-2.0.html and
++** https://www.gnu.org/licenses/gpl-3.0.html.
++**
++** $QT_END_LICENSE$
++**
++****************************************************************************/
++
++#include "favicon_manager.h"
++#include "favicon_manager_p.h"
++
++#include "type_conversion.h"
++#include "web_contents_adapter_client.h"
++
++#include "base/bind.h"
++#include "content/public/browser/web_contents.h"
++#include "third_party/skia/include/core/SkBitmap.h"
++#include "third_party/skia/include/core/SkPixelRef.h"
++#include "ui/gfx/geometry/size.h"
++
++#include <QtCore/QUrl>
++#include <QtGui/QIcon>
++
++namespace QtWebEngineCore {
++
++static inline bool isResourceUrl(const QUrl &url)
++{
++    return !url.scheme().compare(QLatin1String("qrc"));
++}
++
++static inline unsigned area(const QSize &size)
++{
++    return size.width() * size.height();
++}
++
++
++FaviconManagerPrivate::FaviconManagerPrivate(content::WebContents *webContents, WebContentsAdapterClient *viewClient)
++    : m_webContents(webContents)
++    , m_viewClient(viewClient)
++    , m_weakFactory(this)
++{
++}
++
++FaviconManagerPrivate::~FaviconManagerPrivate()
++{
++}
++
++int FaviconManagerPrivate::downloadIcon(const QUrl &url, bool candidate)
++{
++    static int fakeId = 0;
++    int id;
++
++    bool cached = candidate && m_icons.contains(url);
++    if (isResourceUrl(url) || cached) {
++        id = --fakeId;
++        m_pendingRequests.insert(id, url);
++    } else {
++        id = m_webContents->DownloadImage(
++             toGurl(url),
++             true, // is_favicon
++             0,    // no max size
++             false, // normal cache policy
++             base::Bind(&FaviconManagerPrivate::iconDownloadFinished, m_weakFactory.GetWeakPtr()));
++    }
++
++    if (candidate) {
++        Q_ASSERT(!m_inProgressCandidateRequests.contains(id));
++        m_inProgressCandidateRequests.insert(id, url);
++    } else {
++        Q_ASSERT(!m_inProgressCustomRequests.contains(id));
++        m_inProgressCustomRequests.insert(id, url);
++    }
++
++    return id;
++}
++
++void FaviconManagerPrivate::iconDownloadFinished(int id,
++                                                 int status,
++                                                 const GURL &url,
++                                                 const std::vector<SkBitmap> &bitmaps,
++                                                 const std::vector<gfx::Size> &original_bitmap_sizes)
++{
++    Q_UNUSED(status);
++    Q_UNUSED(url);
++    Q_UNUSED(original_bitmap_sizes);
++
++    storeIcon(id, toQIcon(bitmaps));
++}
++
++/* Pending requests are used as a workaround for avoiding signal iconChanged when
++ * accessing each cached icons or icons stored in qrc. They don't have to be downloaded
++ * thus the m_inProgressCustomRequests maybe emptied right before the next icon is added to
++ * in-progress-requests queue. The m_pendingRequests stores these requests until all
++ * candidates are added to the queue then pending requests should be cleaned up by this
++ * function.
++ */
++void FaviconManagerPrivate::downloadPendingRequests()
++{
++    Q_FOREACH (int id, m_pendingRequests.keys()) {
++        QIcon icon;
++
++        QUrl requestUrl = m_pendingRequests[id];
++        if (isResourceUrl(requestUrl) && !m_icons.contains(requestUrl))
++            icon = QIcon(requestUrl.toString().remove(0, 3));
++
++        storeIcon(id, icon);
++    }
++
++    m_pendingRequests.clear();
++}
++
++void FaviconManagerPrivate::storeIcon(int id, const QIcon &icon)
++{
++    Q_Q(FaviconManager);
++
++    bool candidate = m_inProgressCandidateRequests.contains(id);
++
++    QUrl requestUrl = candidate ? m_inProgressCandidateRequests[id] : m_inProgressCustomRequests[id];
++    FaviconInfo &faviconInfo = q->m_faviconInfoMap[requestUrl];
++
++    unsigned iconCount = 0;
++    if (!icon.isNull())
++        iconCount = icon.availableSizes().count();
++
++    if (iconCount > 0) {
++        m_icons.insert(requestUrl, icon);
++
++        faviconInfo.size = icon.availableSizes().at(0);
++        if (iconCount > 1) {
++            faviconInfo.multiSize = true;
++            unsigned bestArea = area(faviconInfo.size);
++            for (unsigned i = 1; i < iconCount; ++i) {
++                QSize iconSize = icon.availableSizes().at(i);
++                if (bestArea < area(iconSize)) {
++                    faviconInfo.size = iconSize;
++                    bestArea = area(iconSize);
++                }
++            }
++        }
++
++        q->m_hasDownloadedIcon = true;
++    } else if (id < 0) {
++        // Icon is cached
++        q->m_hasDownloadedIcon = true;
++    } else {
++        // Reset size if icon cannot be downloaded
++        faviconInfo.size = QSize(0, 0);
++    }
++
++    if (candidate) {
++        m_inProgressCandidateRequests.remove(id);
++        if (m_inProgressCandidateRequests.isEmpty())
++            m_viewClient->iconChanged(q->getProposedFaviconInfo().url);
++    } else {
++        m_inProgressCustomRequests.remove(id);
++    }
++
++    Q_EMIT q->iconDownloaded(requestUrl);
++}
++
++FaviconManager::FaviconManager(FaviconManagerPrivate *d)
++    : m_hasDownloadedIcon(false)
++{
++    Q_ASSERT(d);
++    d_ptr.reset(d);
++
++    d->q_ptr = this;
++}
++
++FaviconManager::~FaviconManager()
++{
++}
++
++QIcon FaviconManager::getIcon(const QUrl &url) const
++{
++    Q_D(const FaviconManager);
++    return d->m_icons[url];
++}
++
++FaviconInfo FaviconManager::getFaviconInfo(const QUrl &url) const
++{
++    return m_faviconInfoMap[url];
++}
++
++QList<FaviconInfo> FaviconManager::getFaviconInfoList(bool candidatesOnly) const
++{
++    QList<FaviconInfo> faviconInfoList = m_faviconInfoMap.values();
++
++    if (candidatesOnly) {
++        QMutableListIterator<FaviconInfo> it(faviconInfoList);
++        while (it.hasNext()) {
++            if (!it.next().candidate)
++                it.remove();
++        }
++    }
++
++    return faviconInfoList;
++}
++
++
++void FaviconManager::downloadIcon(const QUrl &url, FaviconInfo::FaviconType iconType)
++{
++    Q_D(FaviconManager);
++
++    // If the favicon cannot be found in the list that means that it is not a candidate
++    // for any visited page (including the current one). In this case the type of the icon
++    // is unknown: it has to be specified explicitly.
++    if (!m_faviconInfoMap.contains(url)) {
++        FaviconInfo newFaviconInfo(url, iconType);
++        m_faviconInfoMap.insert(url, newFaviconInfo);
++    }
++
++    d->downloadIcon(url, false);
++    d->downloadPendingRequests();
++}
++
++void FaviconManager::removeIcon(const QUrl &url)
++{
++    Q_D(FaviconManager);
++    int removed = d->m_icons.remove(url);
++
++    if (removed) {
++        Q_ASSERT(removed == 1);
++        Q_ASSERT(m_faviconInfoMap.contains(url));
++        m_faviconInfoMap[url].size = QSize(0, 0);
++    }
++}
++
++bool FaviconManager::hasAvailableCandidateIcon() const
++{
++    Q_D(const FaviconManager);
++    return m_hasDownloadedIcon || !d->m_inProgressCandidateRequests.isEmpty();
++}
++
++void FaviconManager::update(QList<FaviconInfo> &candidates)
++{
++    Q_D(FaviconManager);
++    updateCandidates(candidates);
++
++    Q_FOREACH (FaviconInfo faviconInfo, m_faviconInfoMap.values()) {
++        if (!faviconInfo.candidate || faviconInfo.type != FaviconInfo::Favicon)
++            continue;
++
++        if (faviconInfo.isValid())
++            d->downloadIcon(faviconInfo.url, true);
++    }
++
++    d->downloadPendingRequests();
++}
++
++void FaviconManager::updateCandidates(QList<FaviconInfo> &candidates)
++{
++    Q_FOREACH (FaviconInfo candidateFaviconInfo, candidates) {
++        QUrl candidateUrl = candidateFaviconInfo.url;
++        if (m_faviconInfoMap.contains(candidateUrl)) {
++            m_faviconInfoMap[candidateUrl].candidate = true;
++            // Update type in case of the icon was downloaded manually
++            m_faviconInfoMap[candidateUrl].type = candidateFaviconInfo.type;
++            continue;
++        }
++
++        candidateFaviconInfo.candidate = true;
++        m_faviconInfoMap.insert(candidateUrl, candidateFaviconInfo);
++    }
++}
++
++void FaviconManager::resetCandidates()
++{
++    m_hasDownloadedIcon = false;
++    Q_FOREACH (const QUrl key, m_faviconInfoMap.keys())
++        m_faviconInfoMap[key].candidate = false;
++}
++
++
++FaviconInfo FaviconManager::getProposedFaviconInfo() const
++{
++    FaviconInfo proposedFaviconInfo = getFirstFaviconInfo();
++
++    // If nothing has been downloaded yet return the first favicon
++    // if there is available for dev-tools
++    if (!m_hasDownloadedIcon)
++        return proposedFaviconInfo;
++
++    unsigned bestArea = area(proposedFaviconInfo.size);
++    Q_FOREACH (const FaviconInfo faviconInfo, m_faviconInfoMap.values()) {
++        if (!faviconInfo.candidate || faviconInfo.type != FaviconInfo::Favicon)
++            continue;
++
++        if (faviconInfo.isValid() && bestArea < area(faviconInfo.size)) {
++            proposedFaviconInfo = faviconInfo;
++            bestArea = area(proposedFaviconInfo.size);
++        }
++    }
++
++    return proposedFaviconInfo;
++}
++
++FaviconInfo FaviconManager::getFirstFaviconInfo() const
++{
++    Q_FOREACH (const FaviconInfo faviconInfo, m_faviconInfoMap.values()) {
++        if (!faviconInfo.candidate || faviconInfo.type != FaviconInfo::Favicon)
++            continue;
++
++        if (faviconInfo.isValid())
++            return faviconInfo;
++    }
++
++    return FaviconInfo();
++}
++
++
++
++FaviconInfo::FaviconInfo()
++    : url(QUrl())
++    , type(FaviconInfo::InvalidIcon)
++    , size(QSize(0, 0))
++    , candidate(false)
++    , multiSize(false)
++{
++}
++
++FaviconInfo::FaviconInfo(const FaviconInfo &other)
++    : url(other.url)
++    , type(other.type)
++    , size(other.size)
++    , candidate(other.candidate)
++{
++}
++
++FaviconInfo::FaviconInfo(const QUrl &url, FaviconInfo::FaviconType type)
++    : url(url)
++    , type(type)
++    , size(QSize(0, 0))
++    , candidate(false)
++    , multiSize(false)
++{
++}
++
++FaviconInfo::~FaviconInfo()
++{
++}
++
++bool FaviconInfo::isValid() const
++{
++    if (type == FaviconInfo::InvalidIcon)
++        return false;
++
++    if (url.isEmpty() || !url.isValid())
++        return false;
++
++    return true;
++}
++
++bool FaviconInfo::isDownloaded() const
++{
++    return area(size) > 0;
++}
++
++} // namespace QtWebEngineCore
+diff --git a/src/core/favicon_manager.h b/src/core/favicon_manager.h
+new file mode 100644
+index 0000000..eaae812
+--- /dev/null
++++ b/src/core/favicon_manager.h
+@@ -0,0 +1,120 @@
++/****************************************************************************
++**
++** Copyright (C) 2016 The Qt Company Ltd.
++** Contact: https://www.qt.io/licensing/
++**
++** This file is part of the QtWebEngine module of the Qt Toolkit.
++**
++** $QT_BEGIN_LICENSE:LGPL$
++** Commercial License Usage
++** Licensees holding valid commercial Qt licenses may use this file in
++** accordance with the commercial license agreement provided with the
++** Software or, alternatively, in accordance with the terms contained in
++** a written agreement between you and The Qt Company. For licensing terms
++** and conditions see https://www.qt.io/terms-conditions. For further
++** information use the contact form at https://www.qt.io/contact-us.
++**
++** GNU Lesser General Public License Usage
++** Alternatively, this file may be used under the terms of the GNU Lesser
++** General Public License version 3 as published by the Free Software
++** Foundation and appearing in the file LICENSE.LGPL3 included in the
++** packaging of this file. Please review the following information to
++** ensure the GNU Lesser General Public License version 3 requirements
++** will be met: https://www.gnu.org/licenses/lgpl-3.0.html.
++**
++** GNU General Public License Usage
++** Alternatively, this file may be used under the terms of the GNU
++** General Public License version 2.0 or (at your option) the GNU General
++** Public license version 3 or any later version approved by the KDE Free
++** Qt Foundation. The licenses are as published by the Free Software
++** Foundation and appearing in the file LICENSE.GPL2 and LICENSE.GPL3
++** included in the packaging of this file. Please review the following
++** information to ensure the GNU General Public License requirements will
++** be met: https://www.gnu.org/licenses/gpl-2.0.html and
++** https://www.gnu.org/licenses/gpl-3.0.html.
++**
++** $QT_END_LICENSE$
++**
++****************************************************************************/
++
++#ifndef FAVICON_MANAGER_H
++#define FAVICON_MANAGER_H
++
++#include "qtwebenginecoreglobal.h"
++
++#include <QtCore/QMap>
++#include <QtCore/QObject>
++#include <QtCore/QSize>
++#include <QtCore/QUrl>
++
++#include "web_engine_settings.h"
++
++namespace QtWebEngineCore {
++
++class FaviconManagerPrivate;
++
++// Based on src/3rdparty/chromium/content/public/common/favicon_url.h
++class QWEBENGINE_EXPORT FaviconInfo {
++public:
++    enum FaviconType {
++        InvalidIcon,
++        Favicon,
++        TouchIcon,
++        TouchPrecomposedIcon
++    };
++
++    FaviconInfo();
++    FaviconInfo(const FaviconInfo &);
++    FaviconInfo(const QUrl &, FaviconInfo::FaviconType);
++    ~FaviconInfo();
++
++    bool isValid() const;
++    bool isDownloaded() const;
++
++    QUrl url;
++    FaviconType type;
++    // Stores the size of the highest quality in case of multi-size icon
++    QSize size;
++    bool candidate;
++    bool multiSize;
++};
++
++
++class QWEBENGINE_EXPORT FaviconManager : public QObject {
++    Q_OBJECT
++public:
++    ~FaviconManager();
++
++    QIcon getIcon(const QUrl &) const;
++    FaviconInfo getFaviconInfo(const QUrl &) const;
++    QList<FaviconInfo> getFaviconInfoList(bool) const;
++    void downloadIcon(const QUrl &url, FaviconInfo::FaviconType iconType = FaviconInfo::Favicon);
++    void removeIcon(const QUrl &);
++
++Q_SIGNALS:
++    void iconDownloaded(const QUrl &url);
++
++private:
++    FaviconManager(FaviconManagerPrivate *);
++
++    bool hasAvailableCandidateIcon() const;
++    void update(QList<FaviconInfo> &);
++    void updateCandidates(QList<FaviconInfo> &);
++    void resetCandidates();
++
++    FaviconInfo getProposedFaviconInfo() const;
++    FaviconInfo getFirstFaviconInfo() const;
++
++    QMap<QUrl, FaviconInfo> m_faviconInfoMap;
++    bool m_hasDownloadedIcon;
++
++    Q_DISABLE_COPY(FaviconManager)
++    Q_DECLARE_PRIVATE(FaviconManager)
++    QScopedPointer<FaviconManagerPrivate> d_ptr;
++
++    friend class WebContentsDelegateQt;
++};
++
++} // namespace QtWebEngineCore
++
++#endif // FAVICON_MANAGER_H
+diff --git a/src/core/favicon_manager_p.h b/src/core/favicon_manager_p.h
+new file mode 100644
+index 0000000..8358245
+--- /dev/null
++++ b/src/core/favicon_manager_p.h
+@@ -0,0 +1,106 @@
++/****************************************************************************
++**
++** Copyright (C) 2016 The Qt Company Ltd.
++** Contact: https://www.qt.io/licensing/
++**
++** This file is part of the QtWebEngine module of the Qt Toolkit.
++**
++** $QT_BEGIN_LICENSE:LGPL$
++** Commercial License Usage
++** Licensees holding valid commercial Qt licenses may use this file in
++** accordance with the commercial license agreement provided with the
++** Software or, alternatively, in accordance with the terms contained in
++** a written agreement between you and The Qt Company. For licensing terms
++** and conditions see https://www.qt.io/terms-conditions. For further
++** information use the contact form at https://www.qt.io/contact-us.
++**
++** GNU Lesser General Public License Usage
++** Alternatively, this file may be used under the terms of the GNU Lesser
++** General Public License version 3 as published by the Free Software
++** Foundation and appearing in the file LICENSE.LGPL3 included in the
++** packaging of this file. Please review the following information to
++** ensure the GNU Lesser General Public License version 3 requirements
++** will be met: https://www.gnu.org/licenses/lgpl-3.0.html.
++**
++** GNU General Public License Usage
++** Alternatively, this file may be used under the terms of the GNU
++** General Public License version 2.0 or (at your option) the GNU General
++** Public license version 3 or any later version approved by the KDE Free
++** Qt Foundation. The licenses are as published by the Free Software
++** Foundation and appearing in the file LICENSE.GPL2 and LICENSE.GPL3
++** included in the packaging of this file. Please review the following
++** information to ensure the GNU General Public License requirements will
++** be met: https://www.gnu.org/licenses/gpl-2.0.html and
++** https://www.gnu.org/licenses/gpl-3.0.html.
++**
++** $QT_END_LICENSE$
++**
++****************************************************************************/
++
++#ifndef FAVICON_MANAGER_P_H
++#define FAVICON_MANAGER_P_H
++
++//
++//  W A R N I N G
++//  -------------
++//
++// This file is not part of the Qt API.  It exists purely as an
++// implementation detail.  This header file may change from version to
++// version without notice, or even be removed.
++//
++// We mean it.
++//
++
++#include "qtwebenginecoreglobal_p.h"
++
++#include <QtCore/QMap>
++#include <QtCore/QObject>
++#include <vector>
++
++#include "base/memory/weak_ptr.h"
++
++QT_FORWARD_DECLARE_CLASS(QUrl)
++
++class GURL;
++class SkBitmap;
++
++namespace gfx {
++    class Size;
++}
++
++namespace content {
++    class WebContents;
++}
++
++namespace QtWebEngineCore {
++
++class FaviconManager;
++class WebContentsAdapterClient;
++
++class FaviconManagerPrivate {
++public:
++    FaviconManagerPrivate(content::WebContents *, WebContentsAdapterClient *);
++    ~FaviconManagerPrivate();
++
++    int downloadIcon(const QUrl &, bool);
++
++    void iconDownloadFinished(int, int, const GURL &, const std::vector<SkBitmap> &, const std::vector<gfx::Size> &);
++    void storeIcon(int, const QIcon &);
++    void downloadPendingRequests();
++
++    content::WebContents *m_webContents;
++    WebContentsAdapterClient *m_viewClient;
++    base::WeakPtrFactory<FaviconManagerPrivate> m_weakFactory;
++
++    QMap<QUrl, QIcon> m_icons;
++    QMap<int, QUrl> m_inProgressCandidateRequests;
++    QMap<int, QUrl> m_inProgressCustomRequests;
++    QMap<int, QUrl> m_pendingRequests;
++
++    Q_DECLARE_PUBLIC(FaviconManager)
++    FaviconManager *q_ptr;
++};
++
++} // namespace QtWebEngineCore
++
++#endif // FAVICON_MANAGER_P_H
+diff --git a/src/core/type_conversion.cpp b/src/core/type_conversion.cpp
+index ac458df..ccfc2fd 100644
+--- a/src/core/type_conversion.cpp
++++ b/src/core/type_conversion.cpp
+@@ -128,6 +128,23 @@ QImage toQImage(const gfx::ImageSkiaRep &imageSkiaRep)
+     return image;
+ }
+ 
++QIcon toQIcon(const std::vector<SkBitmap> &bitmaps)
++{
++    if (!bitmaps.size())
++        return QIcon();
++
++    QIcon icon;
++
++    for (unsigned i = 0; i < bitmaps.size(); ++i) {
++        SkBitmap bitmap = bitmaps[i];
++        QImage image = toQImage(bitmap);
++
++        icon.addPixmap(QPixmap::fromImage(image).copy());
++    }
++
++    return icon;
++}
++
+ int flagsFromModifiers(Qt::KeyboardModifiers modifiers)
+ {
+     int modifierFlags = ui::EF_NONE;
+@@ -152,5 +169,33 @@ int flagsFromModifiers(Qt::KeyboardModifiers modifiers)
+     return modifierFlags;
+ }
+ 
++FaviconInfo toFaviconInfo(const content::FaviconURL &favicon_url)
++{
++    FaviconInfo info;
++
++    info.url = toQt(favicon_url.icon_url);
++
++    switch (favicon_url.icon_type) {
++    case content::FaviconURL::FAVICON:
++        info.type = FaviconInfo::Favicon;
++        break;
++    case content::FaviconURL::TOUCH_ICON:
++        info.type = FaviconInfo::TouchIcon;
++        break;
++    case content::FaviconURL::TOUCH_PRECOMPOSED_ICON:
++        info.type = FaviconInfo::TouchPrecomposedIcon;
++        break;
++    default:
++        info.type = FaviconInfo::InvalidIcon;
++        break;
++    }
++
++    // TODO: Add support for rel sizes attribute (favicon_url.icon_sizes):
++    // http://www.w3schools.com/tags/att_link_sizes.asp
++    info.size = QSize(0, 0);
++
++    return info;
++}
++
+ 
+ } // namespace QtWebEngineCore
+diff --git a/src/core/type_conversion.h b/src/core/type_conversion.h
+index 0f33579..8789cf2 100644
+--- a/src/core/type_conversion.h
++++ b/src/core/type_conversion.h
+@@ -43,6 +43,7 @@
+ #include <QColor>
+ #include <QDateTime>
+ #include <QDir>
++#include <QIcon>
+ #include <QImage>
+ #include <QMatrix4x4>
+ #include <QNetworkCookie>
+@@ -53,6 +54,8 @@
+ #include "base/files/file_path.h"
+ #include "base/time/time.h"
+ #include "content/public/common/file_chooser_file_info.h"
++#include "content/public/common/favicon_url.h"
++#include "favicon_manager.h"
+ #include "net/cookies/canonical_cookie.h"
+ #include "third_party/skia/include/core/SkBitmap.h"
+ #include "third_party/skia/include/core/SkColor.h"
+@@ -164,6 +167,7 @@ inline QImage toQImage(const SkBitmap &bitmap, QImage::Format format)
+ 
+ QImage toQImage(const SkBitmap &bitmap);
+ QImage toQImage(const gfx::ImageSkiaRep &imageSkiaRep);
++QIcon toQIcon(const std::vector<SkBitmap> &bitmaps);
+ 
+ inline QMatrix4x4 toQt(const SkMatrix44 &m)
+ {
+@@ -261,6 +265,8 @@ inline QStringList fromVector(const std::vector<base::string16> &vector)
+ }
+ #endif
+ 
++FaviconInfo toFaviconInfo(const content::FaviconURL &);
++
+ } // namespace QtWebEngineCore
+ 
+ #endif // TYPE_CONVERSION_H
+diff --git a/src/core/web_contents_adapter.cpp b/src/core/web_contents_adapter.cpp
+index bf36a77..eb44360 100644
+--- a/src/core/web_contents_adapter.cpp
++++ b/src/core/web_contents_adapter.cpp
+@@ -1207,4 +1207,10 @@ WebContentsAdapterClient::renderProcessExitStatus(int terminationStatus) {
+     return status;
+ }
+ 
++FaviconManager *WebContentsAdapter::faviconManager()
++{
++    Q_D(WebContentsAdapter);
++    return d->webContentsDelegate->faviconManager();
++}
++
+ } // namespace QtWebEngineCore
+diff --git a/src/core/web_contents_adapter.h b/src/core/web_contents_adapter.h
+index e6aef23..c7c2c1e 100644
+--- a/src/core/web_contents_adapter.h
++++ b/src/core/web_contents_adapter.h
+@@ -65,6 +65,7 @@ namespace QtWebEngineCore {
+ class BrowserContextQt;
+ class MessagePassingInterface;
+ class WebContentsAdapterPrivate;
++class FaviconManager;
+ 
+ class QWEBENGINE_EXPORT WebContentsAdapter : public QSharedData {
+ public:
+@@ -154,6 +155,7 @@ public:
+     BrowserContextAdapter* browserContextAdapter();
+     QWebChannel *webChannel() const;
+     void setWebChannel(QWebChannel *, uint worldId);
++    FaviconManager *faviconManager();
+ 
+     QPointF lastScrollOffset() const;
+     QSizeF lastContentsSize() const;
+diff --git a/src/core/web_contents_delegate_qt.cpp b/src/core/web_contents_delegate_qt.cpp
+index 95066a0..a3d2d81 100644
+--- a/src/core/web_contents_delegate_qt.cpp
++++ b/src/core/web_contents_delegate_qt.cpp
+@@ -46,6 +46,8 @@
+ #include "browser_context_adapter.h"
+ #include "color_chooser_qt.h"
+ #include "color_chooser_controller.h"
++#include "favicon_manager.h"
++#include "favicon_manager_p.h"
+ #include "file_picker_controller.h"
+ #include "media_capture_devices_dispatcher.h"
+ #include "network_delegate_qt.h"
+@@ -89,6 +91,7 @@ static WebContentsAdapterClient::JavaScriptConsoleMessageLevel mapToJavascriptCo
+ WebContentsDelegateQt::WebContentsDelegateQt(content::WebContents *webContents, WebContentsAdapterClient *adapterClient)
+     : m_viewClient(adapterClient)
+     , m_lastReceivedFindReply(0)
++    , m_faviconManager(new FaviconManager(new FaviconManagerPrivate(webContents, adapterClient)))
+ {
+     webContents->SetDelegate(this);
+     Observe(webContents);
+@@ -175,8 +178,10 @@ void WebContentsDelegateQt::DidStartProvisionalLoadForFrame(content::RenderFrame
+         m_loadingErrorFrameList.append(render_frame_host->GetRoutingID());
+ 
+         // Trigger LoadStarted signal for main frame's error page only.
+-        if (!render_frame_host->GetParent())
++        if (!render_frame_host->GetParent()) {
++            m_faviconManager->resetCandidates();
+             m_viewClient->loadStarted(toQt(validated_url), true);
++        }
+ 
+         return;
+     }
+@@ -185,6 +190,7 @@ void WebContentsDelegateQt::DidStartProvisionalLoadForFrame(content::RenderFrame
+         return;
+ 
+     m_loadingErrorFrameList.clear();
++    m_faviconManager->resetCandidates();
+     m_viewClient->loadStarted(toQt(validated_url));
+ }
+ 
+@@ -208,6 +214,7 @@ void WebContentsDelegateQt::DidFailLoad(content::RenderFrameHost* render_frame_h
+     if (m_loadingErrorFrameList.removeOne(render_frame_host->GetRoutingID()) || render_frame_host->GetParent())
+         return;
+ 
++    m_viewClient->iconChanged(QUrl());
+     m_viewClient->loadFinished(false /* success */ , toQt(validated_url), false /* isErrorPage */, error_code, toQt(error_description));
+     m_viewClient->loadProgressChanged(0);
+ }
+@@ -230,28 +237,31 @@ void WebContentsDelegateQt::DidFinishLoad(content::RenderFrameHost* render_frame
+ 
+     m_viewClient->loadFinished(true, toQt(validated_url));
+ 
+-    content::NavigationEntry *entry = web_contents()->GetController().GetActiveEntry();
++    content::NavigationEntry *entry = web_contents()->GetController().GetVisibleEntry();
+     if (!entry)
+         return;
+-    content::FaviconStatus &favicon = entry->GetFavicon();
+-    if (favicon.valid)
+-        m_viewClient->iconChanged(toQt(favicon.url));
+-    else
++
++    // No available icon for the current entry
++    if (!entry->GetFavicon().valid && !m_faviconManager->hasAvailableCandidateIcon())
+         m_viewClient->iconChanged(QUrl());
+ }
+ 
+-void WebContentsDelegateQt::DidUpdateFaviconURL(const std::vector<content::FaviconURL>& candidates)
++void WebContentsDelegateQt::DidUpdateFaviconURL(const std::vector<content::FaviconURL> &candidates)
+ {
++    QList<FaviconInfo> faviconCandidates;
+     Q_FOREACH (content::FaviconURL candidate, candidates) {
+-        if (candidate.icon_type == content::FaviconURL::FAVICON && !candidate.icon_url.is_empty()) {
+-            content::NavigationEntry *entry = web_contents()->GetController().GetActiveEntry();
+-            if (!entry)
+-                continue;
+-            content::FaviconStatus &favicon = entry->GetFavicon();
+-            favicon.url = candidate.icon_url;
+-            favicon.valid = toQt(candidate.icon_url).isValid();
+-            break;
+-        }
++        // Store invalid candidates too for later debugging via API
++        faviconCandidates.append(toFaviconInfo(candidate));
++    }
++
++    m_faviconManager->update(faviconCandidates);
++
++    content::NavigationEntry *entry = web_contents()->GetController().GetVisibleEntry();
++    if (entry) {
++        FaviconInfo proposedFaviconInfo = m_faviconManager->getProposedFaviconInfo();
++        content::FaviconStatus &favicon = entry->GetFavicon();
++        favicon.url = toGurl(proposedFaviconInfo.url);
++        favicon.valid = proposedFaviconInfo.isValid();
+     }
+ }
+ 
+@@ -426,4 +436,9 @@ void WebContentsDelegateQt::BeforeUnloadFired(content::WebContents *tab, bool pr
+         m_viewClient->windowCloseRejected();
+ }
+ 
++FaviconManager *WebContentsDelegateQt::faviconManager()
++{
++    return m_faviconManager.data();
++}
++
+ } // namespace QtWebEngineCore
+diff --git a/src/core/web_contents_delegate_qt.h b/src/core/web_contents_delegate_qt.h
+index d646a13..afa4030 100644
+--- a/src/core/web_contents_delegate_qt.h
++++ b/src/core/web_contents_delegate_qt.h
+@@ -48,6 +48,7 @@
+ #include "base/callback.h"
+ 
+ #include "color_chooser_controller.h"
++#include "favicon_manager.h"
+ #include "javascript_dialog_manager_qt.h"
+ #include <QtCore/qvector.h>
+ #include <QtCore/qcompilerdetection.h>
+@@ -119,6 +120,7 @@ public:
+     void allowCertificateError(const QSharedPointer<CertificateErrorController> &) ;
+     void requestGeolocationPermission(const QUrl &requestingOrigin);
+     void launchExternalURL(const QUrl &url, ui::PageTransition page_transition, bool is_main_frame);
++    FaviconManager *faviconManager();
+ 
+ private:
+     WebContentsAdapter *createWindow(content::WebContents *new_contents, WindowOpenDisposition disposition, const gfx::Rect& initial_pos, bool user_gesture);
+@@ -127,6 +129,7 @@ private:
+     QString m_lastSearchedString;
+     int m_lastReceivedFindReply;
+     QVector<int64> m_loadingErrorFrameList;
++    QScopedPointer<FaviconManager> m_faviconManager;
+ };
+ 
+ } // namespace QtWebEngineCore
+diff --git a/tests/auto/core/qwebengineurlrequestinterceptor/tst_qwebengineurlrequestinterceptor.cpp b/tests/auto/core/qwebengineurlrequestinterceptor/tst_qwebengineurlrequestinterceptor.cpp
+index a65ffb8..180953e 100644
+--- a/tests/auto/core/qwebengineurlrequestinterceptor/tst_qwebengineurlrequestinterceptor.cpp
++++ b/tests/auto/core/qwebengineurlrequestinterceptor/tst_qwebengineurlrequestinterceptor.cpp
+@@ -150,6 +150,9 @@ public:
+ 
+     void interceptRequest(QWebEngineUrlRequestInfo &info) override
+     {
++        if (info.resourceType() == QWebEngineUrlRequestInfo::ResourceTypeFavicon)
++            return;
++
+         requestedUrls.append(info.requestUrl());
+         info.redirect(QUrl("data:text/html,<p>hello"));
+     }
+diff --git a/tests/auto/quick/qmltests/data/favicon-misc.html b/tests/auto/quick/qmltests/data/favicon-misc.html
+new file mode 100644
+index 0000000..9e788bd
+--- /dev/null
++++ b/tests/auto/quick/qmltests/data/favicon-misc.html
+@@ -0,0 +1,11 @@
++<html>
++    <head>
++        <title>Favicon Test</title>
++        <link rel="shortcut icon" href="icons/qt32.ico" />
++        <link rel="apple-touch-icon" href="icons/qt144.png" />
++        <link rel="shortcut icon" href="icons/unavailable.ico" />
++    </head>
++    <body>
++        <h1>Favicon Test</h1>
++    </body>
++</html>
+diff --git a/tests/auto/quick/qmltests/data/favicon-shortcut.html b/tests/auto/quick/qmltests/data/favicon-shortcut.html
+new file mode 100644
+index 0000000..786cdb8
+--- /dev/null
++++ b/tests/auto/quick/qmltests/data/favicon-shortcut.html
+@@ -0,0 +1,10 @@
++<html>
++    <head>
++        <title>Favicon Test</title>
++        <link rel="shortcut icon" href="icons/qt32.ico" />
++        <link rel="shortcut icon" href="icons/qt144.png" />
++    </head>
++    <body>
++        <h1>Favicon Test</h1>
++    </body>
++</html>
+diff --git a/tests/auto/quick/qmltests/data/favicon-single.html b/tests/auto/quick/qmltests/data/favicon-single.html
+new file mode 100644
+index 0000000..eb4675c
+--- /dev/null
++++ b/tests/auto/quick/qmltests/data/favicon-single.html
+@@ -0,0 +1,9 @@
++<html>
++    <head>
++        <title>Favicon Test</title>
++        <link rel="shortcut icon" href="icons/qt32.ico" />
++    </head>
++    <body>
++        <h1>Favicon Test</h1>
++    </body>
++</html>
+diff --git a/tests/auto/quick/qmltests/data/favicon-touch.html b/tests/auto/quick/qmltests/data/favicon-touch.html
+new file mode 100644
+index 0000000..2717834
+--- /dev/null
++++ b/tests/auto/quick/qmltests/data/favicon-touch.html
+@@ -0,0 +1,10 @@
++<html>
++    <head>
++        <title>Favicon Test</title>
++        <link rel="apple-touch-icon" href="icons/qt32.ico" />
++        <link rel="apple-touch-icon" href="icons/qt144.png" />
++    </head>
++    <body>
++        <h1>Favicon Test</h1>
++    </body>
++</html>
+diff --git a/tests/auto/quick/qmltests/data/favicon-unavailable.html b/tests/auto/quick/qmltests/data/favicon-unavailable.html
+new file mode 100644
+index 0000000..c456642
+--- /dev/null
++++ b/tests/auto/quick/qmltests/data/favicon-unavailable.html
+@@ -0,0 +1,9 @@
++<html>
++    <head>
++        <title>Favicon Test</title>
++        <link rel="shortcut icon" href="icons/unavailable.ico" />
++    </head>
++    <body>
++        <h1>Favicon Test</h1>
++    </body>
++</html>
+diff --git a/tests/auto/quick/qmltests/data/favicon.html b/tests/auto/quick/qmltests/data/favicon.html
+index c9f225c..9823fa3 100644
+--- a/tests/auto/quick/qmltests/data/favicon.html
++++ b/tests/auto/quick/qmltests/data/favicon.html
+@@ -1,10 +1,10 @@
+ <html>
+ <head>
+ </head>
+-<link type="image/png" href="favicon.png" sizes="48x48" rel="icon" />
++<link type="image/png" href="icons/favicon.png" sizes="48x48" rel="icon" />
+ <body>
+ <p>It's expected that you see a favicon displayed for this page when you open it as a local file.</p>
+ <p>The favicon looks like this:</p>
+-<img src="favicon.png"/>
++<img src="icons/favicon.png"/>
+ </body>
+ </html>
+diff --git a/tests/auto/quick/qmltests/data/favicon.png b/tests/auto/quick/qmltests/data/favicon.png
+deleted file mode 100644
+index 35717cca58f97c79c3d324e8357b4c4f7b1e1464..0000000000000000000000000000000000000000
+GIT binary patch
+literal 0
+HcmV?d00001
+
+literal 3961
+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
+TMTH2>00000NkvXXu0mjf4RNW(
+
+diff --git a/tests/auto/quick/qmltests/data/favicon2.html b/tests/auto/quick/qmltests/data/favicon2.html
+index 5548b86..81c2690 100644
+--- a/tests/auto/quick/qmltests/data/favicon2.html
++++ b/tests/auto/quick/qmltests/data/favicon2.html
+@@ -1,10 +1,10 @@
+ <html>
+ <head>
+ </head>
+-<link type="image/png" href="small-favicon.png" sizes="16x16" rel="icon" />
++<link type="image/png" href="icons/small-favicon.png" sizes="16x16" rel="icon" />
+ <body>
+ <p>It's expected that you see a favicon displayed for this page when you open it as a local file.</p>
+ <p>The favicon looks like this:</p>
+-<img src="small-favicon.png"/>
++<img src="icons/small-favicon.png"/>
+ </body>
+ </html>
+diff --git a/tests/auto/quick/qmltests/data/icons/favicon.png b/tests/auto/quick/qmltests/data/icons/favicon.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..35717cca58f97c79c3d324e8357b4c4f7b1e1464
+GIT binary patch
+literal 3961
+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
+TMTH2>00000NkvXXu0mjf4RNW(
+
+literal 0
+HcmV?d00001
+
+diff --git a/tests/auto/quick/qmltests/data/icons/qt144.png b/tests/auto/quick/qmltests/data/icons/qt144.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..050b1e066c586b2796ddac0ca8a292688e2feb8f
+GIT binary patch
+literal 8315
+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
+
+literal 0
+HcmV?d00001
+
+diff --git a/tests/auto/quick/qmltests/data/icons/qt32.ico b/tests/auto/quick/qmltests/data/icons/qt32.ico
+new file mode 100644
+index 0000000000000000000000000000000000000000..2f6fcb5bc384acf5d757fcc794ada11931018a31
+GIT binary patch
+literal 4286
+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
+
+literal 0
+HcmV?d00001
+
+diff --git a/tests/auto/quick/qmltests/data/icons/small-favicon.png b/tests/auto/quick/qmltests/data/icons/small-favicon.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..4462752a53baeb05d9a98f8ae23fa807e7ceee4a
+GIT binary patch
+literal 891
+zcmV->1BCpEP)<h;3K|Lk000e1NJLTq000mG000mO1^@s6AM^iV00001b5ch_0Itp)
+z=>Px&HAzH4R5(us!Oc$;X8^$A-}}xxGdr*!47-bhVJ$4!qR@bvG);^#{0+Sr)AZ)W
+zG(GeWD5su#)kDv{n;zQQ#&~NJQd5yu5n+Lam1TEXc6Yw#oj#8M_+owiu{-NNG#ryG
+z3<*XNcFrUd2BqpH#tSa3(_^$!n5NB1qj}P8ojra2;>Ba*(Klaj3_GoF^E1;VLSc<L
+z3`PN^YMJs>nU6nN;rfkbCMy+`Wr1Z-u2u_2jmE8Kzx^VVA>?=Y=^|0;Q=X}jdPDMV
+zftlJoi}gB|vM3Y^ShkHHMTBXBpT!i5E>Y?~G^V87s4gurUMwMnjcr*J-3oJa3(QQ-
+zAf-YYlALWL5gZ;I(Aa&0P9>o<ks_Bzsxijh3Wm^>ibdj7lZG+P4{ciAb1Y|^LVkjB
+zWs3Qat`Ut=BCk)rynr$s2g6Z-LDik2*Y5D{V4t1F5n5*$X~xafPq}yJ4#%w)Pk;Xd
+zKhB7>L)_d(NmG!9DX(@mN&5k_^=r80D@;sCjt@?NguT68{`&JDE<BG)DTg*PLLGuE
+zp^ThEC^VCk6&Ba(tS;YR`|U2T|9#1L!6ESs0?*^~+skx1U0U59QfdZ%Opt1%ZD!=6
+zgnZ5doe%~-i*q%UHc&x|B*T&xbF($p@7^Wy`iMBgk|6yH#Dn|yvj<;&NoE-Qy}8NC
+z@^#9S6>QrkO%jqMLI^<+#`FgRa<)m}dHnqAGv01*qk6p_ahg%e=NNh;f*>HvGL(|U
+ziDu{hJG$L-f*>Fjnly~Kxw=XkM`WpiF<YD8Xnr`RSje;AJit^IZrLU0*lfMtVmKO+
+z7Y=zl4>3q(((ZR?o}4l0^-z&Mr*~%Y^1oLkNycfnhudml+ZL&YOP8myl}Rv+NTkLx
+z;PkA`z`sE21f|Rhxk3@sv>CU@Xm&cpnWo<#aMWrdga9%eQ;|fPt~a3H>l60|l<hLc
+z)s@>K(B8ePm#0Ceyg%3{$>6lzVd#fk42L8-qgX8BPEN3Qc!)m=xgs1EOOsEG#+$9@
+zYipm)EY)kb7V336oi>C11(6mA!z9)TX$FH~$Vum%I0fbTR8dd9|LMmc{s%4$g<4+e
+REf4?z002ovPDHLkV1nljo!kHb
+
+literal 0
+HcmV?d00001
+
+diff --git a/tests/auto/quick/qmltests/data/small-favicon.png b/tests/auto/quick/qmltests/data/small-favicon.png
+deleted file mode 100644
+index 4462752a53baeb05d9a98f8ae23fa807e7ceee4a..0000000000000000000000000000000000000000
+GIT binary patch
+literal 0
+HcmV?d00001
+
+literal 891
+zcmV->1BCpEP)<h;3K|Lk000e1NJLTq000mG000mO1^@s6AM^iV00001b5ch_0Itp)
+z=>Px&HAzH4R5(us!Oc$;X8^$A-}}xxGdr*!47-bhVJ$4!qR@bvG);^#{0+Sr)AZ)W
+zG(GeWD5su#)kDv{n;zQQ#&~NJQd5yu5n+Lam1TEXc6Yw#oj#8M_+owiu{-NNG#ryG
+z3<*XNcFrUd2BqpH#tSa3(_^$!n5NB1qj}P8ojra2;>Ba*(Klaj3_GoF^E1;VLSc<L
+z3`PN^YMJs>nU6nN;rfkbCMy+`Wr1Z-u2u_2jmE8Kzx^VVA>?=Y=^|0;Q=X}jdPDMV
+zftlJoi}gB|vM3Y^ShkHHMTBXBpT!i5E>Y?~G^V87s4gurUMwMnjcr*J-3oJa3(QQ-
+zAf-YYlALWL5gZ;I(Aa&0P9>o<ks_Bzsxijh3Wm^>ibdj7lZG+P4{ciAb1Y|^LVkjB
+zWs3Qat`Ut=BCk)rynr$s2g6Z-LDik2*Y5D{V4t1F5n5*$X~xafPq}yJ4#%w)Pk;Xd
+zKhB7>L)_d(NmG!9DX(@mN&5k_^=r80D@;sCjt@?NguT68{`&JDE<BG)DTg*PLLGuE
+zp^ThEC^VCk6&Ba(tS;YR`|U2T|9#1L!6ESs0?*^~+skx1U0U59QfdZ%Opt1%ZD!=6
+zgnZ5doe%~-i*q%UHc&x|B*T&xbF($p@7^Wy`iMBgk|6yH#Dn|yvj<;&NoE-Qy}8NC
+z@^#9S6>QrkO%jqMLI^<+#`FgRa<)m}dHnqAGv01*qk6p_ahg%e=NNh;f*>HvGL(|U
+ziDu{hJG$L-f*>Fjnly~Kxw=XkM`WpiF<YD8Xnr`RSje;AJit^IZrLU0*lfMtVmKO+
+z7Y=zl4>3q(((ZR?o}4l0^-z&Mr*~%Y^1oLkNycfnhudml+ZL&YOP8myl}Rv+NTkLx
+z;PkA`z`sE21f|Rhxk3@sv>CU@Xm&cpnWo<#aMWrdga9%eQ;|fPt~a3H>l60|l<hLc
+z)s@>K(B8ePm#0Ceyg%3{$>6lzVd#fk42L8-qgX8BPEN3Qc!)m=xgs1EOOsEG#+$9@
+zYipm)EY)kb7V336oi>C11(6mA!z9)TX$FH~$Vum%I0fbTR8dd9|LMmc{s%4$g<4+e
+REf4?z002ovPDHLkV1nljo!kHb
+
+diff --git a/tests/auto/quick/qmltests/data/tst_favIconLoad.qml b/tests/auto/quick/qmltests/data/tst_favIconLoad.qml
+deleted file mode 100644
+index 2527cc7..0000000
+--- a/tests/auto/quick/qmltests/data/tst_favIconLoad.qml
++++ /dev/null
+@@ -1,92 +0,0 @@
+-/****************************************************************************
+-**
+-** Copyright (C) 2016 The Qt Company Ltd.
+-** Contact: https://www.qt.io/licensing/
+-**
+-** This file is part of the QtWebEngine module of the Qt Toolkit.
+-**
+-** $QT_BEGIN_LICENSE:GPL-EXCEPT$
+-** Commercial License Usage
+-** Licensees holding valid commercial Qt licenses may use this file in
+-** accordance with the commercial license agreement provided with the
+-** Software or, alternatively, in accordance with the terms contained in
+-** a written agreement between you and The Qt Company. For licensing terms
+-** and conditions see https://www.qt.io/terms-conditions. For further
+-** information use the contact form at https://www.qt.io/contact-us.
+-**
+-** GNU General Public License Usage
+-** Alternatively, this file may be used under the terms of the GNU
+-** General Public License version 3 as published by the Free Software
+-** Foundation with exceptions as appearing in the file LICENSE.GPL3-EXCEPT
+-** included in the packaging of this file. Please review the following
+-** information to ensure the GNU General Public License requirements will
+-** be met: https://www.gnu.org/licenses/gpl-3.0.html.
+-**
+-** $QT_END_LICENSE$
+-**
+-****************************************************************************/
+-
+-import QtQuick 2.0
+-import QtTest 1.0
+-import QtWebEngine 1.2
+-
+-TestWebEngineView {
+-    id: webEngineView
+-    width: 200
+-    height: 400
+-
+-    SignalSpy {
+-        id: spy
+-        target: webEngineView
+-        signalName: "iconChanged"
+-    }
+-
+-    // FIXME: This test is flaky if the loading of the icon image is asynchronous,
+-    // because the iconChanged signal is emitted before the image has been downloaded.
+-    // We can set this property to true after we have some kind of favicon downloading
+-    // logic in the WebEngine.
+-
+-    Image {
+-        id: favicon
+-        asynchronous: false
+-        source: webEngineView.icon
+-    }
+-
+-    TestCase {
+-        id: test
+-        name: "WebEngineViewLoadFavIcon"
+-        when: windowShown
+-
+-        function init() {
+-            if (webEngineView.icon != '') {
+-                // If this is not the first test, then load a blank page without favicon, restoring the initial state.
+-                webEngineView.url = 'about:blank'
+-                verify(webEngineView.waitForLoadSucceeded())
+-                spy.wait()
+-            }
+-            spy.clear()
+-        }
+-
+-        function test_favIconLoad() {
+-            compare(spy.count, 0)
+-            var url = Qt.resolvedUrl("favicon.html")
+-            webEngineView.url = url
+-            verify(webEngineView.waitForLoadSucceeded())
+-            spy.wait()
+-            compare(spy.count, 1)
+-            compare(favicon.width, 48)
+-            compare(favicon.height, 48)
+-        }
+-
+-        function test_favIconLoadEncodedUrl() {
+-            compare(spy.count, 0)
+-            var url = Qt.resolvedUrl("favicon2.html?favicon=load should work with#whitespace!")
+-            webEngineView.url = url
+-            verify(webEngineView.waitForLoadSucceeded())
+-            spy.wait()
+-            compare(spy.count, 1)
+-            compare(favicon.width, 16)
+-            compare(favicon.height, 16)
+-        }
+-    }
+-}
+diff --git a/tests/auto/quick/qmltests/data/tst_favicon.qml b/tests/auto/quick/qmltests/data/tst_favicon.qml
+new file mode 100644
+index 0000000..fab2e97
+--- /dev/null
++++ b/tests/auto/quick/qmltests/data/tst_favicon.qml
+@@ -0,0 +1,166 @@
++/****************************************************************************
++**
++** Copyright (C) 2016 The Qt Company Ltd.
++** Contact: https://www.qt.io/licensing/
++**
++** This file is part of the QtWebEngine module of the Qt Toolkit.
++**
++** $QT_BEGIN_LICENSE:GPL-EXCEPT$
++** Commercial License Usage
++** Licensees holding valid commercial Qt licenses may use this file in
++** accordance with the commercial license agreement provided with the
++** Software or, alternatively, in accordance with the terms contained in
++** a written agreement between you and The Qt Company. For licensing terms
++** and conditions see https://www.qt.io/terms-conditions. For further
++** information use the contact form at https://www.qt.io/contact-us.
++**
++** GNU General Public License Usage
++** Alternatively, this file may be used under the terms of the GNU
++** General Public License version 3 as published by the Free Software
++** Foundation with exceptions as appearing in the file LICENSE.GPL3-EXCEPT
++** included in the packaging of this file. Please review the following
++** information to ensure the GNU General Public License requirements will
++** be met: https://www.gnu.org/licenses/gpl-3.0.html.
++**
++** $QT_END_LICENSE$
++**
++****************************************************************************/
++
++import QtQuick 2.0
++import QtTest 1.0
++import QtWebEngine 1.3
++import QtWebEngine.testsupport 1.0
++
++TestWebEngineView {
++    id: webEngineView
++    width: 200
++    height: 400
++
++    testSupport: WebEngineTestSupport {
++        property var errorPageLoadStatus: null
++
++        function waitForErrorPageLoadSucceeded() {
++            var success = _waitFor(function() { return testSupport.errorPageLoadStatus == WebEngineView.LoadSucceededStatus })
++            testSupport.errorPageLoadStatus = null
++            return success
++        }
++
++        errorPage.onLoadingChanged: {
++            errorPageLoadStatus = loadRequest.status
++        }
++    }
++
++    SignalSpy {
++        id: iconChangedSpy
++        target: webEngineView
++        signalName: "iconChanged"
++    }
++
++    TestCase {
++        id: test
++        name: "WebEngineFavicon"
++        when: windowShown
++
++        function init() {
++            if (webEngineView.icon != '') {
++                // If this is not the first test, then load a blank page without favicon, restoring the initial state.
++                webEngineView.url = 'about:blank'
++                verify(webEngineView.waitForLoadSucceeded())
++                iconChangedSpy.wait()
++            }
++
++            iconChangedSpy.clear()
++        }
++
++        function test_noFavicon() {
++            compare(iconChangedSpy.count, 0)
++
++            var url = Qt.resolvedUrl("test1.html")
++            webEngineView.url = url
++            verify(webEngineView.waitForLoadSucceeded())
++
++            iconChangedSpy.wait()
++            compare(iconChangedSpy.count, 1)
++
++            var iconUrl = webEngineView.icon
++            compare(iconUrl, Qt.resolvedUrl(""))
++        }
++
++        function test_aboutBlank() {
++            compare(iconChangedSpy.count, 0)
++
++            var url = Qt.resolvedUrl("about:blank")
++            webEngineView.url = url
++            verify(webEngineView.waitForLoadSucceeded())
++
++            iconChangedSpy.wait()
++            compare(iconChangedSpy.count, 1)
++
++            var iconUrl = webEngineView.icon
++            compare(iconUrl, Qt.resolvedUrl(""))
++        }
++
++        function test_unavailableFavicon() {
++            compare(iconChangedSpy.count, 0)
++
++            var url = Qt.resolvedUrl("favicon-unavailable.html")
++            webEngineView.url = url
++            verify(webEngineView.waitForLoadSucceeded())
++
++            iconChangedSpy.wait()
++            compare(iconChangedSpy.count, 1)
++
++            var iconUrl = webEngineView.icon
++            compare(iconUrl, Qt.resolvedUrl("icons/unavailable.ico"))
++        }
++
++        function test_errorPageEnabled() {
++            skip("Error page does not work properly: QTBUG-48995")
++            WebEngine.settings.errorPageEnabled = true
++
++            compare(iconChangedSpy.count, 0)
++
++            var url = Qt.resolvedUrl("http://non.existent/url")
++            webEngineView.url = url
++            verify(webEngineView.testSupport.waitForErrorPageLoadSucceeded())
++
++            iconChangedSpy.wait()
++            // Icon is reseted at load start.
++            // Load is started twice: once for unavailale page then error page
++            compare(iconChangedSpy.count, 2)
++
++            var iconUrl = webEngineView.icon
++            compare(iconUrl, Qt.resolvedUrl(""))
++        }
++
++        function test_errorPageDisabled() {
++            WebEngine.settings.errorPageEnabled = false
++
++            compare(iconChangedSpy.count, 0)
++
++            var url = Qt.resolvedUrl("http://non.existent/url")
++            webEngineView.url = url
++            verify(webEngineView.waitForLoadFailed())
++
++            iconChangedSpy.wait()
++            compare(iconChangedSpy.count, 1)
++
++            var iconUrl = webEngineView.icon
++            compare(iconUrl, Qt.resolvedUrl(""))
++        }
++
++        function test_touchIcon() {
++            compare(iconChangedSpy.count, 0)
++
++            var url = Qt.resolvedUrl("favicon-touch.html")
++            webEngineView.url = url
++            verify(webEngineView.waitForLoadSucceeded())
++
++            iconChangedSpy.wait()
++            compare(iconChangedSpy.count, 1)
++
++            var iconUrl = webEngineView.icon
++            compare(iconUrl, Qt.resolvedUrl(""))
++        }
++    }
++}
+diff --git a/tests/auto/quick/qmltests/data/tst_faviconImage.qml b/tests/auto/quick/qmltests/data/tst_faviconImage.qml
+new file mode 100644
+index 0000000..603f769
+--- /dev/null
++++ b/tests/auto/quick/qmltests/data/tst_faviconImage.qml
+@@ -0,0 +1,125 @@
++/****************************************************************************
++**
++** Copyright (C) 2016 The Qt Company Ltd.
++** Contact: https://www.qt.io/licensing/
++**
++** This file is part of the QtWebEngine module of the Qt Toolkit.
++**
++** $QT_BEGIN_LICENSE:GPL-EXCEPT$
++** Commercial License Usage
++** Licensees holding valid commercial Qt licenses may use this file in
++** accordance with the commercial license agreement provided with the
++** Software or, alternatively, in accordance with the terms contained in
++** a written agreement between you and The Qt Company. For licensing terms
++** and conditions see https://www.qt.io/terms-conditions. For further
++** information use the contact form at https://www.qt.io/contact-us.
++**
++** GNU General Public License Usage
++** Alternatively, this file may be used under the terms of the GNU
++** General Public License version 3 as published by the Free Software
++** Foundation with exceptions as appearing in the file LICENSE.GPL3-EXCEPT
++** included in the packaging of this file. Please review the following
++** information to ensure the GNU General Public License requirements will
++** be met: https://www.gnu.org/licenses/gpl-3.0.html.
++**
++** $QT_END_LICENSE$
++**
++****************************************************************************/
++
++import QtQuick 2.0
++import QtTest 1.0
++import QtWebEngine 1.3
++
++TestWebEngineView {
++    id: webEngineView
++    width: 200
++    height: 400
++
++    SignalSpy {
++        id: iconChangedSpy
++        target: webEngineView
++        signalName: "iconChanged"
++    }
++
++    Image {
++        id: faviconImage
++        source: webEngineView.icon
++    }
++
++    TestCase {
++        id: test
++        name: "WebEngineFaviconImage"
++        when: windowShown
++
++        function init() {
++            if (webEngineView.icon != '') {
++                // If this is not the first test, then load a blank page without favicon, restoring the initial state.
++                webEngineView.url = 'about:blank'
++                verify(webEngineView.waitForLoadSucceeded())
++                iconChangedSpy.wait()
++            }
++
++            iconChangedSpy.clear()
++        }
++
++        function test_faviconImageLoad() {
++            compare(iconChangedSpy.count, 0)
++
++            var url = Qt.resolvedUrl("favicon.html")
++            webEngineView.url = url
++            verify(webEngineView.waitForLoadSucceeded())
++
++            iconChangedSpy.wait()
++            compare(iconChangedSpy.count, 1)
++
++            compare(faviconImage.width, 48)
++            compare(faviconImage.height, 48)
++        }
++
++        function test_faviconImageLoadEncodedUrl() {
++            compare(iconChangedSpy.count, 0)
++
++            var url = Qt.resolvedUrl("favicon2.html?favicon=load should work with#whitespace!")
++            webEngineView.url = url
++            verify(webEngineView.waitForLoadSucceeded())
++
++            iconChangedSpy.wait()
++            compare(iconChangedSpy.count, 1)
++
++            compare(faviconImage.width, 16)
++            compare(faviconImage.height, 16)
++        }
++
++        function test_bestFaviconImage() {
++            compare(iconChangedSpy.count, 0)
++            var url, iconUrl
++
++            url = Qt.resolvedUrl("favicon-misc.html")
++            webEngineView.url = url
++            verify(webEngineView.waitForLoadSucceeded())
++
++            iconChangedSpy.wait()
++            compare(iconChangedSpy.count, 1)
++
++            iconUrl = webEngineView.icon
++            // Touch icon is ignored
++            compare(iconUrl, Qt.resolvedUrl("icons/qt32.ico"))
++            compare(faviconImage.width, 32)
++            compare(faviconImage.height, 32)
++
++            iconChangedSpy.clear()
++
++            url = Qt.resolvedUrl("favicon-shortcut.html")
++            webEngineView.url = url
++            verify(webEngineView.waitForLoadSucceeded())
++
++            iconChangedSpy.wait()
++            compare(iconChangedSpy.count, 1)
++
++            iconUrl = webEngineView.icon
++            compare(iconUrl, Qt.resolvedUrl("icons/qt144.png"))
++            compare(faviconImage.width, 144)
++            compare(faviconImage.height, 144)
++        }
++    }
++}
+diff --git a/tests/auto/quick/qmltests/qmltests.pro b/tests/auto/quick/qmltests/qmltests.pro
+index 5764938..d1849d0 100644
+--- a/tests/auto/quick/qmltests/qmltests.pro
++++ b/tests/auto/quick/qmltests/qmltests.pro
+@@ -15,8 +15,12 @@ OTHER_FILES += \
+     $$PWD/data/confirmclose.html \
+     $$PWD/data/directoryupload.html \
+     $$PWD/data/favicon.html \
+-    $$PWD/data/favicon.png \
+     $$PWD/data/favicon2.html \
++    $$PWD/data/favicon-misc.html \
++    $$PWD/data/favicon-single.html \
++    $$PWD/data/favicon-shortcut.html \
++    $$PWD/data/favicon-touch.html \
++    $$PWD/data/favicon-unavailable.html \
+     $$PWD/data/forms.html \
+     $$PWD/data/geolocation.html \
+     $$PWD/data/javascript.html \
+@@ -34,7 +38,8 @@ OTHER_FILES += \
+     $$PWD/data/titleupdate.js \
+     $$PWD/data/tst_desktopBehaviorLoadHtml.qml \
+     $$PWD/data/tst_download.qml \
+-    $$PWD/data/tst_favIconLoad.qml \
++    $$PWD/data/tst_favicon.qml \
++    $$PWD/data/tst_faviconImage.qml \
+     $$PWD/data/tst_filePicker.qml \
+     $$PWD/data/tst_formValidation.qml \
+     $$PWD/data/tst_geopermission.qml \
+@@ -55,6 +60,10 @@ OTHER_FILES += \
+     $$PWD/data/tst_userScripts.qml \
+     $$PWD/data/tst_webchannel.qml \
+     $$PWD/data/tst_keyboardModifierMapping.qml \
++    $$PWD/data/icons/favicon.png \
++    $$PWD/data/icons/small-favicon.png \
++    $$PWD/data/icons/qt144.png \
++    $$PWD/data/icons/qt32.ico \
+     $$PWD/mock-delegates/QtWebEngine/UIDelegates/AlertDialog.qml \
+     $$PWD/mock-delegates/QtWebEngine/UIDelegates/ConfirmDialog.qml \
+     $$PWD/mock-delegates/QtWebEngine/UIDelegates/FilePicker.qml \
+diff --git a/tests/auto/widgets/qwebenginefaviconmanager/qwebenginefaviconmanager.pro b/tests/auto/widgets/qwebenginefaviconmanager/qwebenginefaviconmanager.pro
+new file mode 100644
+index 0000000..70786e7
+--- /dev/null
++++ b/tests/auto/widgets/qwebenginefaviconmanager/qwebenginefaviconmanager.pro
+@@ -0,0 +1,2 @@
++include(../tests.pri)
++QT *= core-private gui-private
+diff --git a/tests/auto/widgets/qwebenginefaviconmanager/resources/favicon-misc.html b/tests/auto/widgets/qwebenginefaviconmanager/resources/favicon-misc.html
+new file mode 100644
+index 0000000..9e788bd
+--- /dev/null
++++ b/tests/auto/widgets/qwebenginefaviconmanager/resources/favicon-misc.html
+@@ -0,0 +1,11 @@
++<html>
++    <head>
++        <title>Favicon Test</title>
++        <link rel="shortcut icon" href="icons/qt32.ico" />
++        <link rel="apple-touch-icon" href="icons/qt144.png" />
++        <link rel="shortcut icon" href="icons/unavailable.ico" />
++    </head>
++    <body>
++        <h1>Favicon Test</h1>
++    </body>
++</html>
+diff --git a/tests/auto/widgets/qwebenginefaviconmanager/resources/favicon-shortcut.html b/tests/auto/widgets/qwebenginefaviconmanager/resources/favicon-shortcut.html
+new file mode 100644
+index 0000000..786cdb8
+--- /dev/null
++++ b/tests/auto/widgets/qwebenginefaviconmanager/resources/favicon-shortcut.html
+@@ -0,0 +1,10 @@
++<html>
++    <head>
++        <title>Favicon Test</title>
++        <link rel="shortcut icon" href="icons/qt32.ico" />
++        <link rel="shortcut icon" href="icons/qt144.png" />
++    </head>
++    <body>
++        <h1>Favicon Test</h1>
++    </body>
++</html>
+diff --git a/tests/auto/widgets/qwebenginefaviconmanager/resources/favicon-single.html b/tests/auto/widgets/qwebenginefaviconmanager/resources/favicon-single.html
+new file mode 100644
+index 0000000..eb4675c
+--- /dev/null
++++ b/tests/auto/widgets/qwebenginefaviconmanager/resources/favicon-single.html
+@@ -0,0 +1,9 @@
++<html>
++    <head>
++        <title>Favicon Test</title>
++        <link rel="shortcut icon" href="icons/qt32.ico" />
++    </head>
++    <body>
++        <h1>Favicon Test</h1>
++    </body>
++</html>
+diff --git a/tests/auto/widgets/qwebenginefaviconmanager/resources/favicon-touch.html b/tests/auto/widgets/qwebenginefaviconmanager/resources/favicon-touch.html
+new file mode 100644
+index 0000000..2717834
+--- /dev/null
++++ b/tests/auto/widgets/qwebenginefaviconmanager/resources/favicon-touch.html
+@@ -0,0 +1,10 @@
++<html>
++    <head>
++        <title>Favicon Test</title>
++        <link rel="apple-touch-icon" href="icons/qt32.ico" />
++        <link rel="apple-touch-icon" href="icons/qt144.png" />
++    </head>
++    <body>
++        <h1>Favicon Test</h1>
++    </body>
++</html>
+diff --git a/tests/auto/widgets/qwebenginefaviconmanager/resources/favicon-unavailable.html b/tests/auto/widgets/qwebenginefaviconmanager/resources/favicon-unavailable.html
+new file mode 100644
+index 0000000..c456642
+--- /dev/null
++++ b/tests/auto/widgets/qwebenginefaviconmanager/resources/favicon-unavailable.html
+@@ -0,0 +1,9 @@
++<html>
++    <head>
++        <title>Favicon Test</title>
++        <link rel="shortcut icon" href="icons/unavailable.ico" />
++    </head>
++    <body>
++        <h1>Favicon Test</h1>
++    </body>
++</html>
+diff --git a/tests/auto/widgets/qwebenginefaviconmanager/resources/icons/qt144.png b/tests/auto/widgets/qwebenginefaviconmanager/resources/icons/qt144.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..050b1e066c586b2796ddac0ca8a292688e2feb8f
+GIT binary patch
+literal 8315
+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
+
+literal 0
+HcmV?d00001
+
+diff --git a/tests/auto/widgets/qwebenginefaviconmanager/resources/icons/qt32.ico b/tests/auto/widgets/qwebenginefaviconmanager/resources/icons/qt32.ico
+new file mode 100644
+index 0000000000000000000000000000000000000000..2f6fcb5bc384acf5d757fcc794ada11931018a31
+GIT binary patch
+literal 4286
+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
+
+literal 0
+HcmV?d00001
+
+diff --git a/tests/auto/widgets/qwebenginefaviconmanager/resources/test1.html b/tests/auto/widgets/qwebenginefaviconmanager/resources/test1.html
+new file mode 100644
+index 0000000..b323f96
+--- /dev/null
++++ b/tests/auto/widgets/qwebenginefaviconmanager/resources/test1.html
+@@ -0,0 +1 @@
++<html><body><p>Some text 1</p></body></html>
+diff --git a/tests/auto/widgets/qwebenginefaviconmanager/tst_qwebenginefaviconmanager.cpp b/tests/auto/widgets/qwebenginefaviconmanager/tst_qwebenginefaviconmanager.cpp
+new file mode 100644
+index 0000000..ececb0e
+--- /dev/null
++++ b/tests/auto/widgets/qwebenginefaviconmanager/tst_qwebenginefaviconmanager.cpp
+@@ -0,0 +1,279 @@
++/****************************************************************************
++**
++** Copyright (C) 2016 The Qt Company Ltd.
++** Contact: https://www.qt.io/licensing/
++**
++** This file is part of the QtWebEngine module of the Qt Toolkit.
++**
++** $QT_BEGIN_LICENSE:GPL-EXCEPT$
++** Commercial License Usage
++** Licensees holding valid commercial Qt licenses may use this file in
++** accordance with the commercial license agreement provided with the
++** Software or, alternatively, in accordance with the terms contained in
++** a written agreement between you and The Qt Company. For licensing terms
++** and conditions see https://www.qt.io/terms-conditions. For further
++** information use the contact form at https://www.qt.io/contact-us.
++**
++** GNU General Public License Usage
++** Alternatively, this file may be used under the terms of the GNU
++** General Public License version 3 as published by the Free Software
++** Foundation with exceptions as appearing in the file LICENSE.GPL3-EXCEPT
++** included in the packaging of this file. Please review the following
++** information to ensure the GNU General Public License requirements will
++** be met: https://www.gnu.org/licenses/gpl-3.0.html.
++**
++** $QT_END_LICENSE$
++**
++****************************************************************************/
++
++#include <QtTest/QtTest>
++#include "../util.h"
++
++#include <qwebenginepage.h>
++#include <qwebenginesettings.h>
++#include <qwebengineview.h>
++
++
++class tst_QWebEngineFaviconManager : public QObject {
++    Q_OBJECT
++
++public Q_SLOTS:
++    void init();
++    void initTestCase();
++    void cleanupTestCase();
++    void cleanup();
++
++private Q_SLOTS:
++    void faviconLoad();
++    void faviconLoadFromResources();
++    void faviconLoadEncodedUrl();
++    void noFavicon();
++    void aboutBlank();
++    void unavailableFavicon();
++    void errorPageEnabled();
++    void errorPageDisabled();
++    void bestFavicon();
++    void touchIcon();
++
++private:
++    QWebEngineView* m_view;
++    QWebEnginePage* m_page;
++};
++
++
++void tst_QWebEngineFaviconManager::init()
++{
++    m_view = new QWebEngineView();
++    m_page = m_view->page();
++}
++
++
++void tst_QWebEngineFaviconManager::initTestCase()
++{
++}
++
++void tst_QWebEngineFaviconManager::cleanupTestCase()
++{
++}
++
++
++void tst_QWebEngineFaviconManager::cleanup()
++{
++    delete m_view;
++}
++
++void tst_QWebEngineFaviconManager::faviconLoad()
++{
++    if (!QDir(TESTS_SOURCE_DIR).exists())
++        W_QSKIP(QString("This test requires access to resources found in '%1'").arg(TESTS_SOURCE_DIR).toLatin1().constData(), SkipAll);
++
++    QSignalSpy loadFinishedSpy(m_page, SIGNAL(loadFinished(bool)));
++    QSignalSpy iconUrlChangedSpy(m_page, SIGNAL(iconUrlChanged(QUrl)));
++
++    QUrl url = QUrl::fromLocalFile(TESTS_SOURCE_DIR + QLatin1String("qwebenginefaviconmanager/resources/favicon-single.html"));
++    m_page->load(url);
++
++    QTRY_COMPARE(loadFinishedSpy.count(), 1);
++    QTRY_COMPARE(iconUrlChangedSpy.count(), 1);
++
++    QUrl iconUrl = iconUrlChangedSpy.at(0).at(0).toString();
++    QCOMPARE(iconUrl, QUrl::fromLocalFile(TESTS_SOURCE_DIR + QLatin1String("qwebenginefaviconmanager/resources/icons/qt32.ico")));
++}
++
++void tst_QWebEngineFaviconManager::faviconLoadFromResources()
++{
++    QSignalSpy loadFinishedSpy(m_page, SIGNAL(loadFinished(bool)));
++    QSignalSpy iconUrlChangedSpy(m_page, SIGNAL(iconUrlChanged(QUrl)));
++
++    QUrl url = QUrl("qrc:/resources/favicon-single.html");
++    m_page->load(url);
++
++    QTRY_COMPARE(loadFinishedSpy.count(), 1);
++    QTRY_COMPARE(iconUrlChangedSpy.count(), 1);
++
++    QUrl iconUrl = iconUrlChangedSpy.at(0).at(0).toString();
++    QCOMPARE(iconUrl, QUrl("qrc:/resources/icons/qt32.ico"));
++}
++
++void tst_QWebEngineFaviconManager::faviconLoadEncodedUrl()
++{
++    if (!QDir(TESTS_SOURCE_DIR).exists())
++        W_QSKIP(QString("This test requires access to resources found in '%1'").arg(TESTS_SOURCE_DIR).toLatin1().constData(), SkipAll);
++
++    QSignalSpy loadFinishedSpy(m_page, SIGNAL(loadFinished(bool)));
++    QSignalSpy iconUrlChangedSpy(m_page, SIGNAL(iconUrlChanged(QUrl)));
++
++    QString urlString = QUrl::fromLocalFile(TESTS_SOURCE_DIR + QLatin1String("qwebenginefaviconmanager/resources/favicon-single.html")).toString();
++    QUrl url = QUrl(urlString + QLatin1String("?favicon=load should work with#whitespace!"));
++    m_page->load(url);
++
++    QTRY_COMPARE(loadFinishedSpy.count(), 1);
++    QTRY_COMPARE(iconUrlChangedSpy.count(), 1);
++
++    QUrl iconUrl = iconUrlChangedSpy.at(0).at(0).toString();
++    QCOMPARE(iconUrl, QUrl::fromLocalFile(TESTS_SOURCE_DIR + QLatin1String("qwebenginefaviconmanager/resources/icons/qt32.ico")));
++}
++
++void tst_QWebEngineFaviconManager::noFavicon()
++{
++    if (!QDir(TESTS_SOURCE_DIR).exists())
++        W_QSKIP(QString("This test requires access to resources found in '%1'").arg(TESTS_SOURCE_DIR).toLatin1().constData(), SkipAll);
++
++    QSignalSpy loadFinishedSpy(m_page, SIGNAL(loadFinished(bool)));
++    QSignalSpy iconUrlChangedSpy(m_page, SIGNAL(iconUrlChanged(QUrl)));
++
++    QUrl url = QUrl::fromLocalFile(TESTS_SOURCE_DIR + QLatin1String("qwebenginefaviconmanager/resources/test1.html"));
++    m_page->load(url);
++
++    QTRY_COMPARE(loadFinishedSpy.count(), 1);
++    QTRY_COMPARE(iconUrlChangedSpy.count(), 1);
++
++    QUrl iconUrl = iconUrlChangedSpy.at(0).at(0).toString();
++    QVERIFY(iconUrl.isEmpty());
++}
++
++void tst_QWebEngineFaviconManager::aboutBlank()
++{
++    QSignalSpy loadFinishedSpy(m_page, SIGNAL(loadFinished(bool)));
++    QSignalSpy iconUrlChangedSpy(m_page, SIGNAL(iconUrlChanged(QUrl)));
++
++    QUrl url = QUrl("about:blank");
++    m_page->load(url);
++
++    QTRY_COMPARE(loadFinishedSpy.count(), 1);
++    QTRY_COMPARE(iconUrlChangedSpy.count(), 1);
++
++    QUrl iconUrl = iconUrlChangedSpy.at(0).at(0).toString();
++    QVERIFY(iconUrl.isEmpty());
++}
++
++void tst_QWebEngineFaviconManager::unavailableFavicon()
++{
++    if (!QDir(TESTS_SOURCE_DIR).exists())
++        W_QSKIP(QString("This test requires access to resources found in '%1'").arg(TESTS_SOURCE_DIR).toLatin1().constData(), SkipAll);
++
++    QSignalSpy loadFinishedSpy(m_page, SIGNAL(loadFinished(bool)));
++    QSignalSpy iconUrlChangedSpy(m_page, SIGNAL(iconUrlChanged(QUrl)));
++
++    QUrl url = QUrl::fromLocalFile(TESTS_SOURCE_DIR + QLatin1String("qwebenginefaviconmanager/resources/favicon-unavailable.html"));
++    m_page->load(url);
++
++    QTRY_COMPARE(loadFinishedSpy.count(), 1);
++    QTRY_COMPARE(iconUrlChangedSpy.count(), 1);
++
++    QUrl iconUrl = iconUrlChangedSpy.at(0).at(0).toString();
++    QCOMPARE(iconUrl, QUrl::fromLocalFile(TESTS_SOURCE_DIR + QLatin1String("qwebenginefaviconmanager/resources/icons/unavailable.ico")));
++}
++
++void tst_QWebEngineFaviconManager::errorPageEnabled()
++{
++    m_page->settings()->setAttribute(QWebEngineSettings::ErrorPageEnabled, true);
++
++    QSignalSpy loadFinishedSpy(m_page, SIGNAL(loadFinished(bool)));
++    QSignalSpy iconUrlChangedSpy(m_page, SIGNAL(iconUrlChanged(QUrl)));
++
++    QUrl url = QUrl(QUrl("http://non.existent/url"));
++    m_page->load(url);
++
++    QTRY_COMPARE(loadFinishedSpy.count(), 1);
++    // Icon is reseted at load start.
++    // Load is started twice: once for unavailale page then error page
++    QTRY_COMPARE(iconUrlChangedSpy.count(), 2);
++
++    QUrl iconUrl;
++    iconUrl = iconUrlChangedSpy.at(0).at(0).toString();
++    QVERIFY(iconUrl.isEmpty());
++    iconUrl = iconUrlChangedSpy.at(1).at(0).toString();
++    QVERIFY(iconUrl.isEmpty());
++}
++
++void tst_QWebEngineFaviconManager::errorPageDisabled()
++{
++    m_page->settings()->setAttribute(QWebEngineSettings::ErrorPageEnabled, false);
++
++    QSignalSpy loadFinishedSpy(m_page, SIGNAL(loadFinished(bool)));
++    QSignalSpy iconUrlChangedSpy(m_page, SIGNAL(iconUrlChanged(QUrl)));
++
++    QUrl url = QUrl(QUrl("http://non.existent/url"));
++    m_page->load(url);
++
++    QTRY_COMPARE(loadFinishedSpy.count(), 1);
++    QTRY_COMPARE(iconUrlChangedSpy.count(), 1);
++
++    QUrl iconUrl = iconUrlChangedSpy.at(0).at(0).toString();
++    QVERIFY(iconUrl.isEmpty());
++}
++
++void tst_QWebEngineFaviconManager::bestFavicon()
++{
++    if (!QDir(TESTS_SOURCE_DIR).exists())
++        W_QSKIP(QString("This test requires access to resources found in '%1'").arg(TESTS_SOURCE_DIR).toLatin1().constData(), SkipAll);
++
++    QSignalSpy loadFinishedSpy(m_page, SIGNAL(loadFinished(bool)));
++    QSignalSpy iconUrlChangedSpy(m_page, SIGNAL(iconUrlChanged(QUrl)));
++    QUrl url, iconUrl;
++
++    url = QUrl::fromLocalFile(TESTS_SOURCE_DIR + QLatin1String("qwebenginefaviconmanager/resources/favicon-misc.html"));
++    m_page->load(url);
++
++    QTRY_COMPARE(loadFinishedSpy.count(), 1);
++    QTRY_COMPARE(iconUrlChangedSpy.count(), 1);
++
++    iconUrl = iconUrlChangedSpy.at(0).at(0).toString();
++    // Touch icon is ignored
++    QCOMPARE(iconUrl, QUrl::fromLocalFile(TESTS_SOURCE_DIR + QLatin1String("qwebenginefaviconmanager/resources/icons/qt32.ico")));
++
++    loadFinishedSpy.clear();
++    iconUrlChangedSpy.clear();
++
++    url = QUrl::fromLocalFile(TESTS_SOURCE_DIR + QLatin1String("qwebenginefaviconmanager/resources/favicon-shortcut.html"));
++    m_page->load(url);
++
++    QTRY_COMPARE(loadFinishedSpy.count(), 1);
++    QTRY_COMPARE(iconUrlChangedSpy.count(), 1);
++
++    iconUrl = iconUrlChangedSpy.at(0).at(0).toString();
++    QCOMPARE(iconUrl, QUrl::fromLocalFile(TESTS_SOURCE_DIR + QLatin1String("qwebenginefaviconmanager/resources/icons/qt144.png")));
++}
++
++void tst_QWebEngineFaviconManager::touchIcon()
++{
++    if (!QDir(TESTS_SOURCE_DIR).exists())
++        W_QSKIP(QString("This test requires access to resources found in '%1'").arg(TESTS_SOURCE_DIR).toLatin1().constData(), SkipAll);
++
++    QSignalSpy loadFinishedSpy(m_page, SIGNAL(loadFinished(bool)));
++    QSignalSpy iconUrlChangedSpy(m_page, SIGNAL(iconUrlChanged(QUrl)));
++
++    QUrl url = QUrl::fromLocalFile(TESTS_SOURCE_DIR + QLatin1String("qwebenginefaviconmanager/resources/favicon-touch.html"));
++    m_page->load(url);
++
++    QTRY_COMPARE(loadFinishedSpy.count(), 1);
++    QTRY_COMPARE(iconUrlChangedSpy.count(), 1);
++
++    QUrl iconUrl = iconUrlChangedSpy.at(0).at(0).toString();
++    QVERIFY(iconUrl.isEmpty());
++}
++
++QTEST_MAIN(tst_QWebEngineFaviconManager)
++
++#include "tst_qwebenginefaviconmanager.moc"
+diff --git a/tests/auto/widgets/qwebenginefaviconmanager/tst_qwebenginefaviconmanager.qrc b/tests/auto/widgets/qwebenginefaviconmanager/tst_qwebenginefaviconmanager.qrc
+new file mode 100644
+index 0000000..65d8ed9
+--- /dev/null
++++ b/tests/auto/widgets/qwebenginefaviconmanager/tst_qwebenginefaviconmanager.qrc
+@@ -0,0 +1,12 @@
++<!DOCTYPE RCC><RCC version="1.0">
++<qresource>
++    <file>resources/favicon-misc.html</file>
++    <file>resources/favicon-shortcut.html</file>
++    <file>resources/favicon-single.html</file>
++    <file>resources/favicon-touch.html</file>
++    <file>resources/favicon-unavailable.html</file>
++    <file>resources/icons/qt144.png</file>
++    <file>resources/icons/qt32.ico</file>
++    <file>resources/test1.html</file>
++</qresource>
++</RCC>
+diff --git a/tests/auto/widgets/widgets.pro b/tests/auto/widgets/widgets.pro
+index 986d5bb..c65d7dd 100644
+--- a/tests/auto/widgets/widgets.pro
++++ b/tests/auto/widgets/widgets.pro
+@@ -2,6 +2,7 @@ TEMPLATE = subdirs
+ 
+ SUBDIRS += \
+     qwebengineaccessibility \
++    qwebenginefaviconmanager \
+     qwebenginepage \
+     qwebenginehistory \
+     qwebenginehistoryinterface \
+-- 
+2.7.4 (Apple Git-66)
+

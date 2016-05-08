@@ -1,0 +1,133 @@
+From 8e5ac243ac774209b77bec42eda2ec43f9c9b04a Mon Sep 17 00:00:00 2001
+From: Peter Varga <pvarga@inf.u-szeged.hu>
+Date: Sat, 6 Feb 2016 12:57:02 +0100
+Subject: [PATCH] Optimize FaviconManager related iterations
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+- Replace foreach with for
+- Fix expensive iteration over QMap::keys() and QMap::values()
+
+Change-Id: Ia7f6803af7f5e609ec57bc4115bec17f43668937
+Reviewed-by: Anton Kudryavtsev <a.kudryavtsev@netris.ru>
+Reviewed-by: Michael Brüning <michael.bruning@theqtcompany.com>
+---
+ src/core/favicon_manager.cpp          | 25 ++++++++++++++-----------
+ src/core/favicon_manager.h            |  4 ++--
+ src/core/web_contents_delegate_qt.cpp |  3 ++-
+ 3 files changed, 18 insertions(+), 14 deletions(-)
+
+diff --git a/src/core/favicon_manager.cpp b/src/core/favicon_manager.cpp
+index f3260b3..6cbb8bc 100644
+--- a/src/core/favicon_manager.cpp
++++ b/src/core/favicon_manager.cpp
+@@ -127,14 +127,14 @@ void FaviconManagerPrivate::iconDownloadFinished(int id,
+  */
+ void FaviconManagerPrivate::downloadPendingRequests()
+ {
+-    Q_FOREACH (int id, m_pendingRequests.keys()) {
++    for (auto it = m_pendingRequests.cbegin(), end = m_pendingRequests.cend(); it != end; ++it) {
+         QIcon icon;
+ 
+-        QUrl requestUrl = m_pendingRequests[id];
++        QUrl requestUrl = it.value();
+         if (isResourceUrl(requestUrl) && !m_icons.contains(requestUrl))
+             icon = QIcon(requestUrl.toString().remove(0, 3));
+ 
+-        storeIcon(id, icon);
++        storeIcon(it.key(), icon);
+     }
+ 
+     m_pendingRequests.clear();
+@@ -263,12 +263,13 @@ bool FaviconManager::hasAvailableCandidateIcon() const
+     return m_hasDownloadedIcon || !d->m_inProgressCandidateRequests.isEmpty();
+ }
+ 
+-void FaviconManager::update(QList<FaviconInfo> &candidates)
++void FaviconManager::update(const QList<FaviconInfo> &candidates)
+ {
+     Q_D(FaviconManager);
+     updateCandidates(candidates);
+ 
+-    Q_FOREACH (FaviconInfo faviconInfo, m_faviconInfoMap.values()) {
++    for (auto it = m_faviconInfoMap.cbegin(), end = m_faviconInfoMap.cend(); it != end; ++it) {
++        const FaviconInfo &faviconInfo = it.value();
+         if (!faviconInfo.candidate || faviconInfo.type != FaviconInfo::Favicon)
+             continue;
+ 
+@@ -279,9 +280,9 @@ void FaviconManager::update(QList<FaviconInfo> &candidates)
+     d->downloadPendingRequests();
+ }
+ 
+-void FaviconManager::updateCandidates(QList<FaviconInfo> &candidates)
++void FaviconManager::updateCandidates(const QList<FaviconInfo> &candidates)
+ {
+-    Q_FOREACH (FaviconInfo candidateFaviconInfo, candidates) {
++    for (FaviconInfo candidateFaviconInfo : candidates) {
+         QUrl candidateUrl = candidateFaviconInfo.url;
+         if (m_faviconInfoMap.contains(candidateUrl)) {
+             m_faviconInfoMap[candidateUrl].candidate = true;
+@@ -298,8 +299,8 @@ void FaviconManager::updateCandidates(QList<FaviconInfo> &candidates)
+ void FaviconManager::resetCandidates()
+ {
+     m_hasDownloadedIcon = false;
+-    Q_FOREACH (const QUrl key, m_faviconInfoMap.keys())
+-        m_faviconInfoMap[key].candidate = false;
++    for (auto it = m_faviconInfoMap.begin(), end = m_faviconInfoMap.end(); it != end; ++it)
++        it->candidate = false;
+ }
+ 
+ 
+@@ -313,7 +314,8 @@ FaviconInfo FaviconManager::getProposedFaviconInfo() const
+         return proposedFaviconInfo;
+ 
+     unsigned bestArea = area(proposedFaviconInfo.size);
+-    Q_FOREACH (const FaviconInfo faviconInfo, m_faviconInfoMap.values()) {
++    for (auto it = m_faviconInfoMap.cbegin(), end = m_faviconInfoMap.cend(); it != end; ++it) {
++        const FaviconInfo &faviconInfo = it.value();
+         if (!faviconInfo.candidate || faviconInfo.type != FaviconInfo::Favicon)
+             continue;
+ 
+@@ -328,7 +330,8 @@ FaviconInfo FaviconManager::getProposedFaviconInfo() const
+ 
+ FaviconInfo FaviconManager::getFirstFaviconInfo() const
+ {
+-    Q_FOREACH (const FaviconInfo faviconInfo, m_faviconInfoMap.values()) {
++    for (auto it = m_faviconInfoMap.cbegin(), end = m_faviconInfoMap.cend(); it != end; ++it) {
++        const FaviconInfo &faviconInfo = it.value();
+         if (!faviconInfo.candidate || faviconInfo.type != FaviconInfo::Favicon)
+             continue;
+ 
+diff --git a/src/core/favicon_manager.h b/src/core/favicon_manager.h
+index eaae812..ff5c76a 100644
+--- a/src/core/favicon_manager.h
++++ b/src/core/favicon_manager.h
+@@ -98,8 +98,8 @@ private:
+     FaviconManager(FaviconManagerPrivate *);
+ 
+     bool hasAvailableCandidateIcon() const;
+-    void update(QList<FaviconInfo> &);
+-    void updateCandidates(QList<FaviconInfo> &);
++    void update(const QList<FaviconInfo> &);
++    void updateCandidates(const QList<FaviconInfo> &);
+     void resetCandidates();
+ 
+     FaviconInfo getProposedFaviconInfo() const;
+diff --git a/src/core/web_contents_delegate_qt.cpp b/src/core/web_contents_delegate_qt.cpp
+index 43ecbdf..1dbb38e 100644
+--- a/src/core/web_contents_delegate_qt.cpp
++++ b/src/core/web_contents_delegate_qt.cpp
+@@ -249,7 +249,8 @@ void WebContentsDelegateQt::DidFinishLoad(content::RenderFrameHost* render_frame
+ void WebContentsDelegateQt::DidUpdateFaviconURL(const std::vector<content::FaviconURL> &candidates)
+ {
+     QList<FaviconInfo> faviconCandidates;
+-    Q_FOREACH (content::FaviconURL candidate, candidates) {
++    faviconCandidates.reserve(static_cast<int>(candidates.size()));
++    for (const content::FaviconURL &candidate : candidates) {
+         // Store invalid candidates too for later debugging via API
+         faviconCandidates.append(toFaviconInfo(candidate));
+     }
+-- 
+2.7.4 (Apple Git-66)
+

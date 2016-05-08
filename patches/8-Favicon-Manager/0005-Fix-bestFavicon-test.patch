@@ -1,0 +1,58 @@
+From 4d6b2dc88bda15ade9d04e54d80b7e4693d59832 Mon Sep 17 00:00:00 2001
+From: Peter Varga <pvarga@inf.u-szeged.hu>
+Date: Sat, 19 Mar 2016 11:41:15 +0100
+Subject: [PATCH] Fix bestFavicon test
+
+Workaround the case when the page load finishes earlier than the icon
+url is updated and the test should wait more for the actual icon url.
+
+Change-Id: I9553bf444843e9932842ed5e61dfc87a8e970ad3
+Reviewed-by: Allan Sandfeld Jensen <allan.jensen@theqtcompany.com>
+---
+ tests/auto/quick/qmltests/data/tst_favicon.qml                   | 9 ++++++++-
+ .../qwebenginefaviconmanager/tst_qwebenginefaviconmanager.cpp    | 8 ++++++++
+ 2 files changed, 16 insertions(+), 1 deletion(-)
+
+diff --git a/tests/auto/quick/qmltests/data/tst_favicon.qml b/tests/auto/quick/qmltests/data/tst_favicon.qml
+index d12fbab..8448960 100644
+--- a/tests/auto/quick/qmltests/data/tst_favicon.qml
++++ b/tests/auto/quick/qmltests/data/tst_favicon.qml
+@@ -200,8 +200,15 @@ TestWebEngineView {
+ 
+             iconChangedSpy.wait()
+             verify(iconChangedSpy.count >= 1)
+-
+             iconUrl = webEngineView.icon
++
++            // If the icon URL is empty we have to wait for
++            // the second iconChanged signal that propagates the expected URL
++            if (iconUrl == Qt.resolvedUrl("")) {
++                tryCompare(iconChangedSpy, "count", 2)
++                iconUrl = webEngineView.icon
++            }
++
+             compare(iconUrl, Qt.resolvedUrl("icons/qt144.png"))
+             compare(favicon.width, 144)
+             compare(favicon.height, 144)
+diff --git a/tests/auto/widgets/qwebenginefaviconmanager/tst_qwebenginefaviconmanager.cpp b/tests/auto/widgets/qwebenginefaviconmanager/tst_qwebenginefaviconmanager.cpp
+index 89a3313..a0f864a 100644
+--- a/tests/auto/widgets/qwebenginefaviconmanager/tst_qwebenginefaviconmanager.cpp
++++ b/tests/auto/widgets/qwebenginefaviconmanager/tst_qwebenginefaviconmanager.cpp
+@@ -244,6 +244,14 @@ void tst_QWebEngineFaviconManager::bestFavicon()
+     QTRY_VERIFY(iconUrlChangedSpy.count() >= 1);
+ 
+     iconUrl = iconUrlChangedSpy.last().at(0).toString();
++
++    // If the icon URL is empty we have to wait for
++    // the second iconChanged signal that propagates the expected URL
++    if (iconUrl.isEmpty()) {
++        QTRY_COMPARE(iconUrlChangedSpy.count(), 2);
++        iconUrl = iconUrlChangedSpy.last().at(0).toString();
++    }
++
+     QCOMPARE(iconUrl, QUrl::fromLocalFile(TESTS_SOURCE_DIR + QLatin1String("qwebenginefaviconmanager/resources/icons/qt144.png")));
+ }
+ 
+-- 
+2.7.4 (Apple Git-66)
+

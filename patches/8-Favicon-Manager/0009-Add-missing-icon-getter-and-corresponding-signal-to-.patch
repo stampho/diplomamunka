@@ -1,0 +1,145 @@
+From b355aa1c02338a0d9c38beceb2cf8bc7d59f101a Mon Sep 17 00:00:00 2001
+From: Peter Varga <pvarga@inf.u-szeged.hu>
+Date: Tue, 26 Apr 2016 18:10:59 +0200
+Subject: [PATCH] Add missing icon getter and corresponding signal to
+ QWebEngineView
+
+Task-number: QTBUG-51179
+Change-Id: I44a34fbe9d738b5f27c5f0f220691aab0120e040
+Reviewed-by: Allan Sandfeld Jensen <allan.jensen@theqtcompany.com>
+Reviewed-by: Leena Miettinen <riitta-leena.miettinen@qt.io>
+---
+ src/webenginewidgets/api/qwebengineview.cpp        | 25 ++++++++++++++++++++++
+ src/webenginewidgets/api/qwebengineview.h          |  5 ++++-
+ .../doc/src/qwebengineview_lgpl.qdoc               | 19 ++++++++++------
+ 3 files changed, 41 insertions(+), 8 deletions(-)
+
+diff --git a/src/webenginewidgets/api/qwebengineview.cpp b/src/webenginewidgets/api/qwebengineview.cpp
+index add2000..396e695 100644
+--- a/src/webenginewidgets/api/qwebengineview.cpp
++++ b/src/webenginewidgets/api/qwebengineview.cpp
+@@ -86,6 +86,7 @@ void QWebEngineViewPrivate::bind(QWebEngineView *view, QWebEnginePage *page)
+         QObject::connect(page, &QWebEnginePage::titleChanged, view, &QWebEngineView::titleChanged);
+         QObject::connect(page, &QWebEnginePage::urlChanged, view, &QWebEngineView::urlChanged);
+         QObject::connect(page, &QWebEnginePage::iconUrlChanged, view, &QWebEngineView::iconUrlChanged);
++        QObject::connect(page, &QWebEnginePage::iconChanged, view, &QWebEngineView::iconChanged);
+         QObject::connect(page, &QWebEnginePage::loadStarted, view, &QWebEngineView::loadStarted);
+         QObject::connect(page, &QWebEnginePage::loadProgress, view, &QWebEngineView::loadProgress);
+         QObject::connect(page, &QWebEnginePage::loadFinished, view, &QWebEngineView::loadFinished);
+@@ -121,6 +122,16 @@ QWebEngineViewPrivate::QWebEngineViewPrivate()
+     with which the process terminated.
+ */
+ 
++/*!
++    \fn void QWebEngineView::iconChanged(const QIcon &icon)
++    \since 5.7
++
++    This signal is emitted when the icon ("favicon") associated with the
++    view is changed. The new icon is specified by \a icon.
++
++    \sa icon(), iconUrl(), iconUrlChanged()
++*/
++
+ QWebEngineView::QWebEngineView(QWidget *parent)
+     : QWidget(parent)
+     , d_ptr(new QWebEngineViewPrivate)
+@@ -198,6 +209,20 @@ QUrl QWebEngineView::iconUrl() const
+     return page()->iconUrl();
+ }
+ 
++/*!
++    \property QWebEngineView::icon
++    \brief the icon associated with the page currently viewed
++    \since 5.7
++
++    By default, this property contains a null icon.
++
++    \sa iconChanged(), iconUrl(), iconUrlChanged()
++*/
++QIcon QWebEngineView::icon() const
++{
++    return page()->icon();
++}
++
+ bool QWebEngineView::hasSelection() const
+ {
+     return page()->hasSelection();
+diff --git a/src/webenginewidgets/api/qwebengineview.h b/src/webenginewidgets/api/qwebengineview.h
+index 7181509..f7e8468 100644
+--- a/src/webenginewidgets/api/qwebengineview.h
++++ b/src/webenginewidgets/api/qwebengineview.h
+@@ -58,7 +58,8 @@ class QWEBENGINEWIDGETS_EXPORT QWebEngineView : public QWidget {
+     Q_OBJECT
+     Q_PROPERTY(QString title READ title)
+     Q_PROPERTY(QUrl url READ url WRITE setUrl)
+-    Q_PROPERTY(QUrl iconUrl READ iconUrl)
++    Q_PROPERTY(QUrl iconUrl READ iconUrl NOTIFY iconUrlChanged)
++    Q_PROPERTY(QIcon icon READ icon NOTIFY iconChanged)
+     Q_PROPERTY(QString selectedText READ selectedText)
+     Q_PROPERTY(bool hasSelection READ hasSelection)
+     Q_PROPERTY(qreal zoomFactor READ zoomFactor WRITE setZoomFactor)
+@@ -80,6 +81,7 @@ public:
+     void setUrl(const QUrl &url);
+     QUrl url() const;
+     QUrl iconUrl() const;
++    QIcon icon() const;
+ 
+     bool hasSelection() const;
+     QString selectedText() const;
+@@ -116,6 +118,7 @@ Q_SIGNALS:
+     void selectionChanged();
+     void urlChanged(const QUrl&);
+     void iconUrlChanged(const QUrl&);
++    void iconChanged(const QIcon&);
+     void renderProcessTerminated(QWebEnginePage::RenderProcessTerminationStatus terminationStatus,
+                              int exitCode);
+ 
+diff --git a/src/webenginewidgets/doc/src/qwebengineview_lgpl.qdoc b/src/webenginewidgets/doc/src/qwebengineview_lgpl.qdoc
+index 976a1a9..feaa802 100644
+--- a/src/webenginewidgets/doc/src/qwebengineview_lgpl.qdoc
++++ b/src/webenginewidgets/doc/src/qwebengineview_lgpl.qdoc
+@@ -57,9 +57,11 @@
+ 
+     The title of an HTML document can be accessed with the title() property.
+     Additionally, a web site may specify an icon, which can be accessed
+-    using the iconUrl() property. If the title or the icon changes, the corresponding
+-    titleChanged() and iconUrlChanged() signals will be emitted. The
+-    zoomFactor() property enables zooming the contents of the web page by a scale factor.
++    using the icon() or its URL using the iconUrl() property.
++    If the title or the icon changes, the corresponding titleChanged(), iconChanged()
++    and iconUrlChanged() signals will be emitted.
++    The zoomFactor() property enables zooming the contents of the web page by a
++    scale factor.
+ 
+     If you require a custom context menu, you can implement it by reimplementing
+     \l{QWidget::}{contextMenuEvent()} and populating your QMenu with the actions
+@@ -187,9 +189,11 @@
+ 
+ /*!
+     \property QWebEngineView::iconUrl
+-    \brief the URL of the icon associated with the web page currently viewed
++    \brief the URL of the icon associated with the page currently viewed
+ 
+-    \sa iconUrlChanged()
++    By default, this property contains an empty URL.
++
++    \sa iconUrlChanged(), icon(), iconChanged()
+ */
+ 
+ /*!
+@@ -329,9 +333,10 @@
+ /*!
+     \fn void QWebEngineView::iconUrlChanged(const QUrl &url)
+ 
+-    This signal is emitted whenever the icon \a url of the view changes.
++    This signal is emitted when the URL of the icon ("favicon") associated with the
++    view is changed. The new URL is specified by \a url.
+ 
+-    \sa iconUrl()
++    \sa iconUrl(), icon(), iconChanged()
+ */
+ 
+ /*!
+-- 
+2.7.4 (Apple Git-66)
+

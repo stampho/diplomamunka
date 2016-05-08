@@ -1,0 +1,737 @@
+From ddc4c40e2dcba81d36c9a4c445f1540b90403997 Mon Sep 17 00:00:00 2001
+From: Peter Varga <pvarga@inf.u-szeged.hu>
+Date: Tue, 22 Mar 2016 09:56:00 +0100
+Subject: [PATCH] Add QQuickWebEngineFaviconProvider
+
+The new QQuickImageProvider subclass is used to access downloaded icons
+from the FaviconManager via the Quick API.
+
+Change-Id: I6a52d3c737b2260cf480167764a931915cd99cab
+Task-number: QTBUG-51179
+Reviewed-by: Allan Sandfeld Jensen <allan.jensen@theqtcompany.com>
+---
+ .../webengine/quicknanobrowser/BrowserWindow.qml   |   1 +
+ src/core/favicon_manager.cpp                       |   4 +
+ .../api/qquickwebenginefaviconprovider.cpp         | 186 +++++++++++++++++++++
+ .../api/qquickwebenginefaviconprovider_p_p.h       |  87 ++++++++++
+ src/webengine/api/qquickwebengineview.cpp          |  19 ++-
+ src/webengine/api/qquickwebengineview_p.h          |   2 +
+ src/webengine/api/qquickwebengineview_p_p.h        |   2 +
+ src/webengine/doc/src/webengineview.qdoc           |  11 +-
+ src/webengine/plugin/plugin.cpp                    |   7 +
+ src/webengine/webengine.pro                        |   2 +
+ .../quick/qmltests/data/favicon-multi-gray.html    |   9 +
+ tests/auto/quick/qmltests/data/icons/grayicons.ico | Bin 0 -> 22150 bytes
+ tests/auto/quick/qmltests/data/tst_favicon.qml     |  92 +++++++++-
+ .../quick/qmltests/data/tst_faviconDownload.qml    |   6 +-
+ tests/auto/quick/qmltests/qmltests.pro             |   2 +
+ 15 files changed, 415 insertions(+), 15 deletions(-)
+ create mode 100644 src/webengine/api/qquickwebenginefaviconprovider.cpp
+ create mode 100644 src/webengine/api/qquickwebenginefaviconprovider_p_p.h
+ create mode 100644 tests/auto/quick/qmltests/data/favicon-multi-gray.html
+ create mode 100644 tests/auto/quick/qmltests/data/icons/grayicons.ico
+
+diff --git a/examples/webengine/quicknanobrowser/BrowserWindow.qml b/examples/webengine/quicknanobrowser/BrowserWindow.qml
+index b468b2a..c008425 100644
+--- a/examples/webengine/quicknanobrowser/BrowserWindow.qml
++++ b/examples/webengine/quicknanobrowser/BrowserWindow.qml
+@@ -237,6 +237,7 @@ ApplicationWindow {
+                         z: 2
+                         id: faviconImage
+                         width: 16; height: 16
++                        sourceSize: Qt.size(width, height)
+                         source: currentWebView && currentWebView.icon
+                     }
+                     style: TextFieldStyle {
+diff --git a/src/core/favicon_manager.cpp b/src/core/favicon_manager.cpp
+index 16a087e..5568e6e 100644
+--- a/src/core/favicon_manager.cpp
++++ b/src/core/favicon_manager.cpp
+@@ -220,11 +220,15 @@ FaviconManager::~FaviconManager()
+ QIcon FaviconManager::getIcon(const QUrl &url) const
+ {
+     Q_D(const FaviconManager);
++    if (!d->m_icons.contains(url))
++        return QIcon();
++
+     return d->m_icons[url];
+ }
+ 
+ FaviconInfo FaviconManager::getFaviconInfo(const QUrl &url) const
+ {
++    Q_ASSERT(m_faviconInfoMap.contains(url));
+     return m_faviconInfoMap[url];
+ }
+ 
+diff --git a/src/webengine/api/qquickwebenginefaviconprovider.cpp b/src/webengine/api/qquickwebenginefaviconprovider.cpp
+new file mode 100644
+index 0000000..c41ec5a
+--- /dev/null
++++ b/src/webengine/api/qquickwebenginefaviconprovider.cpp
+@@ -0,0 +1,186 @@
++/****************************************************************************
++**
++** Copyright (C) 2016 The Qt Company Ltd.
++** Contact: https://www.qt.io/licensing/
++**
++** This file is part of the QtWebEngine module of the Qt Toolkit.
++**
++** $QT_BEGIN_LICENSE:LGPL$
++** Commercial License Usage
++** Licensees holding valid commercial Qt licenses may use this file in
++** accordance with the commercial license agreement provided with the
++** Software or, alternatively, in accordance with the terms contained in
++** a written agreement between you and The Qt Company. For licensing terms
++** and conditions see https://www.qt.io/terms-conditions. For further
++** information use the contact form at https://www.qt.io/contact-us.
++**
++** GNU Lesser General Public License Usage
++** Alternatively, this file may be used under the terms of the GNU Lesser
++** General Public License version 3 as published by the Free Software
++** Foundation and appearing in the file LICENSE.LGPL3 included in the
++** packaging of this file. Please review the following information to
++** ensure the GNU Lesser General Public License version 3 requirements
++** will be met: https://www.gnu.org/licenses/lgpl-3.0.html.
++**
++** GNU General Public License Usage
++** Alternatively, this file may be used under the terms of the GNU
++** General Public License version 2.0 or (at your option) the GNU General
++** Public license version 3 or any later version approved by the KDE Free
++** Qt Foundation. The licenses are as published by the Free Software
++** Foundation and appearing in the file LICENSE.GPL2 and LICENSE.GPL3
++** included in the packaging of this file. Please review the following
++** information to ensure the GNU General Public License requirements will
++** be met: https://www.gnu.org/licenses/gpl-2.0.html and
++** https://www.gnu.org/licenses/gpl-3.0.html.
++**
++** $QT_END_LICENSE$
++**
++****************************************************************************/
++
++#include "qquickwebenginefaviconprovider_p_p.h"
++
++#include "favicon_manager.h"
++#include "qquickwebengineview_p.h"
++#include "qquickwebengineview_p_p.h"
++#include "web_contents_adapter.h"
++
++#include <QtGui/QIcon>
++#include <QtGui/QPixmap>
++
++QT_BEGIN_NAMESPACE
++
++using QtWebEngineCore::FaviconInfo;
++using QtWebEngineCore::FaviconManager;
++
++static inline unsigned area(const QSize &size)
++{
++    return size.width() * size.height();
++}
++
++QString QQuickWebEngineFaviconProvider::identifier()
++{
++    return QStringLiteral("favicon");
++}
++
++QUrl QQuickWebEngineFaviconProvider::faviconProviderUrl(const QUrl &url)
++{
++    if (url.isEmpty())
++        return url;
++
++    QUrl providerUrl;
++    providerUrl.setScheme(QStringLiteral("image"));
++    providerUrl.setHost(identifier());
++    providerUrl.setPath(QStringLiteral("/%1").arg(url.toString()));
++
++    return providerUrl;
++}
++
++QQuickWebEngineFaviconProvider::QQuickWebEngineFaviconProvider()
++    : QQuickImageProvider(QQuickImageProvider::Pixmap)
++    , m_latestView(0)
++{
++}
++
++QQuickWebEngineFaviconProvider::~QQuickWebEngineFaviconProvider()
++{
++    qDeleteAll(m_iconUrlMap);
++}
++
++QUrl QQuickWebEngineFaviconProvider::attach(QQuickWebEngineView *view, const QUrl &iconUrl)
++{
++    if (iconUrl.isEmpty())
++        return QUrl();
++
++    m_latestView = view;
++
++    if (!m_iconUrlMap.contains(view))
++        m_iconUrlMap.insert(view, new QList<QUrl>());
++
++    QList<QUrl> *iconUrls = m_iconUrlMap[view];
++    if (!iconUrls->contains(iconUrl))
++        iconUrls->append(iconUrl);
++
++    return faviconProviderUrl(iconUrl);
++}
++
++void QQuickWebEngineFaviconProvider::detach(QQuickWebEngineView *view)
++{
++    QList<QUrl> *iconUrls = m_iconUrlMap.take(view);
++    delete iconUrls;
++}
++
++QPixmap QQuickWebEngineFaviconProvider::requestPixmap(const QString &id, QSize *size, const QSize &requestedSize)
++{
++    Q_UNUSED(size);
++    Q_UNUSED(requestedSize);
++
++    QUrl iconUrl(id);
++    QQuickWebEngineView *view = viewForIconUrl(iconUrl);
++
++    if (!view || iconUrl.isEmpty())
++        return QPixmap();
++
++    FaviconManager *faviconManager = view->d_ptr->adapter->faviconManager();
++    Q_ASSERT(faviconManager);
++
++    const QIcon &icon = faviconManager->getIcon(iconUrl);
++
++    Q_ASSERT(!icon.isNull());
++    const QSize &bestSize = faviconManager->getFaviconInfo(iconUrl).size;
++
++    // If source size is not specified, use the best quality
++    if (!requestedSize.isValid()) {
++        if (size)
++            *size = bestSize;
++
++        return icon.pixmap(bestSize).copy();
++    }
++
++    const QSize &fitSize = findFitSize(icon.availableSizes(), requestedSize, bestSize);
++    const QPixmap &iconPixmap = icon.pixmap(fitSize);
++
++    if (size)
++        *size = iconPixmap.size();
++
++    return iconPixmap.scaled(requestedSize, Qt::KeepAspectRatio, Qt::SmoothTransformation).copy();
++}
++
++QQuickWebEngineView *QQuickWebEngineFaviconProvider::viewForIconUrl(const QUrl &iconUrl) const
++{
++    // The most common use case is that the requested iconUrl belongs to the
++    // latest WebEngineView which was raised an iconChanged signal.
++    if (m_latestView) {
++        QList<QUrl> *iconUrls = m_iconUrlMap[m_latestView];
++        if (iconUrls->contains(iconUrl))
++            return m_latestView;
++    }
++
++    for (auto it = m_iconUrlMap.cbegin(), end = m_iconUrlMap.cend(); it != end; ++it) {
++        if (it.value()->contains(iconUrl))
++            return it.key();
++    }
++
++    return 0;
++}
++
++QSize QQuickWebEngineFaviconProvider::findFitSize(const QList<QSize> &availableSizes,
++                                                  const QSize &requestedSize,
++                                                  const QSize &bestSize) const
++{
++    Q_ASSERT(availableSizes.count());
++    if (availableSizes.count() == 1 || area(requestedSize) >= area(bestSize))
++        return bestSize;
++
++    QSize fitSize = bestSize;
++    for (const QSize &size : availableSizes) {
++        if (area(size) == area(requestedSize))
++            return size;
++
++        if (area(requestedSize) < area(size) && area(size) < area(fitSize))
++            fitSize = size;
++    }
++
++    return fitSize;
++}
++
++QT_END_NAMESPACE
+diff --git a/src/webengine/api/qquickwebenginefaviconprovider_p_p.h b/src/webengine/api/qquickwebenginefaviconprovider_p_p.h
+new file mode 100644
+index 0000000..52f3fb7
+--- /dev/null
++++ b/src/webengine/api/qquickwebenginefaviconprovider_p_p.h
+@@ -0,0 +1,87 @@
++/****************************************************************************
++**
++** Copyright (C) 2016 The Qt Company Ltd.
++** Contact: https://www.qt.io/licensing/
++**
++** This file is part of the QtWebEngine module of the Qt Toolkit.
++**
++** $QT_BEGIN_LICENSE:LGPL$
++** Commercial License Usage
++** Licensees holding valid commercial Qt licenses may use this file in
++** accordance with the commercial license agreement provided with the
++** Software or, alternatively, in accordance with the terms contained in
++** a written agreement between you and The Qt Company. For licensing terms
++** and conditions see https://www.qt.io/terms-conditions. For further
++** information use the contact form at https://www.qt.io/contact-us.
++**
++** GNU Lesser General Public License Usage
++** Alternatively, this file may be used under the terms of the GNU Lesser
++** General Public License version 3 as published by the Free Software
++** Foundation and appearing in the file LICENSE.LGPL3 included in the
++** packaging of this file. Please review the following information to
++** ensure the GNU Lesser General Public License version 3 requirements
++** will be met: https://www.gnu.org/licenses/lgpl-3.0.html.
++**
++** GNU General Public License Usage
++** Alternatively, this file may be used under the terms of the GNU
++** General Public License version 2.0 or (at your option) the GNU General
++** Public license version 3 or any later version approved by the KDE Free
++** Qt Foundation. The licenses are as published by the Free Software
++** Foundation and appearing in the file LICENSE.GPL2 and LICENSE.GPL3
++** included in the packaging of this file. Please review the following
++** information to ensure the GNU General Public License requirements will
++** be met: https://www.gnu.org/licenses/gpl-2.0.html and
++** https://www.gnu.org/licenses/gpl-3.0.html.
++**
++** $QT_END_LICENSE$
++**
++****************************************************************************/
++
++#ifndef QQUICKWEBENGINEFAVICONPROVIDER_P_P_H
++#define QQUICKWEBENGINEFAVICONPROVIDER_P_P_H
++
++//
++//  W A R N I N G
++//  -------------
++//
++// This file is not part of the Qt API.  It exists purely as an
++// implementation detail.  This header file may change from version to
++// version without notice, or even be removed.
++//
++// We mean it.
++//
++
++#include <private/qtwebengineglobal_p.h>
++#include <QtQuick/QQuickImageProvider>
++
++#include <QtCore/QMap>
++
++QT_BEGIN_NAMESPACE
++
++class QQuickWebEngineView;
++
++class Q_WEBENGINE_PRIVATE_EXPORT QQuickWebEngineFaviconProvider : public QQuickImageProvider {
++public:
++    static QString identifier();
++    static QUrl faviconProviderUrl(const QUrl &);
++
++    QQuickWebEngineFaviconProvider();
++    ~QQuickWebEngineFaviconProvider();
++
++    QUrl attach(QQuickWebEngineView *, const QUrl &);
++    void detach(QQuickWebEngineView *);
++
++
++    virtual QPixmap requestPixmap(const QString &, QSize *, const QSize &);
++
++private:
++    QQuickWebEngineView *viewForIconUrl(const QUrl &) const;
++    QSize findFitSize(const QList<QSize> &, const QSize &, const QSize &) const;
++
++    QMap<QQuickWebEngineView *, QList<QUrl> *> m_iconUrlMap;
++    QQuickWebEngineView *m_latestView;
++};
++
++QT_END_NAMESPACE
++
++#endif // QQUICKWEBENGINEFAVICONPROVIDER_P_P_H
+diff --git a/src/webengine/api/qquickwebengineview.cpp b/src/webengine/api/qquickwebengineview.cpp
+index 9296cc4..122ae23 100644
+--- a/src/webengine/api/qquickwebengineview.cpp
++++ b/src/webengine/api/qquickwebengineview.cpp
+@@ -47,6 +47,7 @@
+ #include "javascript_dialog_controller.h"
+ #include "qquickwebenginehistory_p.h"
+ #include "qquickwebenginecertificateerror_p.h"
++#include "qquickwebenginefaviconprovider_p_p.h"
+ #include "qquickwebengineloadrequest_p.h"
+ #include "qquickwebenginenavigationrequest_p.h"
+ #include "qquickwebenginenewviewrequest_p.h"
+@@ -112,6 +113,7 @@ QQuickWebEngineViewPrivate::QQuickWebEngineViewPrivate()
+     , m_testSupport(0)
+ #endif
+     , contextMenuExtraItems(0)
++    , faviconProvider(0)
+     , loadProgress(0)
+     , m_fullscreenMode(false)
+     , isLoading(false)
+@@ -389,9 +391,19 @@ void QQuickWebEngineViewPrivate::urlChanged(const QUrl &url)
+ void QQuickWebEngineViewPrivate::iconChanged(const QUrl &url)
+ {
+     Q_Q(QQuickWebEngineView);
+-    if (iconUrl == url)
++
++    if (iconUrl == QQuickWebEngineFaviconProvider::faviconProviderUrl(url))
+         return;
+-    iconUrl = url;
++
++    if (!faviconProvider) {
++        QQmlEngine *engine = qmlEngine(q);
++        Q_ASSERT(engine);
++        faviconProvider = static_cast<QQuickWebEngineFaviconProvider *>(
++                    engine->imageProvider(QQuickWebEngineFaviconProvider::identifier()));
++        Q_ASSERT(faviconProvider);
++    }
++
++    iconUrl = faviconProvider->attach(q, url);
+     Q_EMIT q->iconChanged();
+ }
+ 
+@@ -788,6 +800,9 @@ QQuickWebEngineView::QQuickWebEngineView(QQuickItem *parent)
+ 
+ QQuickWebEngineView::~QQuickWebEngineView()
+ {
++    Q_D(QQuickWebEngineView);
++    if (d->faviconProvider)
++        d->faviconProvider->detach(this);
+ }
+ 
+ void QQuickWebEngineViewPrivate::ensureContentsAdapter()
+diff --git a/src/webengine/api/qquickwebengineview_p.h b/src/webengine/api/qquickwebengineview_p.h
+index 8015820..843e34f 100644
+--- a/src/webengine/api/qquickwebengineview_p.h
++++ b/src/webengine/api/qquickwebengineview_p.h
+@@ -60,6 +60,7 @@ QT_BEGIN_NAMESPACE
+ class QQmlWebChannel;
+ class QQuickWebEngineCertificateError;
+ class QQuickWebEngineContextMenuData;
++class QQuickWebEngineFaviconProvider;
+ class QQuickWebEngineHistory;
+ class QQuickWebEngineLoadRequest;
+ class QQuickWebEngineNavigationRequest;
+@@ -517,6 +518,7 @@ private:
+     friend class QQuickWebEngineViewExperimental;
+     friend class QQuickWebEngineViewExperimentalExtension;
+     friend class QQuickWebEngineNewViewRequest;
++    friend class QQuickWebEngineFaviconProvider;
+ #ifndef QT_NO_ACCESSIBILITY
+     friend class QQuickWebEngineViewAccessible;
+ #endif // QT_NO_ACCESSIBILITY
+diff --git a/src/webengine/api/qquickwebengineview_p_p.h b/src/webengine/api/qquickwebengineview_p_p.h
+index d240e3e..892e99c 100644
+--- a/src/webengine/api/qquickwebengineview_p_p.h
++++ b/src/webengine/api/qquickwebengineview_p_p.h
+@@ -71,6 +71,7 @@ class QQuickWebEngineView;
+ class QQmlComponent;
+ class QQmlContext;
+ class QQuickWebEngineSettings;
++class QQuickWebEngineFaviconProvider;
+ 
+ #ifdef ENABLE_QML_TESTSUPPORT_API
+ class QQuickWebEngineTestSupport;
+@@ -215,6 +216,7 @@ public:
+     QQuickWebEngineContextMenuData contextMenuData;
+     QUrl explicitUrl;
+     QUrl iconUrl;
++    QQuickWebEngineFaviconProvider *faviconProvider;
+     int loadProgress;
+     bool m_fullscreenMode;
+     bool isLoading;
+diff --git a/src/webengine/doc/src/webengineview.qdoc b/src/webengine/doc/src/webengineview.qdoc
+index 3bebb8c..a070140 100644
+--- a/src/webengine/doc/src/webengineview.qdoc
++++ b/src/webengine/doc/src/webengineview.qdoc
+@@ -203,10 +203,11 @@
+     \qmlproperty url WebEngineView::icon
+     \readonly
+ 
+-    The location of the currently displayed web site icon,
+-    also known as favicon or shortcut icon. This read-only URL corresponds to
+-    the image used within a mobile browser application to represent a
+-    bookmarked page on the device's home screen.
++    An internal URL for accessing the currently displayed web site icon,
++    also known as favicon or shortcut icon. The icon is already downloaded
++    and stored by the Qt WebEngine's favicon manager.
++    This read-only URL corresponds to the image used within a mobile browser
++    application to represent a bookmarked page on the device's home screen.
+ 
+     The following snippet uses the \c{icon} property to build an \c{Image}
+     component:
+@@ -214,7 +215,7 @@
+     \qml
+     Image {
+         id: appIcon
+-        source: webView.icon != "" ? webView.icon : "fallbackFavIcon.png";
++        source: webView.icon != "" ? webView.icon : "fallbackFavicon.png";
+         // ...
+     }
+     \endqml
+diff --git a/src/webengine/plugin/plugin.cpp b/src/webengine/plugin/plugin.cpp
+index fc8e40b..b71689a 100644
+--- a/src/webengine/plugin/plugin.cpp
++++ b/src/webengine/plugin/plugin.cpp
+@@ -43,6 +43,7 @@
+ #include "qquickwebenginecertificateerror_p.h"
+ #include "qquickwebenginedownloaditem_p.h"
+ #include "qquickwebenginehistory_p.h"
++#include "qquickwebenginefaviconprovider_p_p.h"
+ #include "qquickwebengineloadrequest_p.h"
+ #include "qquickwebenginenavigationrequest_p.h"
+ #include "qquickwebenginenewviewrequest_p.h"
+@@ -63,6 +64,12 @@ class QtWebEnginePlugin : public QQmlExtensionPlugin
+     Q_OBJECT
+     Q_PLUGIN_METADATA(IID "org.qt-project.Qt.QQmlExtensionInterface/1.0")
+ public:
++    virtual void initializeEngine(QQmlEngine *engine, const char *uri)
++    {
++        Q_UNUSED(uri);
++        engine->addImageProvider(QQuickWebEngineFaviconProvider::identifier(), new QQuickWebEngineFaviconProvider);
++    }
++
+     virtual void registerTypes(const char *uri) Q_DECL_OVERRIDE
+     {
+         Q_ASSERT(QLatin1String(uri) == QLatin1String("QtWebEngine"));
+diff --git a/src/webengine/webengine.pro b/src/webengine/webengine.pro
+index e4b274a..2368819 100644
+--- a/src/webengine/webengine.pro
++++ b/src/webengine/webengine.pro
+@@ -15,6 +15,7 @@ SOURCES = \
+         api/qquickwebenginecontextmenudata.cpp \
+         api/qquickwebenginedownloaditem.cpp \
+         api/qquickwebenginehistory.cpp \
++        api/qquickwebenginefaviconprovider.cpp \
+         api/qquickwebengineloadrequest.cpp \
+         api/qquickwebenginenavigationrequest.cpp \
+         api/qquickwebenginenewviewrequest.cpp \
+@@ -36,6 +37,7 @@ HEADERS = \
+         api/qquickwebenginedownloaditem_p.h \
+         api/qquickwebenginedownloaditem_p_p.h \
+         api/qquickwebenginehistory_p.h \
++        api/qquickwebenginefaviconprovider_p_p.h \
+         api/qquickwebengineloadrequest_p.h \
+         api/qquickwebenginenavigationrequest_p.h \
+         api/qquickwebenginenewviewrequest_p.h \
+diff --git a/tests/auto/quick/qmltests/data/favicon-multi-gray.html b/tests/auto/quick/qmltests/data/favicon-multi-gray.html
+new file mode 100644
+index 0000000..d6ac090
+--- /dev/null
++++ b/tests/auto/quick/qmltests/data/favicon-multi-gray.html
+@@ -0,0 +1,9 @@
++<html>
++    <head>
++        <title>Gray Multi-sized Favicon Test</title>
++        <link rel="shortcut icon" href="icons/grayicons.ico" />
++    </head>
++    <body>
++        <h1>Gray Multi-sized Favicon Test</h1>
++    </body>
++</html>
+diff --git a/tests/auto/quick/qmltests/data/icons/grayicons.ico b/tests/auto/quick/qmltests/data/icons/grayicons.ico
+new file mode 100644
+index 0000000000000000000000000000000000000000..8d8fee839df30d4c7a92ab37cddb5f5bdc9d61ec
+GIT binary patch
+literal 22150
+zcmeI$F-pWh6b9gzMHd?(m90}+TG=|M@CbX3Ifdu&HntwY6Byq!yCS>of}r1npJbB9
+zFnoatOvDtIG0&U4PVo{EPnp)%@%<FB&Gfz>Uqn1?BF5N{=ZM`lVp-Pl`(woOO~hT!
+zk*}g<YTl}zdA(kfQ$%H+tLyix*4r{Yb6D@l`{VVt*7B(;ubvs1gI9gfW3S$;OA#RO
+zp9N~a7zL2Og75v}>U6&t<EyJW6#)VS2oNAZfB*pk1PBly@W%z}ykN<E{5UUoyFEQG
+zSeEKi1PBlyK!5-N0t5&UAV7cs0RjXF5FkK+009C72oNAZfB*pk1PBlyK!5-N0t5&U
+dAV7cs0RjXF5FkK+009C72oNAZfWSEfJ^`Eb9bEtb
+
+literal 0
+HcmV?d00001
+
+diff --git a/tests/auto/quick/qmltests/data/tst_favicon.qml b/tests/auto/quick/qmltests/data/tst_favicon.qml
+index 26e39f4..e959f19 100644
+--- a/tests/auto/quick/qmltests/data/tst_favicon.qml
++++ b/tests/auto/quick/qmltests/data/tst_favicon.qml
+@@ -50,6 +50,10 @@ TestWebEngineView {
+         }
+     }
+ 
++    function removeFaviconProviderPrefix(url) {
++        return url.toString().substring(16)
++    }
++
+     SignalSpy {
+         id: iconChangedSpy
+         target: webEngineView
+@@ -64,6 +68,7 @@ TestWebEngineView {
+     TestCase {
+         id: test
+         name: "WebEngineFavicon"
++        when: windowShown
+ 
+         function init() {
+             if (webEngineView.icon != '') {
+@@ -185,7 +190,7 @@ TestWebEngineView {
+             iconChangedSpy.wait()
+             compare(iconChangedSpy.count, 1)
+ 
+-            iconUrl = webEngineView.icon
++            iconUrl = removeFaviconProviderPrefix(webEngineView.icon)
+             // Touch icon is ignored
+             compare(iconUrl, Qt.resolvedUrl("icons/qt32.ico"))
+             compare(favicon.width, 32)
+@@ -199,13 +204,13 @@ TestWebEngineView {
+ 
+             iconChangedSpy.wait()
+             verify(iconChangedSpy.count >= 1)
+-            iconUrl = webEngineView.icon
++            iconUrl = removeFaviconProviderPrefix(webEngineView.icon)
+ 
+             // If the icon URL is empty we have to wait for
+             // the second iconChanged signal that propagates the expected URL
+             if (iconUrl == Qt.resolvedUrl("")) {
+                 tryCompare(iconChangedSpy, "count", 2)
+-                iconUrl = webEngineView.icon
++                iconUrl = removeFaviconProviderPrefix(webEngineView.icon)
+             }
+ 
+             compare(iconUrl, Qt.resolvedUrl("icons/qt144.png"))
+@@ -224,6 +229,21 @@ TestWebEngineView {
+ 
+             var iconUrl = webEngineView.icon
+             compare(iconUrl, Qt.resolvedUrl(""))
++            compare(favicon.width, 0)
++            compare(favicon.height, 0)
++
++            WebEngine.settings.touchIconsEnabled = true
++
++            url = Qt.resolvedUrl("favicon-touch.html")
++            webEngineView.url = url
++            verify(webEngineView.waitForLoadSucceeded())
++
++            iconChangedSpy.wait()
++            iconUrl = removeFaviconProviderPrefix(webEngineView.icon)
++            compare(iconUrl, Qt.resolvedUrl("icons/qt144.png"))
++            compare(iconChangedSpy.count, 1)
++            compare(favicon.width, 144)
++            compare(favicon.height, 144)
+         }
+ 
+         function test_multiIcon() {
+@@ -235,11 +255,69 @@ TestWebEngineView {
+ 
+             iconChangedSpy.wait()
+             compare(iconChangedSpy.count, 1)
++            compare(favicon.width, 64)
++            compare(favicon.height, 64)
++        }
+ 
+-            // Image QML type does not support multi-sized icons thus
+-            // chooses the first size
+-            compare(favicon.width, 16)
+-            compare(favicon.height, 16)
++        function test_faviconProvider_data() {
++            return [
++                   { tag: "8x8", size: 8, value: 16 },
++                   { tag: "16x16", size: 16, value: 16 },
++                   { tag: "17x17", size: 17, value: 32 },
++                   { tag: "31x31", size: 31, value: 32 },
++                   { tag: "32x32", size: 32, value: 32 },
++                   { tag: "33x33", size: 33, value: 64 },
++                   { tag: "64x64", size: 64, value: 64 },
++                   { tag: "128x128", size: 128, value: 128 },
++                   { tag: "255x255", size: 255, value: 255 },
++                   { tag: "256x256", size: 256, value: 255 },
++            ];
++        }
++
++        function test_faviconProvider(row) {
++            var faviconImage = Qt.createQmlObject("
++                    import QtQuick 2.5\n
++                    Image { sourceSize: Qt.size(width, height) }", test)
++            var grabImage = Qt.createQmlObject("
++                    import QtQuick 2.5\n
++                    Image { }", test)
++            var faviconCanvas = Qt.createQmlObject("
++                    import QtQuick 2.5\n
++                    Canvas { }", test)
++
++            compare(iconChangedSpy.count, 0)
++
++            var url = Qt.resolvedUrl("favicon-multi-gray.html")
++            webEngineView.url = url
++            verify(webEngineView.waitForLoadSucceeded())
++
++            iconChangedSpy.wait()
++            compare(iconChangedSpy.count, 1)
++
++            faviconImage.width = row.size
++            faviconImage.height = row.size
++            faviconImage.source = webEngineView.icon
++            verify(_waitFor(function() { return faviconImage.status == Image.Ready } ))
++
++            faviconImage.grabToImage(function(result) {
++                    grabImage.source = result.url
++                })
++            verify(_waitFor(function() { return grabImage.status == Image.Ready } ))
++
++            faviconCanvas.width = faviconImage.width
++            faviconCanvas.height = faviconImage.height
++            var ctx = faviconCanvas.getContext("2d")
++            ctx.drawImage(grabImage, 0, 0, grabImage.width, grabImage.height)
++
++            var center = Math.round(row.size/2)
++            var imageData = ctx.getImageData(center, center, center, center)
++            var pixel = imageData.data
++
++            compare(pixel[0], row.value)
++
++            faviconImage.destroy()
++            grabImage.destroy()
++            faviconCanvas.destroy()
+         }
+     }
+ }
+diff --git a/tests/auto/quick/qmltests/data/tst_faviconDownload.qml b/tests/auto/quick/qmltests/data/tst_faviconDownload.qml
+index e4dfb36..406dfa3 100644
+--- a/tests/auto/quick/qmltests/data/tst_faviconDownload.qml
++++ b/tests/auto/quick/qmltests/data/tst_faviconDownload.qml
+@@ -35,6 +35,10 @@ TestWebEngineView {
+     width: 200
+     height: 400
+ 
++    function removeFaviconProviderPrefix(url) {
++        return url.toString().substring(16)
++    }
++
+     SignalSpy {
+         id: iconChangedSpy
+         target: webEngineView
+@@ -108,7 +112,7 @@ TestWebEngineView {
+             iconChangedSpy.wait()
+             compare(iconChangedSpy.count, 1)
+ 
+-            var iconUrl = webEngineView.icon
++            var iconUrl = removeFaviconProviderPrefix(webEngineView.icon)
+             compare(iconUrl, row.expectedIconUrl)
+         }
+     }
+diff --git a/tests/auto/quick/qmltests/qmltests.pro b/tests/auto/quick/qmltests/qmltests.pro
+index 257c1c4..af6e14c 100644
+--- a/tests/auto/quick/qmltests/qmltests.pro
++++ b/tests/auto/quick/qmltests/qmltests.pro
+@@ -18,6 +18,7 @@ OTHER_FILES += \
+     $$PWD/data/favicon2.html \
+     $$PWD/data/favicon-misc.html \
+     $$PWD/data/favicon-multi.html \
++    $$PWD/data/favicon-multi-gray.html \
+     $$PWD/data/favicon-single.html \
+     $$PWD/data/favicon-shortcut.html \
+     $$PWD/data/favicon-touch.html \
+@@ -62,6 +63,7 @@ OTHER_FILES += \
+     $$PWD/data/tst_webchannel.qml \
+     $$PWD/data/tst_keyboardModifierMapping.qml \
+     $$PWD/data/icons/favicon.png \
++    $$PWD/data/icons/grayicons.ico \
+     $$PWD/data/icons/small-favicon.png \
+     $$PWD/data/icons/qt144.png \
+     $$PWD/data/icons/qt32.ico \
+-- 
+2.7.4 (Apple Git-66)
+

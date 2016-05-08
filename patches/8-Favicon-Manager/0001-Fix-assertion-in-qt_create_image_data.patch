@@ -1,0 +1,72 @@
+From d142b2d212ea09a7919a0a2761ee9c04d5c9bda8 Mon Sep 17 00:00:00 2001
+From: Peter Varga <pvarga@inf.u-szeged.hu>
+Date: Tue, 19 Apr 2016 10:48:49 +0200
+Subject: [PATCH] Fix assertion in qt_create_image_data()
+
+Fix rounding of width and height parameters.
+
+Change-Id: Ib7655dafe382684340c32e2d2dc8adb445af65b0
+Reviewed-by: Mitch Curtis <mitch.curtis@theqtcompany.com>
+---
+ src/quick/items/context2d/qquickcontext2d.cpp      |  2 +-
+ .../quick/qquickcanvasitem/data/tst_imagedata.qml  | 22 ++++++++++++++++++++++
+ .../quick/qquickcanvasitem/qquickcanvasitem.pro    |  1 +
+ 3 files changed, 24 insertions(+), 1 deletion(-)
+ create mode 100644 tests/auto/quick/qquickcanvasitem/data/tst_imagedata.qml
+
+diff --git a/src/quick/items/context2d/qquickcontext2d.cpp b/src/quick/items/context2d/qquickcontext2d.cpp
+index 56578b5..734cadf 100644
+--- a/src/quick/items/context2d/qquickcontext2d.cpp
++++ b/src/quick/items/context2d/qquickcontext2d.cpp
+@@ -938,7 +938,7 @@ static QV4::ReturnedValue qt_create_image_data(qreal w, qreal h, QV4::ExecutionE
+         pixelData->d()->image = QImage(w, h, QImage::Format_ARGB32);
+         pixelData->d()->image.fill(0x00000000);
+     } else {
+-        Q_ASSERT(image.width() == int(w) && image.height() == int(h));
++        Q_ASSERT(image.width() == qRound(w) && image.height() == qRound(h));
+         pixelData->d()->image = image.format() == QImage::Format_ARGB32 ? image : image.convertToFormat(QImage::Format_ARGB32);
+     }
+ 
+diff --git a/tests/auto/quick/qquickcanvasitem/data/tst_imagedata.qml b/tests/auto/quick/qquickcanvasitem/data/tst_imagedata.qml
+new file mode 100644
+index 0000000..7095602
+--- /dev/null
++++ b/tests/auto/quick/qquickcanvasitem/data/tst_imagedata.qml
+@@ -0,0 +1,22 @@
++import QtQuick 2.0
++import QtTest 1.1
++
++CanvasTestCase {
++    id:testCase
++    name: "imagedata"
++    function init_data() { return testData("2d"); }
++    function test_rounding(row) {
++        var canvas = createCanvasObject(row);
++        var ctx = canvas.getContext('2d');
++        var size = 17
++        ctx.reset();
++        ctx.fillStyle = Qt.rgba(0.7, 0.8, 0.9, 1.0);
++        ctx.fillRect(0, 0, size, size);
++
++        var center = size / 2;
++        var imageData = ctx.getImageData(center, center, center, center);
++        comparePixel(ctx, center, center, imageData.data[0], imageData.data[1], imageData.data[2], imageData.data[3]);
++
++        canvas.destroy();
++    }
++}
+diff --git a/tests/auto/quick/qquickcanvasitem/qquickcanvasitem.pro b/tests/auto/quick/qquickcanvasitem/qquickcanvasitem.pro
+index 3c41d49..c6d2a69 100644
+--- a/tests/auto/quick/qquickcanvasitem/qquickcanvasitem.pro
++++ b/tests/auto/quick/qquickcanvasitem/qquickcanvasitem.pro
+@@ -25,6 +25,7 @@ OTHER_FILES += \
+     data/tst_arcto.qml \
+     data/tst_arc.qml \
+     data/tst_context.qml \
++    data/tst_imagedata.qml \
+     data/CanvasTestCase.qml \
+     data/CanvasComponent.qml \
+     data/tst_image.qml \
+-- 
+2.7.4 (Apple Git-66)
+

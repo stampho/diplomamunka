@@ -1,0 +1,389 @@
+From 3e30c0a33e301bb993efc7a046a34c8cbc68ca58 Mon Sep 17 00:00:00 2001
+From: Peter Varga <pvarga@inf.u-szeged.hu>
+Date: Thu, 3 Mar 2016 16:12:29 +0100
+Subject: [PATCH] Add multi-sized favicon test
+
+Change-Id: Ib984c4fb3e9a2424ac09e4ab17a9bfc3f9627fb9
+Task-number: QTBUG-51179
+Reviewed-by: Kai Koehne <kai.koehne@theqtcompany.com>
+---
+ tests/auto/quick/qmltests/data/favicon-multi.html  |   9 ++++++++
+ tests/auto/quick/qmltests/data/icons/qtmulti.ico   | Bin 0 -> 22382 bytes
+ tests/auto/quick/qmltests/data/tst_favicon.qml     |  16 ++++++++++++++
+ tests/auto/quick/qmltests/qmltests.pro             |   2 ++
+ .../qwebenginefaviconmanager.pro                   |   1 -
+ .../resources/favicon-multi.html                   |   9 ++++++++
+ .../resources/icons/qtmulti.ico                    | Bin 0 -> 22382 bytes
+ .../tst_qwebenginefaviconmanager.cpp               |  24 +++++++++++++++++++--
+ .../tst_qwebenginefaviconmanager.qrc               |   2 ++
+ 9 files changed, 60 insertions(+), 3 deletions(-)
+ create mode 100644 tests/auto/quick/qmltests/data/favicon-multi.html
+ create mode 100644 tests/auto/quick/qmltests/data/icons/qtmulti.ico
+ create mode 100644 tests/auto/widgets/qwebenginefaviconmanager/resources/favicon-multi.html
+ create mode 100644 tests/auto/widgets/qwebenginefaviconmanager/resources/icons/qtmulti.ico
+
+diff --git a/tests/auto/quick/qmltests/data/favicon-multi.html b/tests/auto/quick/qmltests/data/favicon-multi.html
+new file mode 100644
+index 0000000..cc5f3fd
+--- /dev/null
++++ b/tests/auto/quick/qmltests/data/favicon-multi.html
+@@ -0,0 +1,9 @@
++<html>
++    <head>
++        <title>Multi-sized Favicon Test</title>
++        <link rel="shortcut icon" sizes="16x16 32x23 64x64" href="icons/qtmulti.ico" />
++    </head>
++    <body>
++        <h1>Multi-sized Favicon Test</h1>
++    </body>
++</html>
+diff --git a/tests/auto/quick/qmltests/data/icons/qtmulti.ico b/tests/auto/quick/qmltests/data/icons/qtmulti.ico
+new file mode 100644
+index 0000000000000000000000000000000000000000..81e5a22e89dd8d8cbf542222bbc4c3a79262608f
+GIT binary patch
+literal 22382
+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
+K|Cj$`9QZG-${`j2
+
+literal 0
+HcmV?d00001
+
+diff --git a/tests/auto/quick/qmltests/data/tst_favicon.qml b/tests/auto/quick/qmltests/data/tst_favicon.qml
+index 8448960..1619b73 100644
+--- a/tests/auto/quick/qmltests/data/tst_favicon.qml
++++ b/tests/auto/quick/qmltests/data/tst_favicon.qml
+@@ -226,5 +226,21 @@ TestWebEngineView {
+             var iconUrl = webEngineView.icon
+             compare(iconUrl, Qt.resolvedUrl(""))
+         }
++
++        function test_multiIcon() {
++            compare(iconChangedSpy.count, 0)
++
++            var url = Qt.resolvedUrl("favicon-multi.html")
++            webEngineView.url = url
++            verify(webEngineView.waitForLoadSucceeded())
++
++            iconChangedSpy.wait()
++            compare(iconChangedSpy.count, 1)
++
++            // Image QML type does not support multi-sized icons thus
++            // chooses the first size
++            compare(favicon.width, 16)
++            compare(favicon.height, 16)
++        }
+     }
+ }
+diff --git a/tests/auto/quick/qmltests/qmltests.pro b/tests/auto/quick/qmltests/qmltests.pro
+index 2086e88..257c1c4 100644
+--- a/tests/auto/quick/qmltests/qmltests.pro
++++ b/tests/auto/quick/qmltests/qmltests.pro
+@@ -17,6 +17,7 @@ OTHER_FILES += \
+     $$PWD/data/favicon.html \
+     $$PWD/data/favicon2.html \
+     $$PWD/data/favicon-misc.html \
++    $$PWD/data/favicon-multi.html \
+     $$PWD/data/favicon-single.html \
+     $$PWD/data/favicon-shortcut.html \
+     $$PWD/data/favicon-touch.html \
+@@ -64,6 +65,7 @@ OTHER_FILES += \
+     $$PWD/data/icons/small-favicon.png \
+     $$PWD/data/icons/qt144.png \
+     $$PWD/data/icons/qt32.ico \
++    $$PWD/data/icons/qtmulti.ico \
+     $$PWD/mock-delegates/QtWebEngine/UIDelegates/AlertDialog.qml \
+     $$PWD/mock-delegates/QtWebEngine/UIDelegates/ConfirmDialog.qml \
+     $$PWD/mock-delegates/QtWebEngine/UIDelegates/FilePicker.qml \
+diff --git a/tests/auto/widgets/qwebenginefaviconmanager/qwebenginefaviconmanager.pro b/tests/auto/widgets/qwebenginefaviconmanager/qwebenginefaviconmanager.pro
+index 70786e7..e99c7f4 100644
+--- a/tests/auto/widgets/qwebenginefaviconmanager/qwebenginefaviconmanager.pro
++++ b/tests/auto/widgets/qwebenginefaviconmanager/qwebenginefaviconmanager.pro
+@@ -1,2 +1 @@
+ include(../tests.pri)
+-QT *= core-private gui-private
+diff --git a/tests/auto/widgets/qwebenginefaviconmanager/resources/favicon-multi.html b/tests/auto/widgets/qwebenginefaviconmanager/resources/favicon-multi.html
+new file mode 100644
+index 0000000..cc5f3fd
+--- /dev/null
++++ b/tests/auto/widgets/qwebenginefaviconmanager/resources/favicon-multi.html
+@@ -0,0 +1,9 @@
++<html>
++    <head>
++        <title>Multi-sized Favicon Test</title>
++        <link rel="shortcut icon" sizes="16x16 32x23 64x64" href="icons/qtmulti.ico" />
++    </head>
++    <body>
++        <h1>Multi-sized Favicon Test</h1>
++    </body>
++</html>
+diff --git a/tests/auto/widgets/qwebenginefaviconmanager/resources/icons/qtmulti.ico b/tests/auto/widgets/qwebenginefaviconmanager/resources/icons/qtmulti.ico
+new file mode 100644
+index 0000000000000000000000000000000000000000..81e5a22e89dd8d8cbf542222bbc4c3a79262608f
+GIT binary patch
+literal 22382
+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
+K|Cj$`9QZG-${`j2
+
+literal 0
+HcmV?d00001
+
+diff --git a/tests/auto/widgets/qwebenginefaviconmanager/tst_qwebenginefaviconmanager.cpp b/tests/auto/widgets/qwebenginefaviconmanager/tst_qwebenginefaviconmanager.cpp
+index 9f14a42..617ec7b 100644
+--- a/tests/auto/widgets/qwebenginefaviconmanager/tst_qwebenginefaviconmanager.cpp
++++ b/tests/auto/widgets/qwebenginefaviconmanager/tst_qwebenginefaviconmanager.cpp
+@@ -54,14 +54,15 @@ private Q_SLOTS:
+     void errorPageDisabled();
+     void bestFavicon();
+     void touchIcon();
++    void multiIcon();
+     void downloadIconsDisabled_data();
+     void downloadIconsDisabled();
+     void downloadTouchIconsEnabled_data();
+     void downloadTouchIconsEnabled();
+ 
+ private:
+-    QWebEngineView* m_view;
+-    QWebEnginePage* m_page;
++    QWebEngineView *m_view;
++    QWebEnginePage *m_page;
+ };
+ 
+ 
+@@ -276,6 +277,25 @@ void tst_QWebEngineFaviconManager::touchIcon()
+     QVERIFY(m_page->iconUrl().isEmpty());
+ }
+ 
++void tst_QWebEngineFaviconManager::multiIcon()
++{
++    if (!QDir(TESTS_SOURCE_DIR).exists())
++        W_QSKIP(QString("This test requires access to resources found in '%1'").arg(TESTS_SOURCE_DIR).toLatin1().constData(), SkipAll);
++
++    QSignalSpy loadFinishedSpy(m_page, SIGNAL(loadFinished(bool)));
++    QSignalSpy iconUrlChangedSpy(m_page, SIGNAL(iconUrlChanged(QUrl)));
++
++    QUrl url = QUrl::fromLocalFile(TESTS_SOURCE_DIR + QLatin1String("qwebenginefaviconmanager/resources/favicon-multi.html"));
++    m_page->load(url);
++
++    QTRY_COMPARE(loadFinishedSpy.count(), 1);
++    QTRY_COMPARE(iconUrlChangedSpy.count(), 1);
++
++    QUrl iconUrl = iconUrlChangedSpy.at(0).at(0).toString();
++    QCOMPARE(m_page->iconUrl(), iconUrl);
++    QCOMPARE(iconUrl, QUrl::fromLocalFile(TESTS_SOURCE_DIR + QLatin1String("qwebenginefaviconmanager/resources/icons/qtmulti.ico")));
++}
++
+ void tst_QWebEngineFaviconManager::downloadIconsDisabled_data()
+ {
+     QTest::addColumn<QUrl>("url");
+diff --git a/tests/auto/widgets/qwebenginefaviconmanager/tst_qwebenginefaviconmanager.qrc b/tests/auto/widgets/qwebenginefaviconmanager/tst_qwebenginefaviconmanager.qrc
+index 65d8ed9..a352f8a 100644
+--- a/tests/auto/widgets/qwebenginefaviconmanager/tst_qwebenginefaviconmanager.qrc
++++ b/tests/auto/widgets/qwebenginefaviconmanager/tst_qwebenginefaviconmanager.qrc
+@@ -1,12 +1,14 @@
+ <!DOCTYPE RCC><RCC version="1.0">
+ <qresource>
+     <file>resources/favicon-misc.html</file>
++    <file>resources/favicon-multi.html</file>
+     <file>resources/favicon-shortcut.html</file>
+     <file>resources/favicon-single.html</file>
+     <file>resources/favicon-touch.html</file>
+     <file>resources/favicon-unavailable.html</file>
+     <file>resources/icons/qt144.png</file>
+     <file>resources/icons/qt32.ico</file>
++    <file>resources/icons/qtmulti.ico</file>
+     <file>resources/test1.html</file>
+ </qresource>
+ </RCC>
+-- 
+2.7.4 (Apple Git-66)
+
