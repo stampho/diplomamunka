@@ -132,6 +132,7 @@ QtWebSockets QtWebChannel Android WebEngine JavaScript JavaScriptCore WebCore th
 \def\title{A QtWebEngine bővítése és bemutatása saját böngészőalkalmazás segítségével}
 
 \begin{document}
+\selectlanguage{magyar}
 
 % EMPTY PAGE STYLE
 \fancypagestyle{plain}{
@@ -2195,7 +2196,8 @@ böngészőalkalmazás segítségével mutatom be ebben a fejezetben. Az alkalma
 desktop környezetre szántam. Mivel a Qt egy cross-platform keretrendszer így a példa
 böngészőalkalmazás működik a legnépszerűbb desktop operációs rendszereken: Windows, Linux,
 OS X. Mindemellett elméletileg működik beágyazott környezetben is (pl.: Embedded Linux),
-ahol a Qt WebEngine támogatott (Androidon már nem), viszont ez nem került kipróbálásra.
+ahol a Qt WebEngine támogatott (Androidon például nem támogatott), viszont ez nem került
+kipróbálásra.
 
 Az alkalmazást QML nyelven valósítottam meg. Minimális C++ kód is része a megvalósításnak,
 amely két részből áll. Az egyik a program fő belépési pontjának megvalósítása, amely
@@ -2216,7 +2218,7 @@ inicializálja a Qt WebEngine OpenGL és QML környezetét, illetve betölti a Q
  }
 \end{lstlisting}
 A másik rész segédfüggvényeket implementál a QML nyelvhez, amelyek a \texttt{utils} propertyn
-elérhetőek QML-ből. A segédfüggvények az alábbiak:
+keresztül érhetőek el QML-ből. A hozzáadott segédfüggvények a következők:
 \begin{description}
     \item[\texttt{fromUserInput(userInput)}] A paraméterül kapott stringet URL-é alakítja
         annak megfelelően, hogy a hivatkozott erőforrás lokálisan vagy HTTP protokollon
@@ -2230,12 +2232,12 @@ elérhetőek QML-ből. A segédfüggvények az alábbiak:
 A QML kód túlnyomó része a GUI-t valósítja meg. Mivel a QML egy deklaratív nyelv, nem kellett
 túl sokat dolgozni a működés megvalósításán, azt a Qt WebEngine Quick/QML API-ja már
 megvalósította. A hangsúly a megjelenés megtervezésén van, ezért könnyű a QML nyelven
-programozni, a fejlesztőnek csak a GUI elemek testre szabására és az azok közötti
-interakciókra kell figyelni. Lényegében a \texttt{WebEngineView} QML típus is egy GUI elem,
+programozni. A fejlesztőnek csak a GUI elemek testre szabására és az azok közötti
+interakciókra kell figyelnie. Lényegében a \texttt{WebEngineView} QML típus is egy GUI elem,
 ami a web oldal tartalmát rajzolja egy téglalap alakú felületre és küld értesítést
 (signalokat) a nézetben történt változásokról.
 
-A GUI megtervezésénél legfőbb szempontnak tartottam, hogy a böngészőalkalmazás desktop-ra
+A GUI megtervezésénél legfőbb szempontnak tartottam, hogy a böngészőalkalmazás desktopra
 készül, ahol a megjelenítő szélessége nagyobb, mint a magassága. Ezzel szemben a web oldalak
 általában magasabbak, mint szélesek, ezért a bal szélen ki nem használt területet a tabok
 és a böngészési előzmények megjelenítésére használtam fel. A másik fontos szempont az volt,
@@ -2327,7 +2329,7 @@ jeleníti meg. Ilyen saját template típusok a \texttt{CompactEntry} és a \tex
 \end{figure}
 A \texttt{CompactEntry} csak a weboldal ikonját jeleníti meg nagy méretben (touch ikont, ha
 van elérhető). A \texttt{WideEntry} szélessége miatt nagyobb helyet foglal, megjeleníti az
-oldal kis méretű favicon-ját, mellette pedig a web oldal címét. Ezek a lista elem sablonok
+oldal kis méretű faviconját, mellette pedig a web oldal címét. Ezek a lista elem sablonok
 tulajdonképpen nem ``vezérlők'', mert a felhasználói eseményeket nem az elem, hanem a
 \texttt{ListView} QML típus kezeli le, viszont a felhasználó a lista elemre kattintva
 ``vezérli'' az alkalmazást.
@@ -2388,7 +2390,7 @@ Tartalmuk rögzített, melyek felhasználják a \texttt{WebEngineView} QML típu
 propertyjét.
 
 Az \texttt{AddressBar} típus a betölteni kívánt weboldal URL-jének megadására használatos.
-Ez a GUI eleme interaktív, mutatja az oldal betöltésének állapotát és az oldal favicon-ját
+Ez a GUI elem interaktív, mutatja az oldal betöltésének állapotát és az oldal faviconját
 teljesen betöltött oldal esetén.
 \begin{figure}[H]
     \centering
@@ -2414,7 +2416,7 @@ elrejtéséhez.
 \end{figure}
 
 \subsection{Modellek (models)}
-A példa böngészőalkalmazáshoz megvalósított saját modellek valójában nem GUI része, mert
+A példa böngészőalkalmazáshoz megvalósított saját modellek valójában nem a GUI részei, mert
 nem megjelenést definiálnak. Dinamikus tartalmat határoznak meg, amelyet más QML típusoknak
 kell megjeleníteniük. A megvalósítások a \texttt{ListModel} QML típust specializálják úgy,
 hogy tartalmuk egyedi módon változtatható legyen.
@@ -2448,15 +2450,15 @@ A saját és a Qt gyári QML típusai a \texttt{main.qml} QML fájlban vannak p�
 \newpage
 \section{Az új QtWebEngine funkciók használata}
 
-Az funkciók használatának bemutatására a példa böngészőalkalmazás QML kódját használom fel.
-A legtöbb esetben a példakód nem egy-egy az egyben lett bemásolva, hogy az olvashatóbb
-legyen és nyomtatásban kiférjen. Minden kódrészletnél megjelöltem, hogy az eredeti
+Az új QtWebEngine funkciók használatának bemutatására a példa böngészőalkalmazás QML kódját
+használom fel. A legtöbb esetben a példakód nem egy-egy az egyben lett bemásolva, hogy az
+olvashatóbb legyen és nyomtatásban kiférjen. Minden kódrészletnél megjelöltem, hogy az eredeti
 melyik forrásfájlban található. Eltávolításra kerültek még a funkcióhoz nem kapcsolódó
 kódrészletek is, hogy azok ne legyenek zavaróak vagy félrevezetőek a magyarázatban.
 
 \subsection{Favicon Manager}
 
-A példa alkalmazásban az ikonokat minden esetben a \texttt{Image} QML típussal jelenítem meg.
+A példa alkalmazásban az ikonokat minden esetben az \texttt{Image} QML típussal jelenítem meg.
 Ikonok összesen három saját QML típusban fordulnak elő: \texttt{AddressBar},
 \texttt{CompactEntry} és \texttt{WideEntry}. Az API használata lényegében nem tér el a három
 típusban, ezért azt az \texttt{AddressBar} kódjával szemléltetem:
@@ -2472,13 +2474,13 @@ típusban, ezért azt az \texttt{AddressBar} kódjával szemléltetem:
 \end{lstlisting}
 A Favicon Manager szempontjából két property fontos: a \texttt{sourceSize} és a
 \texttt{source}. A \texttt{sourceSize} property mondja meg, hogy mekkora ikont kell
-betöltenie a Favicon Provider-nek. Jelen esetben ez úgy van megadva, hogy egyezzen meg az
+betöltenie a Favicon Providernek. Jelen esetben ez úgy van megadva, hogy megegyezzen az
 \texttt{Image} elem méretével, így az ha dinamikusan változik, akkor a Favicon Provider
 implicit az új méretnek megfelelő ikont tölti be.
 
-A \texttt{source} property értékének egy, a Favicon Provider-re hivatkozó URL-nek kell lennie.
+A \texttt{source} property értékének egy, a Favicon Providerre hivatkozó URL-nek kell lennie.
 Ezt az URL-t a \texttt{WebEngineView::icon} property tárolja. Azért, hogy az
-\texttt{AddressBar} típusnak ne kelljen beimportálnia a Qt WebEngine modult, ezért a saját
+\texttt{AddressBar} típusnak ne kelljen importálnia a Qt WebEngine modult, ezért a saját
 \texttt{iconUrl} propertyjén keresztül éri el az URL-t. Az \texttt{iconUrl} propertynek az
 \texttt{AddressBar} létrehozásakor kell értéket adni:
 \begin{lstlisting}[title=main.qml]
@@ -2495,13 +2497,13 @@ Az ellenőrzésre azért van szükség, hogy az alkalmazás ne küldjön hiba ü
 megnyitva tab. Ha a \texttt{WebEngineView} példány \texttt{icon} propertyje megváltozik
 (új ikon töltődik be), akkor az \texttt{AddressBar} \texttt{iconUrl} propertyje is
 automatikusan változni fog. Ez a QML nyelv \textit{property binding} támogatása miatt
-lehetséges, így a példa alkalmazásban nincs is szükség a \texttt{iconChanged} signal
+lehetséges, így a példa alkalmazásban nincs szükség a \texttt{iconChanged} signal
 használatára.
 
 A Favicon Manager megvalósításának része, hogy a publikus \texttt{WebEngineSettings}
 API-n keresztül befolyásolni lehessen az ikonok letöltését. Erre kétféleképpen lehetünk
 hatással: letilthatjuk az ikonok automatikus letöltését és engedélyezhetjük a touch
-ikonok letöltését\footnote{Alapértelmezetten a favicon-okat automatikusan letöltjük a touch
+ikonok letöltését\footnote{Alapértelmezetten a faviconokat automatikusan letöltjük a touch
 ikonokat nem}. A beállítások tartós tárolására \texttt{Settings} QML típust használtam fel:
 \begin{lstlisting}[title=main.qml]
  Settings {
@@ -2538,7 +2540,7 @@ propertyjeit ezek szerint a beállítások szerint inicializálom, amikor létre
 \end{lstlisting}
 Ezzel a megoldással a böngésző alkalmazás a legutóbbi kilépéskori beállításokkal indul. A
 \texttt{Qt.binding()} JavaScript függvény hívásra azért van szükség, hogy kikényszerítsem
-a \texttt{QML} property bindingot: amikor a checkboxok állapota változik és azzal együtt
+a QML property bindingot: amikor a checkboxok állapota változik és azzal együtt
 a \texttt{appSetttings}-é is, úgy automatikusan változnak a \texttt{WebEngineSettings}
 bekötött propertyjei is.
 
@@ -2548,7 +2550,7 @@ A böngészési előzmények megjelenítéséért a már bemutatott \texttt{Hist
 QML típus felel. Az előzmények modellekben vannak tárolva, melyek a
 \texttt{NavigationHistory} API-n keresztül érhetőek el. Az \texttt{items} modell tartalmazza
 az éppen megjelenített oldalt és az az előtt és után betöltött oldalakat is.
-A teljese böngészési előzmény listához ezt a modellt alkalmaztam:
+A teljes böngészési előzmény listához ezt a modellt használtam:
 \begin{lstlisting}[title=main.qml]
  HistoryListView {
     id: historyListView
@@ -2575,8 +2577,8 @@ oldalt választja ki aktuálisnak, így ez a bejegyzés ki lesz emelve, a többi
 képest lesz rendezve. A látható oldal indexének meghatározásához a Navigation History egy
 másik modelljét használom, a \texttt{backItems}-t. Ez a modell az aktuálisnál korábban
 látogatott oldalak listáját tartalmazza, a legutóbb látogatott oldal az utolsó a listában.
-Az arra rákövetkező oldal az éppen aktuális lesz, így annak indexe az \texttt{items} modellben
-könnyedén kiszámítható a \texttt{backItems} modell méretéből.
+Az arra rákövetkező elem az éppen aktuális oldal lesz, így annak indexe az \texttt{items}
+modellben könnyedén kiszámítható a \texttt{backItems} modell méretéből.
 
 Mivel a Navigation History modelljei minden oldal betöltés után változhatnak, így a
 \texttt{HistoryListView} aktuális indexét is minden betöltés után frissíteni kell. Nem elég
@@ -2606,15 +2608,15 @@ megoldás az oldal betöltésének változását figyelni:
    /* ... */
  }
 \end{lstlisting}
-A fent kódrészlet minden újonnan létrehozott \texttt{WebEngineView} példány
+A fenti kódrészlet minden újonnan létrehozott \texttt{WebEngineView} példány
 \texttt{loadingChanged(loadRequest)} signaljához egy slotot kapcsol, amely minden oldal
 betöltés befejeztével (legyen az sikeres vagy sikertelen) frissíti az előzmény lista
 aktuális indexét.
 
-A modellben tárolt adatokat un. \textit{role}-okon keresztül kérdezhetjük le. Ezek a role-ok,
-a lista elem sablonokból (\texttt{CompactEntry} és \texttt{WideEntry}) példányosított
-listelemek környezetében változóként elérhetőek. A megjelenítéshez, az \texttt{icon} és
-\texttt{title} role-okra van szükség:
+A modellben tárolt adatokat úgynevezett \textit{role}-okon keresztül kérdezhetjük le.
+Ezek a role-ok, a lista elem sablonokból (\texttt{CompactEntry} és \texttt{WideEntry})
+példányosított listelemek környezetében változóként elérhetőek. A megjelenítéshez, az
+\texttt{icon} és \texttt{title} role-okra van szükség:
 \begin{lstlisting}[title=views/HistoryListView.qml]
 property Component compactDelegate: Component {
     CompactEntry {
@@ -2631,7 +2633,7 @@ property Component wideDelegate : Component {
     }
 }
 \end{lstlisting}
-A navigációhoz már az \texttt{offset} role hasznos, ami a kiválasztott böngészési előzmény
+A navigációhoz az \texttt{offset} role használatos, ami a kiválasztott böngészési előzmény
 távolságát tárolja az aktuális oldalhoz képest:
 \begin{lstlisting}[title=main.qml]
  HistoryListView {
@@ -2645,8 +2647,8 @@ távolságát tárolja az aktuális oldalhoz képest:
     /* ... */
  }
 \end{lstlisting}
-A fenti példában az \texttt{offset} a \texttt{selected} signal paramétere, amit a kiválasztott
-lista bejegyzés váltott ki.
+A fenti példában az \texttt{offset} a \texttt{selected} signal paramétere, amit egy lista elem
+kiválasztása vált ki.
 
 
 \subsection{Find Text}
@@ -2669,9 +2671,10 @@ FindBar {
     }
 }
 \end{lstlisting}
-Ismételt keresés ugyanarra az inputra előre mozgatja a kiemelt találatot a web oldalon. A
+Ismételt keresés ugyanarra az inputra előre mozgatja a kiemelt találatot a view-ban. A
 \texttt{WebEngineView.FindBackward} paraméter hatására a kiemelést visszafele lehet léptetni.
-A keresés indítása üres string-gel törli a találatok kiemelését a \texttt{WebEngineView}-ban.
+A keresés indítása üres stringgel törli a találatok kiemelését és alapállapotban helyezi
+a keresést.
 
 A \ref{fig:find-bar-screen} képernyőkép mutat példát arra, hogy a Find Text hogyan jelöli
 a találatokat. Narancssárga téglalappal az aktuális találat van kijelölve.
@@ -2692,7 +2695,7 @@ hiszen a megjelenítendő üzenetet tartalmazó szövegbuborék megvalósítása
 része, ami a megfelelő esemény hatására meg is jelenik. A funkció segítségével viszont jól
 demonstrálható egy másik új funkció, a Localization. A Qt WebEngine Localization funkciója
 miatt a Form Validation üzenetnek a Qt \texttt{QLocale} API-ján keresztül beállított nyelven
-kell megjelenítenie.
+kell megjelennie.
 
 A QML-ben nincs API a locale beállításához, viszont a nyelv kiegészíthető olyan C++ nyelven
 megvalósított függvénnyel, ami elvégzi a beállítást:
@@ -2727,7 +2730,7 @@ Qt alapértelmezett nyelvi beállításait az \texttt{ApplicationWindow} példá
     }
  }
 \end{lstlisting}
-Minden a locale inicializáció után létrejött \texttt{WebEngineView} példány a hozzátartozó
+Minden, a locale inicializáció után létrejött \texttt{WebEngineView} példány a hozzátartozó
 új Render Processt a \texttt{-{}-lang locale} kapcsolóval fogja indítani, ahol a
 \texttt{locale} a \texttt{QLocale} API-n keresztül beállított nyelv. Az első
 \texttt{WebEngineView} példány (tab) éppen ezért az inicializáció után van létrehozva:
@@ -2750,7 +2753,7 @@ ComboBox {
 }
 \end{lstlisting}
 A támogatott nyelvek kézzel vannak hozzáadva a \texttt{LocaleListModel} QML típushoz, továbbá
-ki vannak egészítve az a rendszer által használt nyelvvel, amit a Qt alapértelmezetten
+ki vannak egészítve az operációs rendszer által használt nyelvvel, amit a Qt alapértelmezetten
 használ. Mivel a \texttt{LocaleListModel} hamarabb van példányosítva, mint ahogy az
 \texttt{ApplicationWindow} létrejön, ezért ezen a ponton még nincs felüldefiniálva a Qt
 alapértelmezett nyelve. A lenyíló listában megjelenített neveket (\texttt{name} role) a
@@ -2859,7 +2862,7 @@ elérhető a Qt legfrissebb (5.6) stabil kiadásában. A Favicon Manager a kész
 verzióban biztosan benne lesz.
 
 27 db patch-et nyújtottam be a Qt közösségnek, amelyek szorosan ezekhez a funkciókhoz
-kapcsolódnak és be is kerültek a QtWebEngine kódjába. 1 db patch QtDeclarative komponensbe
+kapcsolódnak és be is kerültek a QtWebEngine kódjába. 1 db patch a QtDeclarative komponensbe
 került be, ami egy a Favicon Manager tesztelése közben felfedezett \texttt{Context2D}
 QML típus hibáját javítja.
 
