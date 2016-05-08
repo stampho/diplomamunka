@@ -1,0 +1,30 @@
+From 6d7b9ab74288eab0f846e5fa92854c9a49bee195 Mon Sep 17 00:00:00 2001
+From: Peter Varga <pvarga@inf.u-szeged.hu>
+Date: Wed, 22 Apr 2015 10:51:14 +0200
+Subject: [PATCH] <chromium> Enable localization codepath on Linux
+
+The preferred locale is set in QtWebEngine. Disable the GLib codepath
+to avoid ignoring Qt settings.
+
+Change-Id: Ic5eee521f4c5a38a9dc651bccc345daadf1fe6b2
+Reviewed-by: Andras Becsi <andras.becsi@theqtcompany.com>
+---
+ chromium/ui/base/l10n/l10n_util.cc | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/chromium/ui/base/l10n/l10n_util.cc b/chromium/ui/base/l10n/l10n_util.cc
+index 1abda33..7f1a8ba 100644
+--- a/chromium/ui/base/l10n/l10n_util.cc
++++ b/chromium/ui/base/l10n/l10n_util.cc
+@@ -450,7 +450,7 @@ std::string GetApplicationLocaleInternal(const std::string& pref_locale) {
+   // On Android, query java.util.Locale for the default locale.
+   candidates.push_back(base::android::GetDefaultLocale());
+ 
+-#elif defined(USE_GLIB) && !defined(OS_CHROMEOS)
++#elif defined(USE_GLIB) && !defined(OS_CHROMEOS) && !defined(TOOLKIT_QT)
+ 
+   // GLib implements correct environment variable parsing with
+   // the precedence order: LANGUAGE, LC_ALL, LC_MESSAGES and LANG.
+-- 
+2.7.4 (Apple Git-66)
+

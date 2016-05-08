@@ -1543,7 +1543,6 @@ A Test Support API-t Qt 5.5-ös verziója óta használjuk tesztelésre.
         \begin{itemize}
             \renewcommand{\labelitemi}{\textcolor{qtgreen}{$\blacktriangleright$}}
             \item \gerrit{107066}
-            \item \gerrit{122727}
         \end{itemize}
     \end{reviewbox}
 \end{center}
@@ -1668,6 +1667,14 @@ Sajnos ikon használatára nem volt lehetőség, mivel a Qt a QML nyelvben nem n
 ikonokat sem pedig ikon támogatást. A widget API-n keresztül elérhető ikonok használatát
 kerülni kellett, mivel a Qt WebEngine modulnak nem lehet Qt Widgets függősége.
 
+\begin{center}
+    \begin{reviewbox}
+        \begin{itemize}
+            \renewcommand{\labelitemi}{\textcolor{qtgreen}{$\blacktriangleright$}}
+            \item \gerrit{122727}
+        \end{itemize}
+    \end{reviewbox}
+\end{center}
 Az Form Validation funkció tesztelésére a Test Support API-t használtam fel. Mivel a
 QtWebEngine-ben a Form Validation funkciónak nincs publikus API-ja, az üzeneteket a Test
 Support API teszi elérhetővé a tesztek számára. Az üzenetek kiváltásához szükség van
@@ -1693,27 +1700,28 @@ verzióban jelentek meg. A funkció tesztelése már csak az 5.6-os Qt verzióho
 
 \noindent
 A \textbf{Localization} funkció felel a Chromium üzeneteinek (legyen az hiba üzenet vagy
-a Form Validation funkció üzenete) lefordításáért. Alapértelmezetten az üzenetek a
-rendszer szinten beállított nyelven fognak megjelenni. Ez a nyelv felüldefiniálható
-a render processzben a Chromium \texttt{-{}-lang} kapcsolóval. A browser processzben
+a Form Validation funkció üzenete) lefordításáért. Alapértelmezetten az üzenetek az
+operációs rendszer nyelvén fognak megjelenni. Ez a nyelv felüldefiniálható
+a Render Processben a Chromium \texttt{-{}-lang} kapcsolójával. A Browser Processben
 ugyanerre a célra a Content API \texttt{ContentBrowserClient::GetApplicationLocale()}
 függvényén keresztül van lehetőség.
 
 Tesztelésnél kulcsfontosságú, hogy az üzenetek angol nyelven jelenjenek meg, mivel a
 tesztelés során angol nyelvű hiba üzeneteket használjuk referenciaként. A Chromium
-alapértelmezett nyelvét a Qt által használt nyelvi beállításokkal definiáltuk felül:
-\begin{verbatim}
-std::string ContentBrowserClientQt::GetApplicationLocale()
-{
+alapértelmezett nyelvét a Qt által használt nyelvi beállításokkal definiáltam felül:
+\begin{lstlisting}[title=src/core/content\_browser\_client\_qt.cpp]
+ std::string ContentBrowserClientQt::GetApplicationLocale()
+ {
     return QLocale().bcp47Name().toStdString();
-}
-\end{verbatim}
-Ez alapján, ahhoz, hogy a tesztekben angol nyelvű hibaüzenetek kapjunk elég a Qt API-n
-keresztül beállítani a nyelvet, a tesztelés inicializálásakor:
-\begin{verbatim}
-QLocale::setDefault(QLocale("en"));
-\end{verbatim}
-Ez a megoldás azonban nem működött és erről hiba jelentés (bug report) is készült:
+ }
+\end{lstlisting}
+Ezzel a módosítással ahhoz, hogy a tesztekben angol nyelvű üzeneteket kapjunk elég a Qt API-n
+keresztül beállítani a nyelvet, a teszt inicializációjakor:
+\begin{lstlisting}[title=tests/auto/quick/qmltests/tst\_qmltests.cpp]
+ QLocale::setDefault(QLocale("en"));
+\end{lstlisting}
+Ez a megoldás azonban egy a Chromium forkban lévő hiba miatt nem működött így erről egy
+hiba jelentést (bug report) is készítettem:
 \begin{center}
     \begin{issuebox}
         \begin{itemize}
@@ -1722,32 +1730,56 @@ Ez a megoldás azonban nem működött és erről hiba jelentés (bug report) is
         \end{itemize}
     \end{issuebox}
 \end{center}
+A probléma oka az volt, hogy amelyik rendszeren elérhető a \textit{GLib} (GNOME core library)
+ott a Chromium ezt a függvénykönyvtárat használja a nyelv kiválasztására. Ez a megoldás
+felülírja a Qt beállításait, ezért a Chromium forkban kikapcsoltam ezt a GLib-et használó
+kód részletet.
 
-A hiba oka a Chromiumban volt, ezért a javítást a \textit{qtwebengine-chromium} Chromium
-forkhoz kellett hozzáadni. A probléma az volt, hogy amelyik rendszeren volt elérhető
-GLib ott arra volt bízva a megfelelő lokalizáció kiválasztása. Qt esetében ezt a kód részt
-(``code path''-t) ki kellett kapcsolni, hogy ne írja felül a Qt beállításait.
+A legtöbb üzenet a Render Processtől jön, azonban a
+\texttt{ContentBrowserClient::GetApplicationLocale} függvény csak a Browser Processre van
+hatással. A Render Process számára a nyelvi beállításokat a \texttt{-{}-lang} parancssori
+kapcsolóval továbbítom annak indításakor. A Browser Process által indított processzek
+parancssori kapcsolóinak megadására a Chromium Content API
+\texttt{ContentBrowserClientQt::AppendExtraCommandLineSwitches()} függvényének
+megvalósításával van lehetőség:
+\begin{lstlisting}[title=src/core/content\_browser\_client\_qt.cpp]
+ void ContentBrowserClientQt::AppendExtraCommandLineSwitches(
+                                base::CommandLine* command_line,
+                                int child_process_id)
+ {
+    /* ... */
+    command_line->AppendSwitchASCII(switches::kLang,
+                                    GetApplicationLocale());
+    /* ... */
+ }
+\end{lstlisting}
 
-Egyes üzenetek a render processztől jönnek, amelyekre nem érvényes a
-\texttt{ContentBrowserClient::GetApplicationLocale} beállítása. A render processznek
-és más nem browser processzeknek van egy \texttt{-{}-lang} parancssori kapcsolója, amivel
-megadható a kiválasztott locale. A Content API
-\texttt{ContentBrowserClientQt::AppendExtraCommandLineSwitches()}
-függvényének implementálásával megadható, hogy amikor a browser processz új processzt indít,
-annak milyen kapcsolót adjon át. Így ezzel a megoldással minden újonnan induló processznek
-átadjuk a \texttt{ContentBrowserClient::GetApplicationLocale()} függvény által visszaadott
-locale-t a processz \texttt{-{}-lang} kapcsolóján keresztül:
-\begin{verbatim}
-AppendSwitchASCII(switches::kLang, GetApplicationLocale());
-\end{verbatim}
+\begin{comment}
+Ahhoz, hogy a felhasználó a QtWebEngine-t beépítő alkalmazás indításakor felüldefiniálhassa
+a Qt beállításait is, a \texttt{-{}-lang} parancssori kapcsoló ellenőrzését hozzáadtam
+Browser Processhez is:
+\newpage
+\begin{lstlisting}[title=src/core/web\_engine\_library\_info.cpp]
+ std::string WebEngineLibraryInfo::getApplicationLocale()
+ {
+    CommandLine *parsedCommandLine =
+        CommandLine::ForCurrentProcess();
+
+    if (!parsedCommandLine->HasSwitch(switches::kLang))
+        return QLocale().bcp47Name().toStdString();
+
+    return parsedCommandLine->GetSwitchValueASCII(
+                                        switches::kLang);
+ }
+\end{lstlisting}
+\end{comment}
 
 Ezzel a megoldással a tesztekben kapott Chromium üzenetek minden esetben angolul jelenik meg,
 viszont előfordulhat, hogy a felhasználó is szeretné felül definiálni parancssorból a
-böngésző alkalmazás nyelvét, ezért a Qt WebEngine-ben a browser processzben is meg lett
-valósítva, hogy \texttt{-{}-lang} kapcsolóval átadott érték felülírja a Qt alapértelmezett
-nyelvi beállítását. Ez a \texttt{WebEngineLibraryInfo::getApplicationLocale()} függvényben
-lett megvalósítva, hogy ha a browser processz \texttt{-{}-lang} kapcsolóval lett indítva,
-akkor annak az értékével térjen vissza és ne kérje le a Qt-tól a locale értékét.
+böngészőalkalmazás nyelvét, ezért  a \texttt{-{}-lang} parancssori kapcsoló kezelését
+megvalósítottam a Browser Processbe is. Ha a processz a \texttt{-{}-lang} kapcsolóval lett
+indítva, akkor a \texttt{ContentBrowserClientQt::GetApplicationLocale()} függvény nem
+a Qt nyelvével tér vissza, hanem a kapcsolóval átadott értékkel.
 
 Az új \texttt{-{}-lang} parancssori kapcsoló támogatása és a tesztelés javítása a Qt 5.5-ös
 verziójában jelent meg.
