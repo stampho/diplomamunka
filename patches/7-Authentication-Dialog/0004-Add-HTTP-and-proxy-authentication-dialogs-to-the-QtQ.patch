@@ -1,0 +1,270 @@
+From a9988f6c4733276469b8473709e18408aca110c1 Mon Sep 17 00:00:00 2001
+From: Peter Varga <pvarga@inf.u-szeged.hu>
+Date: Wed, 26 Aug 2015 17:15:51 +0200
+Subject: [PATCH] Add HTTP and proxy authentication dialogs to the QtQuick API
+
+Change-Id: Idba4c32df3aaecabfbdca0c79c80317e2e4577ba
+Reviewed-by: Allan Sandfeld Jensen <allan.jensen@theqtcompany.com>
+---
+ src/webengine/api/qquickwebengineview.cpp   |   6 ++
+ src/webengine/api/qquickwebengineview_p_p.h |   2 +-
+ src/webengine/ui/AuthenticationDialog.qml   | 105 ++++++++++++++++++++++++++++
+ src/webengine/ui/ui.pro                     |   2 +
+ src/webengine/ui_delegates_manager.cpp      |  41 +++++++++++
+ src/webengine/ui_delegates_manager.h        |   5 +-
+ 6 files changed, 159 insertions(+), 2 deletions(-)
+ create mode 100644 src/webengine/ui/AuthenticationDialog.qml
+
+diff --git a/src/webengine/api/qquickwebengineview.cpp b/src/webengine/api/qquickwebengineview.cpp
+index 65b98ca..a810df2 100644
+--- a/src/webengine/api/qquickwebengineview.cpp
++++ b/src/webengine/api/qquickwebengineview.cpp
+@@ -37,6 +37,7 @@
+ #include "qquickwebengineview_p.h"
+ #include "qquickwebengineview_p_p.h"
+ 
++#include "authentication_dialog_controller.h"
+ #include "browser_context_adapter.h"
+ #include "certificate_error_controller.h"
+ #include "file_picker_controller.h"
+@@ -524,6 +525,11 @@ void QQuickWebEngineViewPrivate::javaScriptConsoleMessage(JavaScriptConsoleMessa
+     Q_EMIT q->javaScriptConsoleMessage(static_cast<QQuickWebEngineView::JavaScriptConsoleMessageLevel>(level), message, lineNumber, sourceID);
+ }
+ 
++void QQuickWebEngineViewPrivate::authenticationRequired(QSharedPointer<AuthenticationDialogController> controller)
++{
++    ui()->showDialog(controller);
++}
++
+ void QQuickWebEngineViewPrivate::runMediaAccessPermissionRequest(const QUrl &securityOrigin, WebContentsAdapterClient::MediaRequestFlags requestFlags)
+ {
+     Q_Q(QQuickWebEngineView);
+diff --git a/src/webengine/api/qquickwebengineview_p_p.h b/src/webengine/api/qquickwebengineview_p_p.h
+index 6db6b19..4aebb6f 100644
+--- a/src/webengine/api/qquickwebengineview_p_p.h
++++ b/src/webengine/api/qquickwebengineview_p_p.h
+@@ -155,7 +155,7 @@ public:
+     virtual void didFindText(quint64, int) Q_DECL_OVERRIDE;
+     virtual void passOnFocus(bool reverse) Q_DECL_OVERRIDE;
+     virtual void javaScriptConsoleMessage(JavaScriptConsoleMessageLevel level, const QString& message, int lineNumber, const QString& sourceID) Q_DECL_OVERRIDE;
+-    virtual void authenticationRequired(QSharedPointer<QtWebEngineCore::AuthenticationDialogController>) Q_DECL_OVERRIDE { }
++    virtual void authenticationRequired(QSharedPointer<QtWebEngineCore::AuthenticationDialogController>) Q_DECL_OVERRIDE;
+     virtual void runMediaAccessPermissionRequest(const QUrl &securityOrigin, MediaRequestFlags requestFlags) Q_DECL_OVERRIDE;
+     virtual void runMouseLockPermissionRequest(const QUrl &securityOrigin) Q_DECL_OVERRIDE;
+ #ifndef QT_NO_ACCESSIBILITY
+diff --git a/src/webengine/ui/AuthenticationDialog.qml b/src/webengine/ui/AuthenticationDialog.qml
+new file mode 100644
+index 0000000..46e2e31
+--- /dev/null
++++ b/src/webengine/ui/AuthenticationDialog.qml
+@@ -0,0 +1,105 @@
++/****************************************************************************
++**
++** Copyright (C) 2015 The Qt Company Ltd.
++** Contact: http://www.qt.io/licensing/
++**
++** This file is part of the QtWebEngine module of the Qt Toolkit.
++**
++** $QT_BEGIN_LICENSE:LGPL$
++** Commercial License Usage
++** Licensees holding valid commercial Qt licenses may use this file in
++** accordance with the commercial license agreement provided with the
++** Software or, alternatively, in accordance with the terms contained in
++** a written agreement between you and The Qt Company. For licensing terms
++** and conditions see http://www.qt.io/terms-conditions. For further
++** information use the contact form at http://www.qt.io/contact-us.
++**
++** GNU Lesser General Public License Usage
++** Alternatively, this file may be used under the terms of the GNU Lesser
++** General Public License version 3 as published by the Free Software
++** Foundation and appearing in the file LICENSE.LGPLv3 included in the
++** packaging of this file. Please review the following information to
++** ensure the GNU Lesser General Public License version 3 requirements
++** will be met: https://www.gnu.org/licenses/lgpl.html.
++**
++** GNU General Public License Usage
++** Alternatively, this file may be used under the terms of the GNU
++** General Public License version 2.0 or later as published by the Free
++** Software Foundation and appearing in the file LICENSE.GPL included in
++** the packaging of this file. Please review the following information to
++** ensure the GNU General Public License version 2.0 requirements will be
++** met: http://www.gnu.org/licenses/gpl-2.0.html.
++**
++** $QT_END_LICENSE$
++**
++****************************************************************************/
++
++// FIXME: authentication missing in Qt Quick Dialogs atm. Make our own for now.
++import QtQuick.Controls 1.4
++import QtQuick.Layouts 1.0
++import QtQuick 2.5
++
++ApplicationWindow {
++    signal accepted(string user, string password);
++    signal rejected;
++    property alias text: message.text;
++
++    width: 350
++    height: 100
++    flags: Qt.Dialog
++
++    title: "Authentication Required"
++
++    function open() {
++        show();
++    }
++
++    ColumnLayout {
++        anchors.fill: parent;
++        anchors.margins: 4;
++        Text {
++            id: message;
++            Layout.fillWidth: true;
++        }
++        RowLayout {
++            Label {
++                text: "Username:"
++            }
++            TextField {
++                id: userField;
++                Layout.fillWidth: true;
++            }
++        }
++        RowLayout {
++            Label {
++                text: "Password:"
++            }
++            TextField {
++                id: passwordField;
++                Layout.fillWidth: true;
++                echoMode: TextInput.Password;
++            }
++        }
++        RowLayout {
++            Layout.alignment: Qt.AlignRight
++            spacing: 8;
++            Button {
++                text: "Log In"
++                onClicked: {
++                    accepted(userField.text, passwordField.text);
++                    close();
++                    destroy();
++                }
++            }
++            Button {
++                text: "Cancel"
++                onClicked: {
++                    rejected();
++                    close();
++                    destroy();
++                }
++            }
++        }
++    }
++
++}
+diff --git a/src/webengine/ui/ui.pro b/src/webengine/ui/ui.pro
+index fdf7a85..28ea691 100644
+--- a/src/webengine/ui/ui.pro
++++ b/src/webengine/ui/ui.pro
+@@ -1,6 +1,8 @@
+ TARGETPATH = QtWebEngine/UIDelegates
+ 
+ QML_FILES += \
++    # Authentication Dialog
++    AuthenticationDialog.qml \
+     # JS Dialogs
+     AlertDialog.qml \
+     ConfirmDialog.qml \
+diff --git a/src/webengine/ui_delegates_manager.cpp b/src/webengine/ui_delegates_manager.cpp
+index 95010d8..5a5c261 100644
+--- a/src/webengine/ui_delegates_manager.cpp
++++ b/src/webengine/ui_delegates_manager.cpp
+@@ -37,6 +37,7 @@
+ #include "ui_delegates_manager.h"
+ 
+ #include "api/qquickwebengineview_p.h"
++#include "authentication_dialog_controller.h"
+ #include "file_picker_controller.h"
+ #include "javascript_dialog_controller.h"
+ 
+@@ -317,6 +318,46 @@ void UIDelegatesManager::showDialog(QSharedPointer<JavaScriptDialogController> d
+     QMetaObject::invokeMethod(dialog, "open");
+ }
+ 
++void UIDelegatesManager::showDialog(QSharedPointer<AuthenticationDialogController> dialogController)
++{
++    Q_ASSERT(!dialogController.isNull());
++
++    if (!ensureComponentLoaded(AuthenticationDialog)) {
++        // Let the controller know it couldn't be loaded
++        qWarning("Failed to load authentication dialog, rejecting.");
++        dialogController->reject();
++        return;
++    }
++
++    QQmlContext *context = qmlContext(m_view);
++    QObject *authenticationDialog = authenticationDialogComponent->beginCreate(context);
++    authenticationDialog->setParent(m_view);
++
++    QString introMessage;
++    if (dialogController->isProxy()) {
++        introMessage = QObject::tr("Connect to proxy \"%1\" using:");
++        introMessage = introMessage.arg(dialogController->host().toHtmlEscaped());
++    } else {
++        introMessage = QObject::tr("Enter username and password for \"%1\" at %2");
++        introMessage = introMessage.arg(dialogController->realm()).arg(dialogController->url().toString().toHtmlEscaped());
++    }
++    QQmlProperty textProp(authenticationDialog, QStringLiteral("text"));
++    textProp.write(introMessage);
++
++    QQmlProperty acceptSignal(authenticationDialog, QStringLiteral("onAccepted"));
++    QQmlProperty rejectSignal(authenticationDialog, QStringLiteral("onRejected"));
++    CHECK_QML_SIGNAL_PROPERTY(acceptSignal, authenticationDialogComponent->url());
++    CHECK_QML_SIGNAL_PROPERTY(rejectSignal, authenticationDialogComponent->url());
++
++    static int acceptIndex = dialogController->metaObject()->indexOfSlot("accept(QString,QString)");
++    QObject::connect(authenticationDialog, acceptSignal.method(), dialogController.data(), dialogController->metaObject()->method(acceptIndex));
++    static int rejectIndex = dialogController->metaObject()->indexOfSlot("reject()");
++    QObject::connect(authenticationDialog, rejectSignal.method(), dialogController.data(), dialogController->metaObject()->method(rejectIndex));
++
++    authenticationDialogComponent->completeCreate();
++    QMetaObject::invokeMethod(authenticationDialog, "open");
++}
++
+ void UIDelegatesManager::showFilePicker(FilePickerController *controller)
+ {
+ 
+diff --git a/src/webengine/ui_delegates_manager.h b/src/webengine/ui_delegates_manager.h
+index 37cbb85..2a86b28 100644
+--- a/src/webengine/ui_delegates_manager.h
++++ b/src/webengine/ui_delegates_manager.h
+@@ -55,7 +55,8 @@
+     F(ConfirmDialog, confirmDialog) SEPARATOR \
+     F(PromptDialog, promptDialog) SEPARATOR \
+     F(FilePicker, filePicker) SEPARATOR \
+-    F(MessageBubble, messageBubble) SEPARATOR
++    F(MessageBubble, messageBubble) SEPARATOR \
++    F(AuthenticationDialog, authenticationDialog) SEPARATOR
+ 
+ #define COMMA_SEPARATOR ,
+ #define SEMICOLON_SEPARATOR ;
+@@ -72,6 +73,7 @@ class QQuickWebEngineView;
+ QT_END_NAMESPACE
+ 
+ namespace QtWebEngineCore {
++class AuthenticationDialogController;
+ class JavaScriptDialogController;
+ class FilePickerController;
+ 
+@@ -102,6 +104,7 @@ public:
+     QObject *addMenu(QObject *parentMenu, const QString &title, const QPoint &pos = QPoint());
+     QQmlContext *creationContextForComponent(QQmlComponent *);
+     void showDialog(QSharedPointer<JavaScriptDialogController>);
++    void showDialog(QSharedPointer<AuthenticationDialogController>);
+     void showFilePicker(FilePickerController *controller);
+     void showMessageBubble(const QRect &anchor, const QString &mainText, const QString &subText);
+     void hideMessageBubble();
+-- 
+2.7.4 (Apple Git-66)
+

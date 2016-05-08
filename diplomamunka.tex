@@ -1754,26 +1754,6 @@ megvalósításával van lehetőség:
  }
 \end{lstlisting}
 
-\begin{comment}
-Ahhoz, hogy a felhasználó a QtWebEngine-t beépítő alkalmazás indításakor felüldefiniálhassa
-a Qt beállításait is, a \texttt{-{}-lang} parancssori kapcsoló ellenőrzését hozzáadtam
-Browser Processhez is:
-\newpage
-\begin{lstlisting}[title=src/core/web\_engine\_library\_info.cpp]
- std::string WebEngineLibraryInfo::getApplicationLocale()
- {
-    CommandLine *parsedCommandLine =
-        CommandLine::ForCurrentProcess();
-
-    if (!parsedCommandLine->HasSwitch(switches::kLang))
-        return QLocale().bcp47Name().toStdString();
-
-    return parsedCommandLine->GetSwitchValueASCII(
-                                        switches::kLang);
- }
-\end{lstlisting}
-\end{comment}
-
 Ezzel a megoldással a tesztekben kapott Chromium üzenetek minden esetben angolul jelenik meg,
 viszont előfordulhat, hogy a felhasználó is szeretné felül definiálni parancssorból a
 böngészőalkalmazás nyelvét, ezért  a \texttt{-{}-lang} parancssori kapcsoló kezelését
@@ -1787,115 +1767,140 @@ verziójában jelent meg.
 
 \section{Authentication Dialog}
 
+A legtöbb böngésző támogatja a HTTP protokoll által nyújtott bejelentkezés funkciót
+(Basic Access Authentication - RFC 2617), amely a legegyszerűbb módja a weblapok jelszóval
+való védésének. Nincs szükség bejelentkező oldalra, \textit{cookie}-kra, hanem a funkció a
+HTTP header megfelelő mezőit használja az azonosításhoz. Ez a szabvány támogatja a
+HTTP proxy szerverre történő bejelentkezést is.
+
+A HTTP protokollon keresztül történő bejelentkezéshez szükséges űrlap nem a web
+oldalon jelenik meg, ezért azt jellemzően a böngészők egy felugró ablakon teszik láthatóvá
+a felhasználó számára. A Chromium megvalósítja a HTTP protokollon keresztül történő
+bejelentkeztetést, viszont a felugró ablakot a beágyazó alkalmazásnak kell implementálnia
+a Content API-n keresztül. A Qt WebEngine-ben az ezt megvalósító funkció az
+\textbf{Authentication Dialog}.
+
+A munka kezdetekor ez a funkció már elérhető volt a Qt WebEngine Widgets modulban, viszont
+annak megvalósítás hibás volt, továbbá az ehhez tartozó implementáció a Core modulban nem
+volt felhasználható egy Quick UI Delegate megvalósításához. A Quick funkció megvalósítását
+ezért a Widget API javításával és újraírásával kezdtem.
+
 \begin{center}
     \begin{reviewbox}
         \begin{itemize}
             \renewcommand{\labelitemi}{\textcolor{qtgreen}{$\blacktriangleright$}}
             \item \gerrit{124330}
-            \item \gerrit{124331}
-            \item \gerrit{124332}
-            \item \gerrit{124333}
         \end{itemize}
     \end{reviewbox}
 \end{center}
 
-\noindent
-Az legtöbb böngésző támogatja a HTTP protokoll által nyújtott bejelentkezés funkciót
-(Basic Access Authentication - RFC 2617), amely a legegyszerűbb módja a web lapok jelszóval
-való védésének. Nincs szükség bejelentkező oldalra, cookie-kra, hanem a HTTP header
-megfelelő mezőit használja az azonosításhoz. Továbbá HTTP protokoll támogatja a HTTP proxy
-szerverre történő bejelentkezést is.
-
-A HTTP protokollon keresztül történő bejelentkezéshez szükséges form (űrlap) nem a web
-oldalon jelenik meg, ezért azt jellemzően a böngészők egy felugró ablakon teszik láthatóvá
-a felhasználó számára. A Chromium megvalósítja a HTTP protokollon keresztül történő
-bejelentkeztetést, viszont a felugró ablakot a beágyazó alkalmazásnak kell megvalósítania
-a Content API-n keresztül. A Qt WebEngine ezt megvalósító funkciója az
-\textbf{Authentication Dialog}.
-
-Az Authentication Dialog már meg volt valósítva a Qt WebEngine Widgets modulban, azonban
-ez a megvalósítás hibás volt, illetve az ehhez tartozó implementáció a Core modulban nem
-volt felhasználható egy Quick UI Delegate megvalósításához. A Quick funkció megvalósítását
-ezért a Widget API javításával és újraírásával kezdtem.
-
-Az első kijavítandó hiba az volt, hogy a Widget megvalósítás nem támogatta az üres
-felhasználónév és jelszó párral történő bejelentkezést, mivel ezt az esetet úgy kezelte,
-hogy a felhasználó megszakítja a bejelentkezést (Mégse/Cancel gomb). A felhasználó név
-és jelszó (credentials) tárolására a Qt Network module saját osztályt definiál:
+Az első kijavított hiba, hogy a Widget megvalósítás nem támogatta az üres felhasználónév és
+jelszó párral történő bejelentkezést. A modul ezt az esetet úgy kezelte, hogy a felhasználó
+megszakítja a műveletet (Mégse/Cancel gomb). A felhasználó név és jelszó
+(\textit{credentials}) tárolására a Qt Network modul saját osztályt definiál, ez a
 \texttt{QAuthenticator}. A hiba javításához megszakítás esetén a \texttt{QAuthenticator}
-példány \texttt{user} és \texttt{password} mezőjébe nem üres string-et tárolunk, hanem
-nem állítunk be semmit és a példány nem inicializált állapotban marad, amit annak az
-\texttt{isNull()} metódusával lehet lekérdezni. Qt Webengine Widgets modul a javításban
-ezt az állapotot ellenőrzi és továbbítja a Core modulnak, hogy az azonosítás meg lett e
-szakítva vagy sem.
+példány \texttt{user} és \texttt{password} mezőjében nem üres stringet tároltam, hanem
+nem állítottam be semmit így a példány inicializálatlan állapotban marad. Ezt az állapotot
+\texttt{QAuthenticator::isNull()} metódussal lehet lekérdezni. A javításban a Qt WebEngine
+Widgets modul ezt az állapotot ellenőrzi és továbbítja az információt Core modulnak, hogy
+az azonosítás meg lett-e szakítva vagy sem.
+
+\begin{center}
+    \begin{reviewbox}
+        \begin{itemize}
+            \renewcommand{\labelitemi}{\textcolor{qtgreen}{$\blacktriangleright$}}
+            \item \gerrit{124331}
+        \end{itemize}
+    \end{reviewbox}
+\end{center}
 
 A másik hiba a Widget API-ban a böngésző ikonok (favicon) megjelenítése volt. Amennyiben a
 felhasználó jelszóval védett oldalt nyitott meg, bejelentkezés után a böngésző nem tudta
 letölteni az oldalhoz tartozó ikont. A probléma oka, hogy az ikon letöltést nem a Chromium
 végezte, hanem a Qt Network modul \texttt{QNetworkAccessManager}-re, aminek nem volt
 hozzáférése a Chromium által tárolt felhasználónév jelszó pároshoz. A problémát a
-Qt WebEngine Widgets module \texttt{demobrowser} példa alkalmazásában kellett orvosolni,
-mivel az \texttt{QNetworkAccessManager}-rel támogatott letöltés nem a Qt WebEngine API része.
-A javítás ezért egy ideiglenes ``workaround'' lett, amíg az ikonok letöltésért felelős
-funkcionalitás/API nincs megvalósítva a Qt WebEngine-ben. A javítás lényege az, hogy a
-legutóbbi Authentication Dialog-ban bevitt felhasználónév/jelszó párost hordozó
-\texttt{QAuthenticator} példányt a böngésző oldalon is tároljuk és amikor a
-\texttt{QNetworkAccessManager} azonosítást igényel, akkor a tárolt a adatokkal próbálja
-azonosítani magát.
+Qt WebEngine Widgets modul \texttt{demobrowser} példa alkalmazásában kellett javítani,
+mivel a \texttt{QNetworkAccessManager}-rel támogatott letöltés nem a Qt WebEngine API része.
+A javítás egy átmeneti \textit{workaround} lett, amire addig volt szükség, amíg az ikonok
+letöltéséért felelős funkcionalitást (Favicon Manager) megvalósítottam QtWebEngine-ben.
+A workaround lényege, hogy a legutóbbi Authentication Dialogban bevitt felhasználónév/jelszó
+párost hordozó \texttt{QAuthenticator} példányt a böngésző oldalon is tároltam így amikor a
+\texttt{QNetworkAccessManager} letölti a jelszóval védett ikont, akkor a tárolt a adatokkal
+próbálja azonosítani magát.
 
-Ennél a javításnál különösen kellett ügyelni arra, hogy ez a workaround ne adjon lehetőséget
-visszaélésre, például az eltárolt adatok megszerzésére egy kimondottan erre a célra
-készített web oldal betöltésével. A támadások kivédésére a \texttt{QAuthenticator} példány
-tárol a web oldalhoz vagy a proxy szerverhez tartozó információkat is azok egyértelmű
-azonosításához. Így a \texttt{QNetworkAccessManager} csak olyan lekérésnél próbál meg
-bejelentkezni a \texttt{QAuthenticator}-ban tárolt adatokkal, ahol az azonosítást kérő
-szervert egyértelműen azonosítani tudja. További szépséghibája a javításnak, hogy
-ugyanezt a problémát a QML/Quick API-ra építő böngészőkben nem oldja meg, mivel ott az ikon
-letöltése az \texttt{Image} QML típuson történik, amely nem nyújt lehetőséget az
-autentikációra.
+Ennél a javításnál különösen kellett ügyelni arra, hogy a megoldás ne adjon lehetőséget
+visszaélésre. A workaround kiaknázható (\textit{exploit}) lehet például egy olyan weboldal
+betöltésével, amely kimondottan a böngészőalkalmazásban tárolt adatokat próbálja megszerezni.
+A támadások kivédésére a \texttt{QAuthenticator} példány tárol a weboldal (vagy a proxy
+szerver) egyértelmű azonosításához szükséges információkat is. Így a
+\texttt{QNetworkAccessManager} csak olyan kéréseknél próbál meg bejelentkezni a
+\texttt{QAuthenticator}-ban tárolt adatokkal, ahol az azonosítást kérő szervert egyértelműen
+azonosítani tudja. További szépséghibája a javításnak, hogy ugyanezt a problémát a QML/Quick
+API-ra építő böngészőkben nem oldja meg, mivel ott az ikon letöltése az \texttt{Image} QML
+típus segítségével, amely nem nyújt lehetőséget az autentikációra.
 
-Widget hibák javítása után a következő akadályt a Quick API Authentication Dialog-jának
-megvalósításához a Content API \texttt{ResourceDispatcherHostLoginDelegate} interfészének
-implementációja jelentette. Ez az interfész már meg volt valósítva az egyszerűség kedvéért
-a Widget ``szinkron'' API-jának megfelelően. A szinkron API ez esetben azt jelenti, hogy a
-\texttt{QWebEnginePrivate::authenticationRequired()} függvényen belül kiküldött
-\texttt{authenticationRequired} vagy \texttt{proxyAuthenticationRequired} szignálok által
-kiváltott slot-ok (ez esetben a dialog) végrehajtását a függvény megvárja és nem megy tovább,
-így nem kell a dialog ablak bezárását külön eseménnyel lekezelni. A Quick aszinkron API-jával
-ez nem megoldható, ezért a \texttt{ResourceDispatcherHostLoginDelegate}-nek olyan közös
-megvalósítására van szükség a Core modulban, amely mind két típusú API-val használható.
+\begin{center}
+    \begin{reviewbox}
+        \begin{itemize}
+            \renewcommand{\labelitemi}{\textcolor{qtgreen}{$\blacktriangleright$}}
+            \item \gerrit{124332}
+        \end{itemize}
+    \end{reviewbox}
+\end{center}
 
-A új közös belső Core API-t \texttt{AuthenticationDialogController} osztály valósítja meg
+Widget hibák javítása után a Chromium Content API \texttt{ResourceDispatcherHostLoginDelegate}
+interfészét kellet újraimplementálni. Az interfész megvalósítása már kész volt, viszont azt
+csak a Qt WebEngine Widgets modul szinkron API-jában lehetett felhasználni. A szinkron API ez
+esetben azt jelenti, hogy a \texttt{QWebEnginePrivate::authenticationRequired()} függvényen
+belül kiküldött \texttt{authenticationRequired} vagy \texttt{proxyAuthenticationRequired}
+signalok által meghívott slotok végrehajtását a függvény megvárja, így az nem folytatódik
+tovább amíg a felhasználó be nem zárja a dialog ablakot. Ennek a megoldásnak az előnye, hogy
+a dialog ablak bezárását nem kell külön eseménnyel lekezelni, viszont QML-ben nem támogatott
+az ilyen szinkron eseménykezelés. A \texttt{ResourceDispatchesHostLoginDelegate} interfészt
+úgy valósítottam meg a Core modulban, hogy az támogassa az aszinkron eseménykezelést, így
+felhasználható legyen a Qt WebEngine és Qt WebEngine Widgets modulokban.
+
+Az új közös belső Core API-t \texttt{AuthenticationDialogController} osztály valósítja meg
 a hasonló \texttt{JavaScriptDialogController} osztály mintájára.
-Az \texttt{AuthenticationDialogController} osztály a
-\texttt{ResourceDispatcherHostLoginDelegateQt} példányosítja, amikor a Content API jelez,
-hogy új Authentication Dialog ablakra van szükség. Példányosítás után a
-\texttt{ResourceDispatcherHostLoginDelegateQt} átadja azt az API-nak, hogy azon keresztül
-az beállíthassa a felhasználótól bekért felhasználónév/jelszó párost.
+Az \texttt{AuthenticationDialogController} osztályt a
+\texttt{ResourceDispatcherHostLoginDelegateQt} példányosítja, amikor a Content API jelzi,
+hogy új Authentication Dialog ablak megjelenítésére van szükség. Példányosítás után a
+\texttt{ResourceDispatcherHostLoginDelegateQt} átadja a \textit{controllert} az API-nak,
+hogy azon keresztül az API beállíthassa a felhasználótól kapott felhasználónév/jelszó párost.
 
-Az \texttt{AuthenticationDialogController}-en
-belül két slot van megvalósítva: \texttt{accept()} a belépéshez és \texttt{reject()} a
-megszakításhoz. A slotok implementálják Chromium értesítését a Content API-n keresztül a
-felhasználói interakció eredményéről. A Widget API könnyen hozzáigazítható volt az új
-modellhez és hála a két új slot-nak a \texttt{AuthenticationDialogController} alkalmas
-olyan aszinkron API megvalósítására is mint a Qt WebEngine modul, Quick API-ja.
+Az \texttt{AuthenticationDialogController} osztályon belül két slot van megvalósítva:
+\texttt{accept()} a belépéshez és \texttt{reject()} a megszakításhoz. A slotok implementálják
+a Chromium értesítését a Content API-n keresztül a felhasználói interakció eredményéről.
+A Widget API könnyen hozzáigazítható volt az aszinkron modellhez és hála a két új slotnak a
+\texttt{AuthenticationDialogController} alkalmas olyan aszinkron API megvalósítására is mint
+a Qt WebEngine modul, Quick API-ja.
 
-Amíg a Widget API-ban lehetséges a fejlesztőre bízni a dialog megvalósítását, addig a
-QML/Quick API-ban (még) nincs lehetőség saját dialog ablakok összekötésére a Qt WebEngine
-eseményeivel. Ezért a Quick Authentication Dialog-ot Qt WebEngine-en belül kellett
-megvalósítani \texttt{UIDelegatesManager} segítségével akár csak a Form Validation funkció
-szöveg buborékja (\texttt{MessageBubble}) esetén.
+\begin{center}
+    \begin{reviewbox}
+        \begin{itemize}
+            \renewcommand{\labelitemi}{\textcolor{qtgreen}{$\blacktriangleright$}}
+            \item \gerrit{124333}
+        \end{itemize}
+    \end{reviewbox}
+\end{center}
 
-Mivel a Qt Declarative komponens nem nyújt bejelentkező (login) dialog ablakot a Quick-hez,
-ezért nem volt elég egy már meglévő QML típust bekötni a \texttt{UIDelegatesManager}-be,
-hanem egy újat kellett implementálni erre a célra QML nyelven:
-\texttt{AuthenticationDialog.qml}. Ez az új QML típus csak a QtWebEngine-ből használható,
-a publikus API-n keresztül nem érhető el. A dialog ablak üzenetei és az események lekezelése
-a \texttt{UIDelegatesManager}-en belül vannak megvalósítva C++ nyelven.
+A Widget API-ban lehetséges a fejlesztőre bízni a dialog ablak megvalósítását és
+testre szabását, Qt WebEngine modul API-ja (még) nem támogatja saját dialog ablakok
+összekötését a QtWebEngine eseményeivel. Emiatt a Quick Authentication Dialogot is a
+UI Delegate-en (\texttt{UIDelegatesManager}) belül valósítottam meg, ahogy a Form Validation
+funkció esetén is a szövegbuborékot (\texttt{MessageBubble}).
 
+Mivel a QtDeclarative nem nyújt előre gyártott bejelentkező (\textit{login}) dialog ablakot,
+ezért implementálnom kellett egy belső, publikus API-n keresztül nem elérhető
+\texttt{AuthenticationDialog} QML típust. A dialog ablak üzenetei és az események kezelése
+a \texttt{UIDelegatesManager}-ben vannak megvalósítva C++ nyelven. Az új dialog ablakot QML
+nyelven valósítottam meg az \texttt{AppliationWindow} QML típus specializációként. Az
+implementáció tartalmazza a szükséges \texttt{accept()} és \texttt{reject()} signalokat,
+amelyeket a \texttt{UIDelegatesManager} kapcsol össze \texttt{AuthenticationDialogController}
+megfelelő slotjaival.
 \begin{figure}[ht]
     \centering
-    \includegraphics[scale=0.75]{ad-quick-screenshot}
+    \includegraphics[scale=0.8]{ad-quick-screenshot}
     \caption{
         \label{fig:ad-quick-screenshot}
         \texttt{AuthenticationDialog} QML típus
@@ -1903,6 +1908,7 @@ a \texttt{UIDelegatesManager}-en belül vannak megvalósítva C++ nyelven.
 \end{figure}
 
 A javítások és az új Quick Authentication Dialog ablak a Qt 5.6-os verziójában jelentek meg.
+\newpage
 
 
 \section{Favicon Manager}

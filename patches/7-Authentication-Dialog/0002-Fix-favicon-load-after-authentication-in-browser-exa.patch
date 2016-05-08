@@ -1,0 +1,197 @@
+From 95d5240475c2c88908a1df23453efa05ed64dd34 Mon Sep 17 00:00:00 2001
+From: Peter Varga <pvarga@inf.u-szeged.hu>
+Date: Tue, 18 Aug 2015 16:15:25 +0200
+Subject: [PATCH] Fix favicon load after authentication in browser example
+
+In the widget browser example QNetworkAccessManager downloads the
+favicon for a webpage. In case of HTTP or proxy authentication
+the credentials may not be cached when QNetworkAccessManager
+tries to load the favicon. Therefore, store last credentials
+and provide it to QNetworkAccessManager when it emits
+authenticationRequired signal.
+
+Change-Id: I2d057bfa7291a13cec30db9debaf30382415122b
+Reviewed-by: Allan Sandfeld Jensen <allan.jensen@theqtcompany.com>
+---
+ .../demobrowser/browserapplication.cpp             | 70 ++++++++++++++++++++++
+ .../demobrowser/browserapplication.h               | 17 ++++++
+ examples/webenginewidgets/demobrowser/webview.cpp  |  9 ++-
+ 3 files changed, 95 insertions(+), 1 deletion(-)
+
+diff --git a/examples/webenginewidgets/demobrowser/browserapplication.cpp b/examples/webenginewidgets/demobrowser/browserapplication.cpp
+index 84ce35d..a85bce2 100644
+--- a/examples/webenginewidgets/demobrowser/browserapplication.cpp
++++ b/examples/webenginewidgets/demobrowser/browserapplication.cpp
+@@ -63,6 +63,7 @@
+ #include <QtNetwork/QLocalServer>
+ #include <QtNetwork/QLocalSocket>
+ #include <QtNetwork/QNetworkProxy>
++#include <QtNetwork/QNetworkReply>
+ #include <QtNetwork/QSslSocket>
+ 
+ #include <QWebEngineProfile>
+@@ -491,6 +492,10 @@ QNetworkAccessManager *BrowserApplication::networkAccessManager()
+ {
+     if (!s_networkAccessManager) {
+         s_networkAccessManager = new QNetworkAccessManager();
++        connect(s_networkAccessManager, &QNetworkAccessManager::authenticationRequired,
++                BrowserApplication::instance(), &BrowserApplication::authenticationRequired);
++        connect(s_networkAccessManager, &QNetworkAccessManager::proxyAuthenticationRequired,
++                BrowserApplication::instance(), &BrowserApplication::proxyAuthenticationRequired);
+     }
+     return s_networkAccessManager;
+ }
+@@ -549,3 +554,68 @@ void BrowserApplication::setPrivateBrowsing(bool privateBrowsing)
+     }
+     emit privateBrowsingChanged(privateBrowsing);
+ }
++
++void BrowserApplication::setLastAuthenticator(QAuthenticator *authenticator)
++{
++    m_lastAuthenticator = QAuthenticator(*authenticator);
++}
++
++void BrowserApplication::setLastProxyAuthenticator(QAuthenticator *authenticator)
++{
++    m_lastProxyAuthenticator = QAuthenticator(*authenticator);
++}
++
++void BrowserApplication::authenticationRequired(QNetworkReply *reply, QAuthenticator *authenticator)
++{
++    if (m_lastAuthenticator.isNull())
++        return;
++
++
++    Q_ASSERT(m_lastAuthenticator.option("key").isValid());
++    QByteArray lastKey = m_lastAuthenticator.option("key").toByteArray();
++    QByteArray key = BrowserApplication::authenticationKey(reply->url(), authenticator->realm());
++
++    if (lastKey == key)
++        *authenticator = m_lastAuthenticator;
++}
++
++void BrowserApplication::proxyAuthenticationRequired(const QNetworkProxy &proxy, QAuthenticator *authenticator)
++{
++    if (m_lastProxyAuthenticator.isNull())
++        return;
++
++    QNetworkProxy::ProxyType proxyType = proxy.type();
++    if (proxyType != QNetworkProxy::HttpProxy || proxyType != QNetworkProxy::HttpCachingProxy)
++        return;
++
++    Q_ASSERT(m_lastProxyAuthenticator.option("host").isValid());
++    QByteArray lastKey = m_lastProxyAuthenticator.option("key").toByteArray();
++    QByteArray key = BrowserApplication::proxyAuthenticationKey(proxy, authenticator->realm());
++
++    if (lastKey == key)
++        *authenticator = m_lastAuthenticator;
++}
++
++// TODO: Remove these functions (QTBUG-47967)
++QByteArray BrowserApplication::authenticationKey(const QUrl &url, const QString &realm)
++{
++    QUrl copy = url;
++    copy.setFragment(realm);
++    return "auth:" + copy.toEncoded(QUrl::RemovePassword | QUrl::RemovePath | QUrl::RemoveQuery);
++}
++
++QByteArray BrowserApplication::proxyAuthenticationKey(const QNetworkProxy &proxy, const QString &realm)
++{
++    QString host = QString("%1:%2").arg(proxy.hostName()).arg(proxy.port());
++    return BrowserApplication::proxyAuthenticationKey(proxy.user(), host, realm);
++}
++
++QByteArray BrowserApplication::proxyAuthenticationKey(const QString &user, const QString &host, const QString &realm)
++{
++    QUrl key;
++    key.setScheme(QLatin1String("proxy-http"));
++    key.setUserName(user);
++    key.setHost(host);
++    key.setFragment(realm);
++    return "auth:" + key.toEncoded();
++}
+diff --git a/examples/webenginewidgets/demobrowser/browserapplication.h b/examples/webenginewidgets/demobrowser/browserapplication.h
+index dd3045b..75ae57c 100644
+--- a/examples/webenginewidgets/demobrowser/browserapplication.h
++++ b/examples/webenginewidgets/demobrowser/browserapplication.h
+@@ -49,9 +49,13 @@
+ 
+ #include <QtGui/QIcon>
+ 
++#include <QtNetwork/QAuthenticator>
++
+ QT_BEGIN_NAMESPACE
+ class QLocalServer;
+ class QNetworkAccessManager;
++class QNetworkProxy;
++class QNetworkReply;
+ class QWebEngineProfile;
+ QT_END_NAMESPACE
+ 
+@@ -80,6 +84,14 @@ public:
+     bool canRestoreSession() const;
+     bool privateBrowsing() const { return m_privateBrowsing; }
+ 
++    void setLastAuthenticator(QAuthenticator *);
++    void setLastProxyAuthenticator(QAuthenticator *);
++
++    // TODO: Remove these functions (QTBUG-47967)
++    static QByteArray authenticationKey(const QUrl &, const QString &);
++    static QByteArray proxyAuthenticationKey(const QNetworkProxy &, const QString &);
++    static QByteArray proxyAuthenticationKey(const QString &, const QString &, const QString &);
++
+     static HistoryManager *historyManager();
+     static CookieJar *cookieJar();
+     static DownloadManager *downloadManager();
+@@ -96,6 +108,8 @@ public slots:
+     void lastWindowClosed();
+     void quitBrowser();
+     void setPrivateBrowsing(bool);
++    void authenticationRequired(QNetworkReply *, QAuthenticator *);
++    void proxyAuthenticationRequired(const QNetworkProxy &, QAuthenticator *);
+ 
+ signals:
+     void privateBrowsingChanged(bool);
+@@ -120,6 +134,9 @@ private:
+     QWebEngineProfile *m_privateProfile;
+     bool m_privateBrowsing;
+     mutable QIcon m_defaultIcon;
++
++    QAuthenticator m_lastAuthenticator;
++    QAuthenticator m_lastProxyAuthenticator;
+ };
+ 
+ #endif // BROWSERAPPLICATION_H
+diff --git a/examples/webenginewidgets/demobrowser/webview.cpp b/examples/webenginewidgets/demobrowser/webview.cpp
+index d56ab80..e454f06 100644
+--- a/examples/webenginewidgets/demobrowser/webview.cpp
++++ b/examples/webenginewidgets/demobrowser/webview.cpp
+@@ -271,8 +271,11 @@ void WebPage::authenticationRequired(const QUrl &requestUrl, QAuthenticator *aut
+     passwordDialog.introLabel->setWordWrap(true);
+ 
+     if (dialog.exec() == QDialog::Accepted) {
++        QByteArray key = BrowserApplication::authenticationKey(requestUrl, auth->realm());
+         auth->setUser(passwordDialog.userNameLineEdit->text());
+         auth->setPassword(passwordDialog.passwordLineEdit->text());
++        auth->setOption("key", key);
++        BrowserApplication::instance()->setLastAuthenticator(auth);
+     } else {
+         // Set authenticator null if dialog is cancelled
+         *auth = QAuthenticator();
+@@ -299,8 +302,12 @@ void WebPage::proxyAuthenticationRequired(const QUrl &requestUrl, QAuthenticator
+     proxyDialog.introLabel->setWordWrap(true);
+ 
+     if (dialog.exec() == QDialog::Accepted) {
+-        auth->setUser(proxyDialog.userNameLineEdit->text());
++        QString user = proxyDialog.userNameLineEdit->text();
++        QByteArray key = BrowserApplication::proxyAuthenticationKey(user, proxyHost, auth->realm());
++        auth->setUser(user);
+         auth->setPassword(proxyDialog.passwordLineEdit->text());
++        auth->setOption("key", key);
++        BrowserApplication::instance()->setLastProxyAuthenticator(auth);
+     } else {
+         // Set authenticator null if dialog is cancelled
+         *auth = QAuthenticator();
+-- 
+2.7.4 (Apple Git-66)
+
